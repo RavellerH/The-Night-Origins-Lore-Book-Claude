@@ -39,6 +39,39 @@
     overflow: hidden;
   }
 
+  /* ─── BACKGROUND IMAGE WITH MIST ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url('back.jpeg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.15;
+    z-index: 0;
+    pointer-events: none;
+    filter: blur(1px) saturate(0.6);
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(4,8,16,0.55) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(4,8,16,0.45) 0%, transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(4,8,16,0.7) 0%, transparent 50%),
+      linear-gradient(180deg, rgba(4,8,16,0.3) 0%, transparent 30%, transparent 70%, rgba(4,8,16,0.5) 100%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ensure all layout elements sit above the background layers */
+  #sidebar, #main, #lightbox, #toast-container,
+  #story-mode-overlay, #scroll-progress {
+    position: relative;
+    z-index: 1;
+  }
+
   /* ─── SIDEBAR ─── */
   #sidebar {
     width: 260px;
@@ -572,6 +605,17 @@
     font-size: 11px;
     color: var(--ink-soft);
     letter-spacing: 1px;
+  }
+  #lightbox-desc {
+    font-family: 'Crimson Text', 'IM Fell English', Georgia, serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    max-width: 480px;
+    text-align: center;
+    line-height: 1.6;
+    padding: 0 20px;
+    opacity: 0.85;
   }
   .lb-btn {
     position: absolute;
@@ -1146,6 +1190,10 @@
         <span class="icon">🎨</span><span class="nav-label"> Concept Art</span>
         <span class="nav-dot" data-dot="conceptart"></span>
       </div>
+      <div class="nav-item" data-page="characterconcepts">
+        <span class="icon">🖼️</span><span class="nav-label"> Character Concepts</span>
+        <span class="nav-dot" data-dot="characterconcepts"></span>
+      </div>
     </div>
     <div class="nav-group">
       <div class="nav-group-label">Discover</div>
@@ -1165,6 +1213,12 @@
         <span class="icon">📊</span><span class="nav-label"> Reading Stats</span>
       </div>
     </div>
+    <div class="nav-group">
+      <div class="nav-group-label">Explore</div>
+      <a href="../Games/index.html" class="nav-item" style="text-decoration:none;color:inherit">
+        <span class="icon">🎮</span><span class="nav-label"> Mini-Games</span>
+      </a>
+    </div>
   </nav>
 </aside>
 
@@ -1175,6 +1229,7 @@
   <img id="lightbox-img" src="" alt="">
   <button class="lb-btn" id="lb-next" onclick="lbStep(1)">›</button>
   <div id="lightbox-caption"></div>
+  <div id="lightbox-desc"></div>
   <div id="lightbox-counter"></div>
 </div>
 
@@ -1249,6 +1304,7 @@ const LORE = {
       {page:'religion',    icon:'🕯️', name:'Religion & Belief',  desc:'Gods, faith & the divine'},
       {page:'openquestions',icon:'❓',name:'Open Questions',     desc:'Unresolved lore decisions'},
       {page:'conceptart',   icon:'🎨',name:'Concept Art',        desc:'World visual development'},
+      {page:'characterconcepts', icon:'🖼️',name:'Character Concepts', desc:'Character portrait studies'},
       {page:'quiz',          icon:'⚔️', name:'Which Faction?',    desc:'Find your allegiance'},
       {page:'relationships', icon:'🕸️', name:'Character Web',     desc:'Interactive connections'},
       {page:'achievements',  icon:'🏆', name:'Achievements',       desc:'Track your exploration'},
@@ -3050,34 +3106,9 @@ const LORE = {
     title: "Concept Art",
     breadcrumb: "Visual",
     render() {
-      const images = [
-        { file: 'A_crack_in_Volmirth_Underworld.png',                   title: 'A Crack in Volmirth — The Underworld' },
-        { file: "A_dusty_upstairs_Hattie's House.png",                  title: "Hattie's House — Dusty Upstairs" },
-        { file: "An_old_house_Hattie's House.png",                      title: "Hattie's House — The Old House" },
-        { file: 'Ancient_elven_ruins_Huge Woods.png',                   title: 'Ancient Elven Ruins — Huge Woods' },
-        { file: 'Aysel Village - Thunderscars HQ.png',                  title: 'Aysel Village — Thunderscars HQ' },
-        { file: 'Black City of Kaeron.png',                             title: 'Black City of Kaeron' },
-        { file: 'Black Leaf HQ Night Etdler.png',                       title: 'Black Leaf HQ — Night Etdler' },
-        { file: 'Blue River Village.png',                               title: 'Blue River Village' },
-        { file: 'Border Apocalypse.png',                                title: 'Border Apocalypse' },
-        { file: 'City of Blinding Light Exterior.png',                  title: 'City of Blinding Light — Exterior' },
-        { file: 'City of Blinding Light Interior_of_a_Throne Room.png', title: 'City of Blinding Light — Throne Room' },
-        { file: 'Dragon Mountain.png',                                  title: 'Dragon Mountain' },
-        { file: "Five_square_books_Kalvoldra's Book.png",               title: "Kalvoldra's Book — Five Volumes" },
-        { file: 'Huge Woods The_ancient_heart_202603241511.png',        title: 'Huge Woods — The Ancient Heart' },
-        { file: 'Kalvoldra Engineer.png',                               title: 'Kalvoldra Engineer' },
-        { file: 'Nevella Kingdom.png',                                  title: 'Nevella Kingdom' },
-        { file: 'Nordell kingdom.png',                                  title: 'Nordell Kingdom' },
-        { file: 'The_Blue_River.png',                                   title: 'The Blue River' },
-        { file: 'The_interior_of_Volmirth.png',                         title: 'The Interior of Volmirth' },
-        { file: 'The_throne_hall_Nevella Kingdom.png',                  title: 'Nevella Kingdom — Throne Hall' },
-        { file: 'Village on Syronnia.png',                              title: 'Village on Syronnia' },
-        { file: 'Vleyrra Forest Labirinth Deepborn Portal.png',         title: 'Vleyrra Forest — Labyrinth Deepborn Portal' },
-        { file: 'White City of Kalvoldra.png',                          title: 'White City of Kalvoldra' },
-      ];
-      const cards = images.map((img, i) =>
+      const cards = ART_IMAGES.map((img, i) =>
         `<div class="art-card" onclick="openLightbox(${i})" data-index="${i}">
-          <img src="Concept Art/${img.file}" alt="${img.title}" loading="lazy">
+          <img src="Concept%20Art/${img.file}" alt="${img.title}" loading="lazy">
           <div class="art-card-label">${img.title}</div>
         </div>`
       ).join('');
@@ -3085,6 +3116,25 @@ const LORE = {
 <div class="parchment"><div class="parchment-inner">
   <div class="section-title"><span class="title-icon">🎨</span> Concept Art</div>
   <div class="note">World-building visual development for Kalmirth — Night Etdler locations and key sites.</div>
+  <div class="art-grid">${cards}</div>
+</div></div>`;
+    }
+  },
+
+  characterconcepts: {
+    title: "Character Concepts",
+    breadcrumb: "Visual",
+    render() {
+      const cards = CHAR_IMAGES.map((img, i) =>
+        `<div class="art-card" onclick="openCharLightbox(${i})" data-index="${i}">
+          <img src="Character%20Concept/${img.file}" alt="${img.title}" loading="lazy">
+          <div class="art-card-label">${img.title}</div>
+        </div>`
+      ).join('');
+      return `
+<div class="parchment"><div class="parchment-inner">
+  <div class="section-title"><span class="title-icon">🖼️</span> Character Concepts</div>
+  <div class="note">Portrait studies for the people of Kalmirth — protagonists, allies, and those who operate in the dark.</div>
   <div class="art-grid">${cards}</div>
 </div></div>`;
     }
@@ -3202,6 +3252,7 @@ const SEARCH_INDEX = [
   {page:'threads', section:'Story Threads', text:'Avery crystal identity Blood Brothers Zachariel Nathaniel Deepborn awakening Callen Faeron secret half-elf Fran Bond portal destabilization religion theology'},
   {page:'openquestions', section:'Open Questions', text:'resolved open questions portal cycle Grace origin Phaerille goddess Wandering Scientist Goldencrest Faeron Ryllae Zade dark elf'},
   {page:'conceptart', section:'Concept Art', text:'concept art illustrations locations Blue River Village City Blinding Light Nordell Black Leaf HQ Aysel Village Thunderscars Huge Woods Vleyrra Forest Deepborn portal elven ruins visual'},
+  {page:'characterconcepts', section:'Character Concepts', text:'character concepts portraits Avery Callen Nathaniel Zachariel Ryllae Bram Silas Kathrine Fran Myst Grace Nate Sanvi Silene Thunder Castor Faeron Vaelar Zade Lynne Phaerille'},
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -3211,7 +3262,7 @@ const STATE_KEY = 'kalmirth_state';
 const State = {
   data: {
     visitedPages: {}, pageScrollDepth: {}, achievements: {},
-    quizResult: null, lightboxOpened: {}, totalTimeMs: 0,
+    quizResult: null, lightboxOpened: {}, charLightboxOpened: {}, totalTimeMs: 0,
     visitCount: 0, lastVisit: null
   },
   load() {
@@ -3398,8 +3449,7 @@ let scrollTrackPage = null;
 function onContentScroll() {
   const wrap = document.getElementById('content-wrap');
   const scrollable = wrap.scrollHeight - wrap.clientHeight;
-  if (scrollable <= 0) return;
-  const pct = Math.round((wrap.scrollTop / scrollable) * 100);
+  const pct = scrollable <= 0 ? 100 : Math.round((wrap.scrollTop / scrollable) * 100);
   // progress bar
   document.getElementById('scroll-progress').style.width = pct + '%';
   // state tracking
@@ -3426,7 +3476,7 @@ function estimateReadTime(pageId) {
 /* ══════════════════════════════════════════════════════════
    CONTINUE READING
    ══════════════════════════════════════════════════════════ */
-const READ_ORDER = ['plot','timeline','characters','factions','locations','geography','magic','origins','blackleaf','deepborn','greatwar','religion','threads','openquestions','conceptart','quiz','relationships','achievements','stats'];
+const READ_ORDER = ['plot','timeline','characters','factions','locations','geography','magic','origins','blackleaf','deepborn','greatwar','religion','threads','openquestions','conceptart','characterconcepts','quiz','relationships','achievements','stats'];
 const PAGE_DESCS = {
   plot:'3-book series arc', timeline:'Chronological events', characters:'All named persons',
   factions:'The five Alliance factions', locations:'Kingdoms & named places',
@@ -3435,6 +3485,7 @@ const PAGE_DESCS = {
   deepborn:'The underground threat', greatwar:'Elves vs. humans war',
   religion:'Gods, faith & the divine', threads:'Series-wide story threads',
   openquestions:'Unresolved lore decisions', conceptart:'World visual development',
+  characterconcepts:'Character portrait studies',
   quiz:'Find your faction allegiance', relationships:'Interactive character graph',
   achievements:'Track your exploration',
   stats:'Your reading journey so far'
@@ -3913,6 +3964,8 @@ function navigate(pageId) {
   document.getElementById('scroll-progress').style.width = '0%';
   updateProgressUI();
   checkAchievements();
+  // for pages that fit entirely in the viewport (no scroll needed), mark as read immediately
+  setTimeout(onContentScroll, 100);
 
   // scroll reveal
   applyRevealToPage();
@@ -4258,34 +4311,87 @@ function revealVoidFragment() {
    LIGHTBOX
    ══════════════════════════════════════════════════════════ */
 const ART_IMAGES = [
-  { file: 'A_crack_in_Volmirth_Underworld.png',                   title: 'A Crack in Volmirth — The Underworld' },
-  { file: "A_dusty_upstairs_Hattie's House.png",                  title: "Hattie's House — Dusty Upstairs" },
-  { file: "An_old_house_Hattie's House.png",                      title: "Hattie's House — The Old House" },
-  { file: 'Ancient_elven_ruins_Huge Woods.png',                   title: 'Ancient Elven Ruins — Huge Woods' },
-  { file: 'Aysel Village - Thunderscars HQ.png',                  title: 'Aysel Village — Thunderscars HQ' },
-  { file: 'Black City of Kaeron.png',                             title: 'Black City of Kaeron' },
-  { file: 'Black Leaf HQ Night Etdler.png',                       title: 'Black Leaf HQ — Night Etdler' },
-  { file: 'Blue River Village.png',                               title: 'Blue River Village' },
-  { file: 'Border Apocalypse.png',                                title: 'Border Apocalypse' },
-  { file: 'City of Blinding Light Exterior.png',                  title: 'City of Blinding Light — Exterior' },
-  { file: 'City of Blinding Light Interior_of_a_Throne Room.png', title: 'City of Blinding Light — Throne Room' },
-  { file: 'Dragon Mountain.png',                                  title: 'Dragon Mountain' },
-  { file: "Five_square_books_Kalvoldra's Book.png",               title: "Kalvoldra's Book — Five Volumes" },
-  { file: 'Huge Woods The_ancient_heart_202603241511.png',        title: 'Huge Woods — The Ancient Heart' },
-  { file: 'Kalvoldra Engineer.png',                               title: 'Kalvoldra Engineer' },
-  { file: 'Nevella Kingdom.png',                                  title: 'Nevella Kingdom' },
-  { file: 'Nordell kingdom.png',                                  title: 'Nordell Kingdom' },
-  { file: 'The_Blue_River.png',                                   title: 'The Blue River' },
-  { file: 'The_interior_of_Volmirth.png',                         title: 'The Interior of Volmirth' },
-  { file: 'The_throne_hall_Nevella Kingdom.png',                  title: 'Nevella Kingdom — Throne Hall' },
-  { file: 'Village on Syronnia.png',                              title: 'Village on Syronnia' },
-  { file: 'Vleyrra Forest Labirinth Deepborn Portal.png',         title: 'Vleyrra Forest — Labyrinth Deepborn Portal' },
-  { file: 'White City of Kalvoldra.png',                          title: 'White City of Kalvoldra' },
+  { file: 'A_crack_in_Volmirth_Underworld.png',                   title: 'A Crack in Volmirth — The Underworld',           desc: 'A fissure where Volmirth\'s floor gives way to the Underworld. The boundary between living territory and what lies below is thinner here than anywhere else.' },
+  { file: "A_dusty_upstairs_Hattie's House.png",                  title: "Hattie's House — Dusty Upstairs",                desc: 'The upper floor — decades of a life the downstairs doesn\'t show. The dust here has been here longer than most of the people in the story.' },
+  { file: "An_old_house_Hattie's House.png",                      title: "Hattie's House — The Old House",                 desc: 'A house that has survived more than houses usually do. Unremarkable from the road. Not unremarkable inside.' },
+  { file: 'Ancient_elven_ruins_Huge Woods.png',                   title: 'Ancient Elven Ruins — Huge Woods',               desc: 'What the elves left in Huge Woods. Old enough that the forest has partially reclaimed them. The structural magic in the stone still hums, faintly.' },
+  { file: 'Aysel Village - Thunderscars HQ.png',                  title: 'Aysel Village — Thunderscars HQ',                desc: 'The village surrounding the Thunderscars sub-faction\'s base of operations. Ordinary-looking. The people who live here know not to ask questions.' },
+  { file: 'Black City of Kaeron.png',                             title: 'Black City of Kaeron',                           desc: 'The dark elf city on the continent of Kaeron, where the main Black Leaf headquarters operates. The city does not make visitors feel welcome.' },
+  { file: 'Black Leaf HQ Night Etdler.png',                       title: 'Black Leaf HQ — Night Etdler',                   desc: 'The Night Etdler branch of the mage-hunter organization. Site of Fran\'s infiltration. Now disbanded.' },
+  { file: 'Blue River Village.png',                               title: 'Blue River Village',                             desc: 'A small settlement on the Blue River\'s bank. Far enough from the war to have missed the worst of it. Close enough to feel the aftermath.' },
+  { file: 'Border Apocalypse.png',                                title: 'Border Apocalypse',                              desc: 'The event that defines the Thunderscars legacy — the deliberate destruction of the Lightning Kingdom. The reason Lightning Mages no longer exist as a faction.' },
+  { file: 'City of Blinding Light Exterior.png',                  title: 'City of Blinding Light — Exterior',              desc: 'The Light Mage training city in Vleyrra Forest. Named for the quality of light that emanates from its crystal architecture at certain hours.' },
+  { file: 'City of Blinding Light Interior_of_a_Throne Room.png', title: 'City of Blinding Light — Throne Room',           desc: 'The interior of the city\'s seat of power. Where Avery trained for two years. Later destroyed. The Throne Room was the last room to fall.' },
+  { file: 'Dragon Mountain.png',                                  title: 'Dragon Mountain',                                desc: 'A fixed point in Kalmirth\'s geography. What lives there — or once lived there — is a matter of debate among those who have come close.' },
+  { file: "Five_square_books_Kalvoldra's Book.png",               title: "Kalvoldra's Book — Five Volumes",                desc: 'The five-volume work that gives Book 3 its name. Each volume holds a different piece of what Kalvoldra understood about the world\'s structure.' },
+  { file: 'Huge Woods The_ancient_heart_202603241511.png',        title: 'Huge Woods — The Ancient Heart',                 desc: 'The deep center of Huge Woods, where the Shapeshifter Mages\' territory begins in earnest. The trees here don\'t move the way trees should.' },
+  { file: 'Kalvoldra Engineer.png',                               title: 'Kalvoldra Engineer',                             desc: 'A visual study of the Kalvoldra figure in their engineering context. What they built — and why — drives the architecture of Book 3.' },
+  { file: 'Nevella Kingdom.png',                                  title: 'Nevella Kingdom',                                desc: 'A kingdom that made different choices during the Great War. The outcome is visible in how its cities look — cleaner, more intact than most.' },
+  { file: 'Nordell kingdom.png',                                  title: 'Nordell Kingdom',                                desc: 'A significant location in The Final Bond\'s arc. The city has layers that take time to read.' },
+  { file: 'The_Blue_River.png',                                   title: 'The Blue River',                                 desc: 'The river that runs through both the geography and the emotional memory of the series. Neutral territory — the one place where no faction claims jurisdiction.' },
+  { file: 'The_interior_of_Volmirth.png',                         title: 'The Interior of Volmirth',                       desc: 'The inner geography of the Underworld. Structured differently from the living world — the light comes from the wrong direction.' },
+  { file: 'The_throne_hall_Nevella Kingdom.png',                  title: 'Nevella Kingdom — Throne Hall',                  desc: 'The seat of Nevella\'s governance. The political decisions made here shaped the post-war Alliance more than the battle lines did.' },
+  { file: 'Village on Syronnia.png',                              title: 'Village on Syronnia',                            desc: 'A settlement on the continent of Syronnia. Evidence that the world extends well beyond Night Etdler\'s borders — and that other people are living in it.' },
+  { file: 'Vleyrra Forest Labirinth Deepborn Portal.png',         title: 'Vleyrra Forest — Labyrinth Deepborn Portal',     desc: 'The portal site in Vleyrra Forest where Deepborn corruption spreads upward. The labyrinthine structure is elven-built. The elves would prefer you didn\'t know why.' },
+  { file: 'White City of Kalvoldra.png',                          title: 'White City of Kalvoldra',                        desc: 'The city associated with Kalvoldra\'s legacy in Book 3. Preserved in a way most of Kalmirth isn\'t. The color is intentional.' },
+];
+
+const CHAR_IMAGES = [
+  { file: 'avery.jpeg_202603251739.jpeg',                    title: 'Avery',                  desc: 'A young woman pulled from Earth through a portal with no memory of how she arrived. Bound to the Light Mage order by a talent she didn\'t ask for, steadied by a purpose she hasn\'t found yet.' },
+  { file: 'avery_18.jpeg_202603251738.jpeg',                 title: 'Avery — Age 18',         desc: 'Avery at eighteen — before the training, before the war. Still figuring out who she is in a world she didn\'t choose.' },
+  { file: 'avery.jpeg_202603251739.jpeg_202603260548.jpeg',  title: 'Avery — Alternate',      desc: 'A second study of Avery, exploring a different quality of the same person. The uncertainty is still there.' },
+  { file: 'callen_18.jpeg_202603251745.jpeg',                title: 'Callen — Age 18',        desc: 'Two years of training and too many things he can\'t unsee. The patience is still there. The certainty isn\'t.' },
+  { file: 'Callen_16.jpeg_202603251743.jpeg',                title: 'Callen — Age 16',        desc: 'At sixteen, already choosing his words carefully and his loyalties more carefully still. Avery\'s closest companion — though he\'d never say it first.' },
+  { file: 'Nathaniel.jpeg_202603251811.jpeg',                title: 'Nathaniel',              desc: 'Zachariel\'s blood brother by oath, not blood. A Light Mage of precise discipline and deliberate distance. His loyalty runs deeper than it looks.' },
+  { file: 'Zachariel.jpeg_202603251814.jpeg',                title: 'Zachariel',              desc: 'Leads with action, trusts instinct over argument. Nathaniel\'s brother in all the ways that count. Somewhere under the confidence is a wound he hasn\'t named yet.' },
+  { file: 'Ryllae.jpeg_202603252025.jpeg',                   title: 'Ryllae',                 desc: 'A Nature Mage at home in the forest and ill at ease everywhere else. Protective of those she loves, quieter about it than most.' },
+  { file: 'Bram.jpeg_202603251741.jpeg',                     title: 'Bram',                   desc: 'The one who asks the question nobody wanted asked. A quiet idealist who has learned that idealism doesn\'t pay well in Kalmirth.' },
+  { file: 'Silas.jpeg_202603252223.jpeg',                    title: 'Silas',                  desc: 'Fast with a joke and careful about everything else. His easy manner is real — and also useful.' },
+  { file: 'Silas_Bounty_Hunter.jpeg_202603252220.jpeg',      title: 'Silas — Bounty Hunter',  desc: 'The same Silas, different context. Before the Alliance, this was the job. He doesn\'t talk about it much.' },
+  { file: 'Kate.jpeg_202603251755.jpeg',                     title: 'Kathrine',               desc: 'Runs on principle and doesn\'t apologize for it. One of the sharpest people in any room she enters.' },
+  { file: 'fran.jpeg_202603251751.jpeg',                     title: 'Fran',                   desc: 'An Origin who arrived through a forced portal breach — and kept her memories. Every other Origin forgets. She does not. She is looking for her sister.' },
+  { file: 'Myst.jpeg_202603251805.jpeg',                     title: 'Myst',                   desc: 'The soul bond that gives The Final Bond its name. What Myst is, exactly, is a question the book earns slowly.' },
+  { file: 'Grace.jpeg_202603251753.jpeg',                    title: 'Grace',                  desc: 'Fran\'s sister. Captured before the story begins, missing through most of it. The reason Fran doesn\'t stop.' },
+  { file: 'Nate_Lucca.jpeg_202603251807.jpeg',               title: 'Nate Lucca',             desc: 'Leader of the Light Mages after the war. Carries Alyse\'s death in everything he does, though he won\'t say her name in public.' },
+  { file: 'Sanvi.jpeg_202603252028.jpeg',                    title: 'Sanvi',                  desc: 'Nate\'s companion and the other half of the Light Mage leadership. Where Nate leads from grief, Sanvi leads from conviction.' },
+  { file: 'Silene.jpeg_202603252224.jpeg',                   title: 'Silene',                 desc: 'The Nature Mage and Dryad leader of Kryonair Forest. Older than most of the Alliance. Doesn\'t need to prove it.' },
+  { file: 'Thunder.jpeg_202603252225.jpeg',                  title: 'Thunder',                desc: 'Shapeshifter Mage leader of the Huge Woods faction. Physical, direct, loyal to the Alliance in the way that actually costs something.' },
+  { file: 'Castor_Fire_Mage.jpeg_202603251747.jpeg',         title: 'Castor — Fire Mage',     desc: 'The Fire Mage leader who died in the war. The faction hasn\'t had a leader since. His absence shapes the Alliance\'s instability more than his presence ever could.' },
+  { file: 'Faeron.jpeg_202603251748.jpeg',                   title: 'Faeron',                 desc: 'The Black Leaf\'s most unsettling operative. Patient, precise, present in rooms he wasn\'t invited into. Serves something older than the organization.' },
+  { file: 'Vaelar_Thom_Haynes.jpeg_202603252226.jpeg',       title: 'Vaelar',                 desc: 'Appears first as an agent of Black Leaf. The name is not the whole story.' },
+  { file: 'Zade_Dark_Mage.jpeg_202603252227.jpeg',           title: 'Zade — Dark Mage',       desc: 'One of the Dark Mage remnant. Left the leaderless faction to serve a dark elf. What that costs him is the question his arc answers.' },
+  { file: 'Alper.jpeg_202603251729.jpeg',                    title: 'Alper',                  desc: 'Present at events the official record doesn\'t fully document. Reliable in the specific, narrow way that makes someone useful to have around.' },
+  { file: 'Arla.jpeg_202603251731.jpeg',                     title: 'Arla',                   desc: 'Present in the margins of events that mattered. What she witnessed and chose not to report is more interesting than what she did.' },
+  { file: 'Fayette.jpeg_202603251749.jpeg',                  title: 'Fayette',                desc: 'Connected to the network of people who kept the Alliance alive during the war\'s worst years. History remembers the leaders. Fayette is the kind of person history forgets.' },
+  { file: 'Lanric.jpeg_202603251757.jpeg',                   title: 'Lanric',                 desc: 'A figure from the conflict\'s more complicated chapter. Not every person in a war is fighting for the side they appear to be on.' },
+  { file: 'Lynne.jpeg_202603251759.jpeg',                    title: 'Lynne',                  desc: 'The one who can identify an Origin on sight — and the first to recognize two simultaneously. She understands what that means. She is one of the few who does.' },
+  { file: 'Noj_Fogdar.jpeg_202603251815.jpeg',               title: 'Noj Fogdar',             desc: 'Operates at the edges of institutional power. The Alliance doesn\'t formally acknowledge people like Noj. That\'s rather the point.' },
+  { file: 'Phaerille.jpeg_202603251818.jpeg',                title: 'Phaerille',              desc: 'The entity that confirms the anomaly: three simultaneous Origins, a thing the system was never designed for. Ancient, observational, and difficult to read.' },
+  { file: 'Renham.jpeg_202603252019.jpeg',                   title: 'Renham',                 desc: 'A figure from the conflict\'s edge. Not every soldier in a war chooses which orders to follow.' },
+  { file: 'Richard_Chambers.jpeg_202603252022.jpeg',         title: 'Richard Chambers',       desc: 'A Black Leaf operative whose effectiveness came from being underestimated. He was good at his job. That\'s what made him dangerous.' },
 ];
 let lbIndex = 0;
+let activeLbImages = [];
+let activeLbFolder = '';
+let activeLbStateKey = '';
 
 function openLightbox(i) {
+  activeLbImages = ART_IMAGES;
+  activeLbFolder = 'Concept%20Art';
+  activeLbStateKey = 'lightboxOpened';
   lbIndex = i;
+  State.data.lightboxOpened[i] = true; State.save();
+  checkAchievements();
+  renderLightbox();
+  document.getElementById('lightbox').classList.add('open');
+}
+
+function openCharLightbox(i) {
+  activeLbImages = CHAR_IMAGES;
+  activeLbFolder = 'Character%20Concept';
+  activeLbStateKey = 'charLightboxOpened';
+  lbIndex = i;
+  State.data.charLightboxOpened[i] = true; State.save();
   renderLightbox();
   document.getElementById('lightbox').classList.add('open');
 }
@@ -4295,16 +4401,19 @@ function closeLightbox() {
 }
 
 function lbStep(dir) {
-  lbIndex = (lbIndex + dir + ART_IMAGES.length) % ART_IMAGES.length;
+  lbIndex = (lbIndex + dir + activeLbImages.length) % activeLbImages.length;
+  State.data[activeLbStateKey][lbIndex] = true; State.save();
+  if (activeLbStateKey === 'lightboxOpened') checkAchievements();
   renderLightbox();
 }
 
 function renderLightbox() {
-  const art = ART_IMAGES[lbIndex];
-  document.getElementById('lightbox-img').src = `../Concept Art/${art.file}`;
+  const art = activeLbImages[lbIndex];
+  document.getElementById('lightbox-img').src = `${activeLbFolder}/${art.file}`;
   document.getElementById('lightbox-img').alt = art.title;
   document.getElementById('lightbox-caption').textContent = art.title;
-  document.getElementById('lightbox-counter').textContent = `${lbIndex + 1} / ${ART_IMAGES.length}`;
+  document.getElementById('lightbox-desc').textContent = art.desc || '';
+  document.getElementById('lightbox-counter').textContent = `${lbIndex + 1} / ${activeLbImages.length}`;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -4332,6 +4441,9 @@ document.addEventListener('DOMContentLoaded', () => {
       navigate(currentPage);
     }
   });
+
+  // scroll tracking — must be attached here after DOM is ready
+  document.getElementById('content-wrap').addEventListener('scroll', onContentScroll);
 
   // nav badges
   applyNavBadges();
