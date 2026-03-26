@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue River — A Day on the River</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  :root {
+    --gold: #C89B3C;
+    --gold-dim: #8a6a28;
+    --bg: #070c14;
+    --card: #0d1422;
+    --text: #d4be8a;
+    --text-dim: #6a5a3a;
+    --border: rgba(200,155,60,0.18);
+    --rare: #a78bfa;
+    --uncommon: #6ee7b7;
+    --legendary: #fbbf24;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* NAV */
+  nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(7,12,20,0.9);
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  nav a {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    color:var(--text-dim);
+    text-decoration:none;
+    text-transform:uppercase;
+    transition: color 0.2s;
+  }
+  nav a:hover { color: var(--gold); }
+  .nav-title {
+    font-family:'Cinzel',serif;
+    font-size:12px;
+    letter-spacing:0.25em;
+    color:var(--gold);
+    text-transform:uppercase;
+  }
+
+  /* TIME BAR */
+  #time-bar {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:24px;
+    padding: 8px 20px;
+    background: rgba(0,0,0,0.4);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .time-period {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    transition: color 0.5s;
+  }
+  .time-period.active { color: var(--gold); }
+  #time-clock {
+    font-family:'Cinzel',serif;
+    font-size:13px;
+    color:var(--text);
+    min-width:60px;
+    text-align:center;
+  }
+
+  /* SCENE */
+  #scene-wrap {
+    position: relative;
+    flex-shrink: 0;
+    height: 260px;
+    overflow: hidden;
+  }
+
+  /* Real river photo sits beneath the canvas animation */
+  #river-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 60%;
+    opacity: 0.45;
+    filter: saturate(0.7) blur(0.5px);
+  }
+
+  #scene-canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Ambient text overlay */
+  #ambient-text {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-style: italic;
+    font-size: 14px;
+    color: rgba(212,190,138,0.7);
+    pointer-events: none;
+    text-align: center;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 1s;
+  }
+
+  /* MAIN LAYOUT */
+  .main-area {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ACTION PANEL */
+  #action-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  #phase-text {
+    font-style: italic;
+    font-size: 16px;
+    color: var(--text-dim);
+    text-align: center;
+    min-height: 24px;
+    transition: opacity 0.4s;
+  }
+
+  .btn-primary {
+    font-family:'Cinzel',serif;
+    font-size:12px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    padding: 10px 28px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .btn-primary:hover { border-color: var(--gold); background: rgba(200,155,60,0.05); }
+  .btn-primary:disabled { opacity:0.3; cursor:default; }
+
+  #pull-bar-wrap {
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    width: 280px;
+  }
+  #pull-bar-wrap.active { display:flex; }
+  #pull-label {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+  #pull-track {
+    width:100%;
+    height:22px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--border);
+    position:relative;
+    overflow:hidden;
+  }
+  #pull-zone {
+    position:absolute;
+    height:100%;
+    background: rgba(110,231,183,0.25);
+    border-left: 1px solid #6ee7b7;
+    border-right: 1px solid #6ee7b7;
+    top:0;
+  }
+  #pull-cursor {
+    position:absolute;
+    width:3px;
+    height:100%;
+    background: var(--gold);
+    top:0;
+    left:0;
+    transition: none;
+  }
+  #pull-attempts {
+    font-size:13px;
+    color:var(--text-dim);
+    font-style:italic;
+  }
+
+  /* JOURNAL PANEL */
+  #journal-toggle {
+    position:fixed;
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.15em;
+    writing-mode:vertical-rl;
+    text-orientation:mixed;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-right:none;
+    color: var(--gold-dim);
+    padding:16px 8px;
+    cursor:pointer;
+    transition: color 0.2s;
+    z-index:50;
+  }
+  #journal-toggle:hover { color: var(--gold); }
+
+  #journal {
+    position:fixed;
+    right:-320px;
+    top:0;
+    width:320px;
+    height:100vh;
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    transition: right 0.35s ease;
+    z-index:49;
+    overflow:hidden;
+  }
+  #journal.open { right:0; }
+
+  .journal-header {
+    padding:20px;
+    border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .journal-header h2 {
+    font-family:'Cinzel',serif;
+    font-size:14px;
+    letter-spacing:0.15em;
+    color:var(--gold);
+  }
+  .journal-header p {
+    font-style:italic;
+    font-size:13px;
+    color:var(--text-dim);
+    margin-top:4px;
+  }
+
+  #journal-entries {
+    flex:1;
+    overflow-y:auto;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  #journal-entries::-webkit-scrollbar { width:4px; }
+  #journal-entries::-webkit-scrollbar-track { background:transparent; }
+  #journal-entries::-webkit-scrollbar-thumb { background:var(--border); }
+
+  .journal-entry {
+    border: 1px solid var(--border);
+    padding:12px 14px;
+    background: rgba(0,0,0,0.2);
+  }
+  .entry-name {
+    font-family:'Cinzel',serif;
+    font-size:13px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .entry-rarity {
+    font-size:10px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+  }
+  .rarity-common { color: var(--text-dim); }
+  .rarity-uncommon { color: var(--uncommon); }
+  .rarity-rare { color: var(--rare); }
+  .rarity-veryrare { color: var(--gold); }
+  .rarity-legendary { color: var(--legendary); }
+  .entry-desc {
+    font-size:13px;
+    font-style:italic;
+    color:var(--text-dim);
+    margin-top:5px;
+    line-height:1.5;
+  }
+  .entry-count {
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:4px;
+  }
+
+  .journal-empty {
+    font-style:italic;
+    color:var(--text-dim);
+    font-size:14px;
+    text-align:center;
+    padding:30px 0;
+  }
+
+  /* CATCH CARD MODAL */
+  #catch-overlay {
+    display:none;
+    position:fixed;
+    inset:0;
+    background: rgba(0,0,0,0.75);
+    z-index:200;
+    align-items:center;
+    justify-content:center;
+  }
+  #catch-overlay.show { display:flex; }
+
+  #catch-card {
+    background: var(--card);
+    background-image: url('../../game-bg/fish-card-bg.jpeg');
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--gold-dim);
+    width: min(340px, 90vw);
+    padding: 36px 32px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    text-align:center;
+    animation: cardIn 0.4s ease;
+    position: relative;
+  }
+
+  /* Dark scrim so text stays readable over the card image */
+  #catch-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(13,20,34,0.72);
+    pointer-events: none;
+  }
+
+  /* Lift card content above the scrim */
+  #catch-card > * { position: relative; z-index: 1; }
+  @keyframes cardIn {
+    from { transform:scale(0.85) translateY(20px); opacity:0; }
+    to   { transform:scale(1) translateY(0); opacity:1; }
+  }
+
+  #catch-new-badge {
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    color: var(--bg);
+    background: var(--gold);
+    padding:3px 10px;
+    display:none;
+  }
+  #catch-new-badge.show { display:block; }
+
+  #catch-icon { font-size:48px; line-height:1; }
+
+  #catch-rarity-label {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+  }
+
+  #catch-name {
+    font-family:'Cinzel',serif;
+    font-size:22px;
+    color:var(--gold);
+    line-height:1.1;
+  }
+
+  .catch-divider {
+    width:60px;
+    height:1px;
+    background: var(--border);
+  }
+
+  #catch-desc {
+    font-style:italic;
+    font-size:15px;
+    color:var(--text-dim);
+    line-height:1.6;
+    max-width:260px;
+  }
+
+  #catch-close {
+    margin-top:8px;
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:8px 20px;
+    cursor:pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  #catch-close:hover { border-color:var(--gold-dim); color:var(--gold); }
+
+  /* ESCAPE flash */
+  #escape-msg {
+    font-style:italic;
+    font-size:15px;
+    color:#ef4444;
+    text-align:center;
+    opacity:0;
+    transition:opacity 0.4s;
+    min-height:24px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html">← Games</a>
+  <div class="nav-title">Blue River</div>
+  <a href="../../index.html">Lore Navigator →</a>
+</nav>
+
+<div id="time-bar">
+  <span class="time-period" id="tp-dawn">Dawn</span>
+  <span class="time-period" id="tp-morning">Morning</span>
+  <span id="time-clock">06:00</span>
+  <span class="time-period" id="tp-afternoon">Afternoon</span>
+  <span class="time-period" id="tp-dusk">Dusk</span>
+  <span class="time-period" id="tp-night">Night</span>
+</div>
+
+<div id="scene-wrap">
+  <img id="river-photo" src="../../game-bg/river-bg.jpeg" alt="">
+  <canvas id="scene-canvas"></canvas>
+  <div id="ambient-text"></div>
+</div>
+
+<div class="main-area">
+  <div id="action-panel">
+    <div id="phase-text">The river is quiet. Your line is uncast.</div>
+    <div id="escape-msg"></div>
+
+    <div id="pull-bar-wrap">
+      <div id="pull-label">Pull at the right moment</div>
+      <div id="pull-track">
+        <div id="pull-zone"></div>
+        <div id="pull-cursor"></div>
+      </div>
+      <div id="pull-attempts"></div>
+    </div>
+
+    <button class="btn-primary" id="main-btn" onclick="handleBtn()">Cast your line</button>
+  </div>
+</div>
+
+<div id="journal-toggle" onclick="toggleJournal()">Fisher's Journal</div>
+
+<div id="journal">
+  <div class="journal-header">
+    <h2>Fisher's Journal</h2>
+    <p id="journal-subtitle">Nothing caught yet.</p>
+  </div>
+  <div id="journal-entries">
+    <div class="journal-empty">Cast your line and see what the river gives you.</div>
+  </div>
+</div>
+
+<div id="catch-overlay" onclick="closeCatch()">
+  <div id="catch-card" onclick="event.stopPropagation()">
+    <div id="catch-new-badge">New Catch</div>
+    <div id="catch-icon">🐟</div>
+    <div id="catch-rarity-label" class="rarity-common">Common</div>
+    <div id="catch-name">River Carp</div>
+    <div class="catch-divider"></div>
+    <div id="catch-desc">Unremarkable. Edible. Forgets you immediately.</div>
+    <button id="catch-close" onclick="closeCatch()">Release it</button>
+  </div>
+</div>
+
+<script>
+// ── SAVE STATE ─────────────────────────────────────────────────────────────
+const SAVE_KEY = 'kalmirth_games';
+function loadSave() {
+  try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch(e) { return {}; }
+}
+function getSave() {
+  const d = loadSave();
+  if (!d.fishing) d.fishing = { counts: {}, journal: [] };
+  return d;
+}
+function writeSave(d) {
+  localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+}
+
+// ── FISH DATABASE ───────────────────────────────────────────────────────────
+const FISH = [
+  { id:'carp',    name:'River Carp',     rarity:'common',   icon:'🐟', weight:40,
+    times:['dawn','morning','afternoon','dusk','night'],
+    desc:'Unremarkable. Edible. Forgets you immediately.' },
+  { id:'mud',     name:'Mudskimmer',     rarity:'common',   icon:'🐠', weight:38,
+    times:['morning','afternoon'],
+    desc:'Tastes like the bottom of the river, which is exactly what it is.' },
+  { id:'silver',  name:'Silverscale',    rarity:'common',   icon:'🐟', weight:35,
+    times:['morning','afternoon','dusk'],
+    desc:'Its scales catch light like scattered coins. You feel briefly optimistic.' },
+  { id:'thorn',   name:'Thornfin',       rarity:'uncommon', icon:'🐡', weight:22,
+    times:['dawn','dusk'],
+    desc:'Sharp fins. Mediocre taste. Impressive attitude for something this small.' },
+  { id:'deepglow',name:'Deepglow',       rarity:'uncommon', icon:'🐠', weight:18,
+    times:['night','dusk'],
+    desc:'Faintly luminescent. Rumored to swim near old Origins. Does not explain itself.' },
+  { id:'glass',   name:'Glassback',      rarity:'uncommon', icon:'🐟', weight:20,
+    times:['dawn','morning'],
+    desc:'Nearly transparent. You can see its spine. It seems unbothered by this.' },
+  { id:'eel',     name:'River Eel',      rarity:'uncommon', icon:'🐍', weight:18,
+    times:['dawn','morning','afternoon','dusk','night'],
+    desc:'Long. Cold. Not pleased about any of this.' },
+  { id:'stonemouth',name:'Stonemouth Bass',rarity:'rare',   icon:'🐟', weight:8,
+    times:['afternoon'],
+    desc:'Ancient-looking. Opens its mouth like it has something important to say. Does not say it.' },
+  { id:'goldtail', name:'Goldtail',      rarity:'rare',     icon:'🐠', weight:7,
+    times:['dawn'],
+    desc:'Warm-colored. Locals say seeing one means fair weather. You choose to believe this.' },
+  { id:'ashfin',  name:'Ashfin',         rarity:'rare',     icon:'🐟', weight:6,
+    times:['night'],
+    desc:'Black scales. Said to carry memories of the water. You let it go quickly.' },
+  { id:'null',    name:'Null Pike',      rarity:'veryrare', icon:'🐟', weight:2,
+    times:['dawn','morning','afternoon','dusk','night'],
+    desc:'No color. No smell. The river doesn\'t seem to notice it\'s missing.' },
+  { id:'unnamed', name:'The Unnamed One',rarity:'legendary',icon:'🌊', weight:0.3,
+    times:['night'],
+    desc:'No entry.' }
+];
+
+const RARITY_COLOR = {
+  common:'rarity-common', uncommon:'rarity-uncommon',
+  rare:'rarity-rare', veryrare:'rarity-veryrare', legendary:'rarity-legendary'
+};
+const RARITY_LABEL = {
+  common:'Common', uncommon:'Uncommon',
+  rare:'Rare', veryrare:'Very Rare', legendary:'Legendary'
+};
+
+// ── TIME SYSTEM ─────────────────────────────────────────────────────────────
+// 1 real second = 2 game minutes. Full day = 720s = 12 real minutes.
+let gameMinutes = 360; // start at 6:00 AM
+const TIME_SPEED = 2; // game mins per real second
+
+const PERIODS = [
+  { id:'dawn',      label:'Dawn',      start:300, end:420  }, // 5am-7am
+  { id:'morning',   label:'Morning',   start:420, end:720  }, // 7am-12pm
+  { id:'afternoon', label:'Afternoon', start:720, end:1020 }, // 12pm-5pm
+  { id:'dusk',      label:'Dusk',      start:1020,end:1200 }, // 5pm-8pm
+  { id:'night',     label:'Night',     start:1200,end:1740 }, // 8pm-5am (wraps)
+];
+
+function getPeriod(mins) {
+  const m = mins % 1440;
+  if (m < 300 || m >= 1200) return 'night';
+  if (m < 420) return 'dawn';
+  if (m < 720) return 'morning';
+  if (m < 1020) return 'afternoon';
+  return 'dusk';
+}
+
+function formatTime(mins) {
+  const m = mins % 1440;
+  const h = Math.floor(m / 60) % 24;
+  const min = m % 60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(min).padStart(2,'0')} ${ampm}`;
+}
+
+function updateTimebar() {
+  document.getElementById('time-clock').textContent = formatTime(gameMinutes);
+  const p = getPeriod(gameMinutes);
+  ['dawn','morning','afternoon','dusk','night'].forEach(id => {
+    document.getElementById('tp-'+id).classList.toggle('active', id===p);
+  });
+}
+
+// ── CANVAS SCENE ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('scene-canvas');
+const ctx = canvas.getContext('2d');
+let canvasW = 0, canvasH = 0;
+let waterOffset = 0;
+let bobY = 0, bobDir = 1;
+let faeronOpacity = 0;
+
+function resizeCanvas() {
+  const wrap = document.getElementById('scene-wrap');
+  canvasW = canvas.width = wrap.offsetWidth;
+  canvasH = canvas.height = wrap.offsetHeight;
+}
+
+function getSkyColors(period) {
+  switch(period) {
+    case 'dawn':      return ['#1a0a20','#7a3a1a','#c8632a','#e8a04a'];
+    case 'morning':   return ['#1a3a6a','#3a6ab0','#7aabdc','#aacbe8'];
+    case 'afternoon': return ['#0a2a5a','#2a5a9a','#5a90c8','#90bce0'];
+    case 'dusk':      return ['#1a0a2a','#6a1a4a','#c84a3a','#e8803a'];
+    case 'night':     return ['#020408','#060c18','#0a1428','#0e1c38'];
+    default:          return ['#0a1428','#1a2a4a','#2a4a7a','#4a7ab0'];
+  }
+}
+
+function getWaterColor(period) {
+  switch(period) {
+    case 'dawn':      return ['#2a1a0a','#4a2a14','#6a4a28'];
+    case 'morning':   return ['#0a1e38','#1a3a6a','#2a5a9a'];
+    case 'afternoon': return ['#082030','#143c5a','#205080'];
+    case 'dusk':      return ['#2a100a','#4a2018','#7a3428'];
+    case 'night':     return ['#020408','#040810','#080c1c'];
+    default:          return ['#0a1428','#1a2a4a','#2a3a6a'];
+  }
+}
+
+function drawScene(phase) {
+  if (!canvasW) return;
+  const period = getPeriod(gameMinutes);
+  const skyC = getSkyColors(period);
+  const waterC = getWaterColor(period);
+  const horizonY = canvasH * 0.42;
+
+  // Sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, horizonY);
+  skyGrad.addColorStop(0, skyC[0]);
+  skyGrad.addColorStop(0.4, skyC[1]);
+  skyGrad.addColorStop(0.8, skyC[2]);
+  skyGrad.addColorStop(1, skyC[3]);
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, canvasW, horizonY);
+
+  // Stars at night
+  if (period === 'night') {
+    ctx.fillStyle = 'rgba(200,180,100,0.6)';
+    const stars = [[0.1,0.1],[0.25,0.2],[0.4,0.05],[0.6,0.15],[0.75,0.08],[0.85,0.25],[0.5,0.3],[0.15,0.35],[0.9,0.12]];
+    stars.forEach(([x,y]) => {
+      ctx.beginPath();
+      ctx.arc(x*canvasW, y*horizonY, 1, 0, Math.PI*2);
+      ctx.fill();
+    });
+  }
+
+  // Sun/Moon
+  if (period === 'dawn' || period === 'morning') {
+    const sunX = period==='dawn' ? canvasW*0.15 : canvasW*0.4;
+    const sunY = period==='dawn' ? horizonY*0.85 : horizonY*0.3;
+    const grad = ctx.createRadialGradient(sunX,sunY,0,sunX,sunY,30);
+    grad.addColorStop(0,'rgba(255,200,100,0.9)');
+    grad.addColorStop(0.4,'rgba(255,160,60,0.4)');
+    grad.addColorStop(1,'transparent');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0,0,canvasW,horizonY);
+  } else if (period === 'night') {
+    const moonX = canvasW*0.8, moonY = horizonY*0.25;
+    ctx.fillStyle = 'rgba(220,210,180,0.7)';
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, 12, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = skyC[0];
+    ctx.beginPath();
+    ctx.arc(moonX+5, moonY-3, 11, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Far bank (opposite shore)
+  ctx.fillStyle = period==='night' ? '#050810' : '#0a1a10';
+  ctx.fillRect(0, horizonY-2, canvasW, 8);
+
+  // Faeron silhouette at night
+  if (period === 'night') {
+    faeronOpacity = Math.min(faeronOpacity + 0.002, 0.55);
+    if (faeronOpacity > 0) {
+      ctx.save();
+      ctx.globalAlpha = faeronOpacity;
+      const fx = canvasW * 0.78, fy = horizonY - 2;
+      // cloak body
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.moveTo(fx-8, fy);
+      ctx.lineTo(fx+8, fy);
+      ctx.lineTo(fx+5, fy-42);
+      ctx.lineTo(fx, fy-44);
+      ctx.lineTo(fx-5, fy-42);
+      ctx.closePath();
+      ctx.fill();
+      // head
+      ctx.beginPath();
+      ctx.arc(fx, fy-48, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  } else {
+    faeronOpacity = Math.max(faeronOpacity - 0.01, 0);
+  }
+
+  // Water
+  const waterGrad = ctx.createLinearGradient(0, horizonY+6, 0, canvasH);
+  waterGrad.addColorStop(0, waterC[2]);
+  waterGrad.addColorStop(0.5, waterC[1]);
+  waterGrad.addColorStop(1, waterC[0]);
+  ctx.fillStyle = waterGrad;
+  ctx.fillRect(0, horizonY+6, canvasW, canvasH);
+
+  // Water ripples
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const y = horizonY + 20 + i * 28 + ((waterOffset + i*40) % 28);
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.bezierCurveTo(canvasW*0.3, y-3, canvasW*0.6, y+3, canvasW, y);
+    ctx.stroke();
+  }
+
+  // Reeds (left side)
+  ctx.strokeStyle = '#1a2a0a';
+  ctx.lineWidth = 2;
+  [canvasW*0.04, canvasW*0.07, canvasW*0.10, canvasW*0.06].forEach((x, i) => {
+    const h = 50 + i*8;
+    ctx.beginPath();
+    ctx.moveTo(x, horizonY+6);
+    ctx.lineTo(x + Math.sin(waterOffset*0.02 + i)*3, horizonY + 6 - h);
+    ctx.stroke();
+    // reed head
+    ctx.fillStyle = '#2a3a0a';
+    ctx.beginPath();
+    ctx.ellipse(x + Math.sin(waterOffset*0.02+i)*3, horizonY+6-h-8, 2, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // Near bank
+  const bankGrad = ctx.createLinearGradient(0, canvasH-50, 0, canvasH);
+  bankGrad.addColorStop(0, '#0a1208');
+  bankGrad.addColorStop(1, '#060e06');
+  ctx.fillStyle = bankGrad;
+  ctx.fillRect(0, canvasH-50, canvasW, 50);
+
+  // Fishing line + bobber
+  if (phase === 'waiting' || phase === 'bite') {
+    const lineStartX = canvasW * 0.55;
+    const lineStartY = canvasH - 20;
+    const bobberX = canvasW * 0.45;
+    bobY += 0.03 * bobDir;
+    if (Math.abs(bobY) > 1.5) bobDir *= -1;
+    const bobberY = horizonY + 35 + bobY;
+
+    // line
+    ctx.strokeStyle = 'rgba(200,180,140,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(lineStartX, lineStartY);
+    ctx.quadraticCurveTo(lineStartX - 20, (lineStartY+bobberY)*0.5, bobberX, bobberY);
+    ctx.stroke();
+
+    // bobber
+    if (phase === 'bite') {
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(bobberX, bobberY - 3 + Math.sin(Date.now()*0.02)*3, 5, 0, Math.PI*2);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(bobberX, bobberY, 4, 0, Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#f0f0f0';
+      ctx.beginPath();
+      ctx.arc(bobberX, bobberY, 4, Math.PI, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  // Casting animation
+  if (phase === 'casting') {
+    ctx.strokeStyle = 'rgba(200,180,140,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5,5]);
+    ctx.beginPath();
+    ctx.moveTo(canvasW*0.55, canvasH-20);
+    ctx.quadraticCurveTo(canvasW*0.5, horizonY, canvasW*0.45, horizonY+30);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+// ── AMBIENT EVENTS ───────────────────────────────────────────────────────────
+const AMBIENT_EVENTS = {
+  dawn:      ["Mist rises off the water.","The first light catches the reeds.","Somewhere upstream, something splashes.","The cold is already leaving."],
+  morning:   ["A dragonfly lands on your line, then thinks better of it.","You hear voices on the road behind you. They pass.","A heron passes overhead, unhurried.","The current shifts. Your bobber bobs twice."],
+  afternoon: ["The sun makes the water difficult to look at directly.","An overloaded cart rumbles past on the distant road.","A leaf drifts by. You watch it until you can't anymore.","Somewhere a child is shouting. Not urgently."],
+  dusk:      ["The light turns amber. Everything looks more significant than it is.","A traveler crosses the bridge and doesn't look at you.","The fish have gone quiet. You wait anyway.","The first firefly of the evening drifts past."],
+  night:     ["The river sounds louder in the dark.","You think you see something move on the far bank.","The stars reflect in the black water.","The cold has settled in. You stay anyway."]
+};
+
+let ambientTimer = 0;
+function triggerAmbient() {
+  const period = getPeriod(gameMinutes);
+  const events = AMBIENT_EVENTS[period];
+  const text = events[Math.floor(Math.random()*events.length)];
+  const el = document.getElementById('ambient-text');
+  el.textContent = text;
+  el.style.opacity = '1';
+  setTimeout(() => { el.style.opacity = '0'; }, 3500);
+}
+
+// ── GAME STATE MACHINE ───────────────────────────────────────────────────────
+let phase = 'idle';
+let waitTimer = 0;
+let biteTimer = 0;
+let pullCursorX = 0;
+let pullCursorDir = 1;
+let pullAttempts = 0;
+let pendingFish = null;
+let pullAnimFrame = null;
+
+function setPhase(p) {
+  phase = p;
+  const btn = document.getElementById('main-btn');
+  const pullWrap = document.getElementById('pull-bar-wrap');
+  const phaseText = document.getElementById('phase-text');
+
+  pullWrap.classList.remove('active');
+  btn.style.display = 'inline-block';
+
+  switch(p) {
+    case 'idle':
+      phaseText.textContent = 'The river is quiet. Your line is uncast.';
+      btn.textContent = 'Cast your line';
+      btn.disabled = false;
+      break;
+    case 'casting':
+      phaseText.textContent = 'The line arcs out over the water…';
+      btn.style.display = 'none';
+      setTimeout(() => setPhase('waiting'), 1200);
+      break;
+    case 'waiting':
+      phaseText.textContent = 'Waiting. The bobber sits still.';
+      btn.style.display = 'none';
+      waitTimer = 4000 + Math.random() * 10000;
+      ambientTimer = 5000 + Math.random() * 6000;
+      break;
+    case 'bite':
+      pendingFish = pickFish();
+      phaseText.innerHTML = '<em>Something tugs at the line!</em>';
+      btn.textContent = 'Pull!';
+      btn.disabled = false;
+      biteTimer = 3000;
+      break;
+    case 'pulling':
+      phaseText.textContent = '';
+      btn.style.display = 'none';
+      startPullMinigame();
+      break;
+    case 'catch':
+      showCatch(pendingFish);
+      btn.style.display = 'none';
+      phaseText.textContent = '';
+      break;
+    case 'escaped':
+      phaseText.textContent = '';
+      btn.textContent = 'Cast again';
+      btn.disabled = false;
+      const em = document.getElementById('escape-msg');
+      em.textContent = 'It got away.';
+      em.style.opacity = '1';
+      setTimeout(()=>{ em.style.opacity='0'; }, 2500);
+      break;
+  }
+}
+
+function handleBtn() {
+  if (phase === 'idle' || phase === 'escaped') setPhase('casting');
+  else if (phase === 'bite') setPhase('pulling');
+}
+
+// ── PULLING MINIGAME ─────────────────────────────────────────────────────────
+function startPullMinigame() {
+  pullAttempts = 3;
+  pullCursorX = 0;
+  pullCursorDir = 1;
+  const wrap = document.getElementById('pull-bar-wrap');
+  wrap.classList.add('active');
+
+  // Set zone position (30% wide, random position in middle 40%)
+  const zoneLeft = 30 + Math.random() * 40;
+  const zoneWidth = 25;
+  const zone = document.getElementById('pull-zone');
+  zone.style.left = zoneLeft + '%';
+  zone.style.width = zoneWidth + '%';
+
+  updatePullAttempts();
+  animatePullCursor();
+}
+
+function animatePullCursor() {
+  pullCursorX += pullCursorDir * 1.2;
+  if (pullCursorX >= 100) pullCursorDir = -1;
+  if (pullCursorX <= 0)   pullCursorDir = 1;
+  document.getElementById('pull-cursor').style.left = pullCursorX + '%';
+  pullAnimFrame = requestAnimationFrame(animatePullCursor);
+}
+
+function updatePullAttempts() {
+  document.getElementById('pull-attempts').textContent =
+    `${pullAttempts} pull${pullAttempts===1?'':'s'} remaining`;
+}
+
+document.addEventListener('click', function(e) {
+  if (phase !== 'pulling') return;
+  if (e.target.id === 'catch-close' || e.target.id === 'catch-overlay') return;
+  checkPull();
+});
+
+function checkPull() {
+  if (phase !== 'pulling') return;
+  const zone = document.getElementById('pull-zone');
+  const zoneLeft = parseFloat(zone.style.left);
+  const zoneRight = zoneLeft + parseFloat(zone.style.width);
+  if (pullCursorX >= zoneLeft && pullCursorX <= zoneRight) {
+    // success
+    cancelAnimationFrame(pullAnimFrame);
+    document.getElementById('pull-bar-wrap').classList.remove('active');
+    setPhase('catch');
+  } else {
+    pullAttempts--;
+    updatePullAttempts();
+    if (pullAttempts <= 0) {
+      cancelAnimationFrame(pullAnimFrame);
+      document.getElementById('pull-bar-wrap').classList.remove('active');
+      setPhase('escaped');
+    }
+  }
+}
+
+// ── FISH SELECTION ───────────────────────────────────────────────────────────
+function pickFish() {
+  const period = getPeriod(gameMinutes);
+  const pool = FISH.filter(f => f.times.includes(period));
+  const totalW = pool.reduce((a,f) => a+f.weight, 0);
+  let r = Math.random() * totalW;
+  for (const f of pool) {
+    r -= f.weight;
+    if (r <= 0) return f;
+  }
+  return pool[0];
+}
+
+// ── CATCH DISPLAY ─────────────────────────────────────────────────────────────
+function showCatch(fish) {
+  const d = getSave();
+  const isNew = !d.fishing.counts[fish.id];
+  d.fishing.counts[fish.id] = (d.fishing.counts[fish.id] || 0) + 1;
+  d.fishing.journal.push({ id: fish.id, time: gameMinutes });
+  writeSave(d);
+
+  document.getElementById('catch-icon').textContent = fish.icon;
+  document.getElementById('catch-name').textContent = fish.name;
+  document.getElementById('catch-desc').textContent = fish.desc;
+  const rl = document.getElementById('catch-rarity-label');
+  rl.textContent = RARITY_LABEL[fish.rarity];
+  rl.className = RARITY_COLOR[fish.rarity];
+  const badge = document.getElementById('catch-new-badge');
+  badge.classList.toggle('show', isNew);
+  document.getElementById('catch-overlay').classList.add('show');
+  renderJournal();
+}
+
+function closeCatch() {
+  document.getElementById('catch-overlay').classList.remove('show');
+  setPhase('idle');
+}
+
+// ── JOURNAL ───────────────────────────────────────────────────────────────────
+function renderJournal() {
+  const d = getSave();
+  const counts = d.fishing.counts;
+  const keys = Object.keys(counts);
+  const sub = document.getElementById('journal-subtitle');
+  const container = document.getElementById('journal-entries');
+
+  if (keys.length === 0) {
+    sub.textContent = 'Nothing caught yet.';
+    container.innerHTML = '<div class="journal-empty">Cast your line and see what the river gives you.</div>';
+    return;
+  }
+
+  const total = keys.reduce((a,k)=>a+counts[k],0);
+  sub.textContent = `${keys.length} species · ${total} total`;
+
+  container.innerHTML = keys.map(id => {
+    const fish = FISH.find(f=>f.id===id);
+    if (!fish) return '';
+    return `<div class="journal-entry">
+      <div class="entry-name">
+        <span>${fish.icon} ${fish.name}</span>
+        <span class="entry-rarity ${RARITY_COLOR[fish.rarity]}">${RARITY_LABEL[fish.rarity]}</span>
+      </div>
+      <div class="entry-desc">${fish.desc}</div>
+      <div class="entry-count">Caught ${counts[id]}×</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleJournal() {
+  document.getElementById('journal').classList.toggle('open');
+}
+
+// ── MAIN LOOP ─────────────────────────────────────────────────────────────────
+let lastTime = 0;
+function gameLoop(ts) {
+  const dt = Math.min(ts - lastTime, 100);
+  lastTime = ts;
+
+  // Advance time
+  gameMinutes += (dt / 1000) * TIME_SPEED;
+  if (gameMinutes >= 1440) gameMinutes -= 1440;
+  updateTimebar();
+
+  // Water animation
+  waterOffset += dt * 0.04;
+
+  // Phase logic
+  if (phase === 'waiting') {
+    waitTimer -= dt;
+    ambientTimer -= dt;
+    if (ambientTimer <= 0) {
+      triggerAmbient();
+      ambientTimer = 8000 + Math.random() * 8000;
+    }
+    if (waitTimer <= 0) setPhase('bite');
+  }
+
+  if (phase === 'bite') {
+    biteTimer -= dt;
+    if (biteTimer <= 0) setPhase('escaped');
+  }
+
+  drawScene(phase);
+  requestAnimationFrame(gameLoop);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+renderJournal();
+requestAnimationFrame(ts => { lastTime = ts; requestAnimationFrame(gameLoop); });
+</script>
+</body>
+</html>

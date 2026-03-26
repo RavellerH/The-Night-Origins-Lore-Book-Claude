@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blue River Village — A Walk Through Town</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  :root {
+    --gold: #C89B3C;
+    --gold-dim: #8a6a28;
+    --bg: #080c10;
+    --card: #0c1018;
+    --text: #d4be8a;
+    --text-dim: #7a6a4a;
+    --border: rgba(200,155,60,0.18);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* NAV */
+  nav {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 20px;
+    border-bottom:1px solid var(--border);
+    background:rgba(8,12,16,0.95);
+    flex-shrink:0;
+    z-index:100;
+  }
+  nav a {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    color:var(--text-dim);
+    text-decoration:none;
+    text-transform:uppercase;
+    transition:color 0.2s;
+  }
+  nav a:hover { color:var(--gold); }
+  .nav-title {
+    font-family:'Cinzel',serif;
+    font-size:12px;
+    letter-spacing:0.25em;
+    color:var(--gold);
+    text-transform:uppercase;
+  }
+
+  /* SCENE CONTAINER */
+  #scene-container {
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* SCENE BACKGROUND */
+  #scene-bg {
+    position:absolute;
+    inset:0;
+    background-size: cover;
+    background-position: center;
+    transition: opacity 0.4s ease;
+  }
+
+  /* Atmospheric overlay on top of scene image */
+  #scene-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(8,12,16,0.45) 0%, transparent 35%, transparent 60%, rgba(8,12,16,0.65) 100%),
+      linear-gradient(90deg, rgba(8,12,16,0.3) 0%, transparent 20%, transparent 80%, rgba(8,12,16,0.3) 100%);
+    pointer-events: none;
+  }
+
+  /* Scene layers */
+  .scene-sky {
+    position:absolute;
+    top:0; left:0; right:0;
+    height:55%;
+  }
+  .scene-ground {
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:38%;
+  }
+  .scene-midground {
+    position:absolute;
+    bottom:38%;
+    left:0; right:0;
+    height:20%;
+  }
+
+  /* NPC Silhouettes */
+  .npc {
+    position:absolute;
+    bottom:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0;
+    opacity:0.7;
+  }
+  .npc-head {
+    width:16px; height:16px;
+    border-radius:50%;
+    background:var(--npc-color, #1a1a2a);
+  }
+  .npc-body {
+    width:20px;
+    height:var(--npc-height, 40px);
+    background:var(--npc-color, #1a1a2a);
+    border-radius:3px 3px 0 0;
+  }
+
+  /* Building shapes */
+  .building {
+    position:absolute;
+    bottom:0;
+    background:var(--bld-color, #0e1018);
+    border-top:2px solid var(--bld-top, #1a1a2a);
+  }
+  .building-roof {
+    position:absolute;
+    bottom:100%;
+    left:50%;
+    transform:translateX(-50%);
+    width:0;
+    height:0;
+    border-style:solid;
+  }
+  .chimney {
+    position:absolute;
+    bottom:100%;
+    width:10px;
+    background:var(--bld-color, #0e1018);
+  }
+  .smoke-wisp {
+    position:absolute;
+    width:6px; height:6px;
+    border-radius:50%;
+    background:rgba(200,200,200,0.15);
+    animation:smokeUp 3s ease-out infinite;
+  }
+  @keyframes smokeUp {
+    0%   { opacity:0.6; transform:translateY(0) scale(1); }
+    100% { opacity:0;   transform:translateY(-40px) scale(3); }
+  }
+
+  /* Tree shape */
+  .tree {
+    position:absolute;
+    bottom:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .tree-top {
+    width:0; height:0;
+    border-left: var(--tw,20px) solid transparent;
+    border-right: var(--tw,20px) solid transparent;
+    border-bottom: var(--th,50px) solid var(--tree-color, #0e180e);
+  }
+  .tree-trunk {
+    width:8px;
+    height:14px;
+    background:#1a1008;
+  }
+
+  /* River CSS */
+  .river {
+    position:absolute;
+    left:0; right:0;
+    overflow:hidden;
+  }
+  .river-band {
+    position:absolute;
+    width:120%;
+    left:-10%;
+    height:100%;
+    animation: riverFlow 6s linear infinite;
+  }
+  @keyframes riverFlow {
+    from { transform:translateX(0); }
+    to   { transform:translateX(-8.33%); }
+  }
+  .ripple {
+    position:absolute;
+    height:2px;
+    background:rgba(255,255,255,0.05);
+    border-radius:50%;
+  }
+
+  /* Road / path */
+  .road {
+    position:absolute;
+    bottom:0;
+    left:0; right:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    perspective:300px;
+  }
+  .road-strip {
+    width:100%;
+    height:12px;
+    background:rgba(30,24,16,0.6);
+    margin-bottom:2px;
+    opacity:0.8;
+  }
+
+  /* INTERACTIVE SPOTS */
+  .spot-marker {
+    position:absolute;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    z-index:20;
+    transition: opacity 0.3s;
+  }
+  .spot-marker:hover .spot-label { opacity:1; }
+  .spot-dot {
+    width:12px; height:12px;
+    border:1px solid var(--gold-dim);
+    border-radius:50%;
+    background:rgba(200,155,60,0.1);
+    animation: dotPulse 2s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%,100%{ box-shadow:0 0 0 0 rgba(200,155,60,0.3); }
+    50%    { box-shadow:0 0 0 6px rgba(200,155,60,0); }
+  }
+  .spot-label {
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color:var(--gold-dim);
+    opacity:0.6;
+    transition:opacity 0.2s;
+    white-space:nowrap;
+    background:rgba(8,12,16,0.8);
+    padding:2px 6px;
+  }
+  .spot-marker.read .spot-dot {
+    opacity:0.3;
+    animation:none;
+  }
+
+  /* LOCATION HEADER */
+  #location-header {
+    position:absolute;
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    z-index:30;
+    white-space:nowrap;
+    background:rgba(8,12,16,0.6);
+    padding:4px 12px;
+  }
+
+  /* SCENE NARRATIVE */
+  #narrative-area {
+    position:absolute;
+    bottom:0;
+    left:0;
+    right:0;
+    background:linear-gradient(transparent, rgba(8,12,16,0.95) 30%);
+    padding:40px 20px 20px;
+    z-index:30;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    pointer-events:none;
+  }
+
+  #scene-desc {
+    font-style:italic;
+    font-size:16px;
+    color:var(--text-dim);
+    line-height:1.65;
+    text-align:center;
+    max-width:520px;
+    margin:0 auto;
+    transition: opacity 0.6s;
+  }
+
+  /* SPOT TEXT PANEL */
+  #spot-panel {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:var(--card);
+    border:1px solid var(--border);
+    padding:24px 28px;
+    max-width:min(420px,88vw);
+    width:100%;
+    z-index:50;
+    display:none;
+    animation:panelIn 0.3s ease;
+  }
+  @keyframes panelIn {
+    from { opacity:0; transform:translate(-50%,-45%); }
+    to   { opacity:1; transform:translate(-50%,-50%); }
+  }
+  #spot-panel.open { display:block; }
+  .spot-panel-title {
+    font-family:'Cinzel',serif;
+    font-size:11px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--gold-dim);
+    margin-bottom:10px;
+  }
+  .spot-panel-text {
+    font-style:italic;
+    font-size:15px;
+    color:var(--text);
+    line-height:1.65;
+  }
+  .spot-close {
+    margin-top:14px;
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:6px 16px;
+    cursor:pointer;
+    transition:color 0.2s, border-color 0.2s;
+  }
+  .spot-close:hover { color:var(--gold); border-color:var(--gold-dim); }
+
+  /* NAVIGATION */
+  #nav-row {
+    position:absolute;
+    bottom:16px;
+    right:16px;
+    z-index:40;
+    display:flex;
+    gap:10px;
+    pointer-events:all;
+  }
+  .nav-btn {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    background:rgba(8,12,16,0.9);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:8px 16px;
+    cursor:pointer;
+    transition:color 0.2s, border-color 0.2s;
+  }
+  .nav-btn:hover { color:var(--gold); border-color:var(--gold-dim); }
+  .nav-btn.primary { color:var(--gold); border-color:var(--gold-dim); }
+  .nav-btn.primary:hover { border-color:var(--gold); background:rgba(200,155,60,0.05); }
+  .nav-btn:disabled { opacity:0.3; cursor:default; }
+
+  /* PROGRESS DOTS */
+  #progress-dots {
+    position:absolute;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:8px;
+    z-index:40;
+  }
+  .prog-dot {
+    width:6px; height:6px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:transparent;
+    transition:background 0.3s, border-color 0.3s;
+  }
+  .prog-dot.active { background:var(--gold); border-color:var(--gold); }
+  .prog-dot.visited { background:var(--text-dim); border-color:var(--text-dim); }
+
+  /* SCENE TRANSITION */
+  #transition-overlay {
+    position:absolute;
+    inset:0;
+    background:var(--bg);
+    z-index:80;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 0.5s;
+  }
+  #transition-overlay.fading { opacity:1; }
+
+  /* FINAL SCENE special */
+  #final-moment {
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    z-index:60;
+    padding:40px 24px;
+    text-align:center;
+    gap:20px;
+    display:none;
+    background:linear-gradient(180deg, rgba(8,12,16,0) 0%, rgba(8,12,16,0.8) 40%, rgba(8,12,16,0.95) 100%);
+  }
+  #final-moment.show { display:flex; }
+  .final-text {
+    font-style:italic;
+    font-size:18px;
+    color:var(--text-dim);
+    max-width:440px;
+    line-height:1.7;
+    animation: fadeUp 1.5s ease forwards;
+  }
+  @keyframes fadeUp {
+    from{opacity:0;transform:translateY(10px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .final-divider {
+    width:60px; height:1px;
+    background:var(--border);
+    animation: fadeUp 1.5s ease 0.5s forwards;
+    opacity:0;
+  }
+  .final-note {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    opacity:0;
+    animation: fadeUp 1.5s ease 1s forwards;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html">← Games</a>
+  <div class="nav-title">Blue River Village</div>
+  <a href="../../index.html">Lore Navigator →</a>
+</nav>
+
+<div id="scene-container">
+  <div id="scene-bg"></div>
+  <div id="location-header"></div>
+
+  <!-- CSS scene art rendered by JS -->
+
+  <div id="narrative-area">
+    <div id="scene-desc"></div>
+  </div>
+
+  <div id="nav-row">
+    <button class="nav-btn" id="btn-back" onclick="goBack()" disabled>← Back</button>
+    <button class="nav-btn primary" id="btn-forward" onclick="goForward()">Continue →</button>
+  </div>
+
+  <div id="progress-dots"></div>
+
+  <div id="spot-panel">
+    <div class="spot-panel-title" id="spot-title"></div>
+    <div class="spot-panel-text" id="spot-text"></div>
+    <button class="spot-close" onclick="closeSpot()">← Walk on</button>
+  </div>
+
+  <div id="final-moment">
+    <p class="final-text">You stand on the bridge. The village is behind you. The road ahead has no markings.</p>
+    <div class="final-divider"></div>
+    <p class="final-text" style="font-size:15px;animation-delay:0.6s">
+      It is a quiet place. It will still be here whether you come back or not.
+    </p>
+    <div class="final-note" style="margin-top:10px">Blue River Village · Kalmirth</div>
+    <button class="nav-btn primary" style="margin-top:20px;z-index:70" onclick="restartWalk()">Walk again</button>
+    <a href="../index.html" class="nav-btn" style="margin-top:6px;z-index:70;text-decoration:none">Back to Games</a>
+  </div>
+
+  <div id="transition-overlay"></div>
+</div>
+
+<script>
+// ── SAVE ─────────────────────────────────────────────────────────────────────
+const SAVE_KEY = 'kalmirth_games';
+function getSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY))||{};
+    if(!d.walkingSim) d.walkingSim={spotsRead:[]};
+    return d;
+  } catch(e){ return {walkingSim:{spotsRead:[]}}; }
+}
+function markSpotRead(id) {
+  const d = getSave();
+  if(!d.walkingSim.spotsRead.includes(id)) d.walkingSim.spotsRead.push(id);
+  localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+}
+
+// ── SCENE DATA ────────────────────────────────────────────────────────────────
+const SCENES = [
+  {
+    id: 'road-in',
+    location: 'The Road In',
+    sky: 'linear-gradient(180deg, #0e1a28 0%, #1a2e44 50%, #283a20 100%)',
+    ground: 'linear-gradient(180deg, #141e0e 0%, #0e1608 100%)',
+    desc: 'The village appears between two hills. A worn sign marks the entrance. The road is packed earth, dry. A cart sits at the verge with a broken wheel. No one is fixing it yet.',
+    spots: [
+      { id:'sign', x:'28%', y:'35%', label:'The Sign',
+        title:'Village Sign',
+        text:'"Blue River — Pop. 340. No mages. No exceptions."\n\nThe "No mages" part has been scratched out and re-carved three times. The chisel marks aren\'t even trying to hide it anymore.' },
+      { id:'cart', x:'72%', y:'52%', label:'Broken Cart',
+        title:'The Cart',
+        text:'A wheel has split cleanly down the middle. Someone has propped it against a rock and left a hat on top of the hub — marking it as theirs, maybe, or just something to do with their hands while they figured out what to do next.\n\nThey haven\'t come back for it.' },
+    ],
+    npcs: [
+      { right:'18%', bottom:'0', height:'44px', color:'#111820' },
+    ],
+    art: 'road-in',
+    img: 'scene-entrance.jpeg'
+  },
+  {
+    id: 'market',
+    location: 'The Market Square',
+    sky: 'linear-gradient(180deg, #0c1822 0%, #1a3040 50%, #223020 100%)',
+    ground: 'linear-gradient(180deg, #181410 0%, #100e0a 100%)',
+    desc: 'Stalls crowd the square. Someone is arguing. Someone else is pretending not to hear. A dog is investigating a pile of something under the far stall. Life is happening here regardless of anything else.',
+    spots: [
+      { id:'noticeboard', x:'22%', y:'38%', label:'Notice Board',
+        title:'Village Notice Board',
+        text:'"LOST: one brown goat. Answers to Coin. (She does not, actually, answer to anything.) Last seen near the mill. Reward: the gratitude of this family and future goodwill."\n\nBelow it, in different handwriting: "Found: one brown goat. She bit me. Keep her."' },
+      { id:'argument', x:'65%', y:'44%', label:'The Argument',
+        title:'Overheard',
+        text:'"—told him three times, I said, you cannot sell blessing water from a creek that runs directly through a pig yard—"\n\n"The blessing is still in it—"\n\n"The pigs are also still in it, Henner."' },
+    ],
+    npcs: [
+      { right:'60%', bottom:'0', height:'50px', color:'#101828' },
+      { right:'38%', bottom:'0', height:'38px', color:'#141010' },
+    ],
+    art: 'market',
+    img: 'scene-market.jpeg'
+  },
+  {
+    id: 'forge-ext',
+    location: "Bronzefinger's Forge",
+    sky: 'linear-gradient(180deg, #0a0c10 0%, #141018 50%, #1a1008 100%)',
+    ground: 'linear-gradient(180deg, #141008 0%, #0c0a06 100%)',
+    desc: 'The forge is easy to find. The sound of hammering reaches you before the building does. Smoke rises from the chimney in a steady column, unhurried, like it has nowhere better to be.',
+    spots: [
+      { id:'bench', x:'25%', y:'50%', label:'Old Bench',
+        title:'A Bench Outside the Forge',
+        text:'Something carved into the wood, worn but legible:\n\n"W.T. sat here 12 years and never got paid proper neither."\n\nBelow it, fresher: "same. — K"' },
+      { id:'waiting', x:'68%', y:'46%', label:'Someone Waiting',
+        title:'A Figure Outside',
+        text:'A person sits on the ground outside the forge door with a sword across their knees. One half of the blade has no edge. They\'ve been here a while.\n\nThey don\'t look at you. You don\'t say anything. You both understand.' },
+    ],
+    npcs: [
+      { right:'30%', bottom:'0', height:'32px', color:'#1a1018', sitting: true },
+    ],
+    art: 'forge-ext',
+    img: 'scene-forge.jpeg'
+  },
+  {
+    id: 'river-edge',
+    location: "The River's Edge",
+    sky: 'linear-gradient(180deg, #080c12 0%, #0e1a2a 50%, #0a140a 100%)',
+    ground: 'linear-gradient(180deg, #0a1008 0%, #060c06 100%)',
+    desc: 'The Blue River. It lives up to the name in low light — there is something in the water here, a faint color that isn\'t quite blue and isn\'t quite anything else. An old man is fishing. He doesn\'t look up.',
+    spots: [
+      { id:'jar', x:'30%', y:'55%', label:'A Jar',
+        title:'A Jar at the Water\'s Edge',
+        text:'Sealed with wax. A note folded inside, barely legible through the glass:\n\n"For whoever finds this: the fishing is better upstream, past the old marker stone. Don\'t tell Henner. He hasn\'t earned it."\n\nNo signature.' },
+      { id:'fisherman', x:'72%', y:'40%', label:'The Fisherman',
+        title:'The Old Man',
+        text:'He has been here long enough that the reeds have grown up around him slightly. His line is in the water.\n\nHe doesn\'t look at you.\n\nYou watch him for a moment. He catches nothing. He doesn\'t seem to mind.' },
+    ],
+    npcs: [
+      { right:'25%', bottom:'0', height:'28px', color:'#0e1820', sitting:true },
+    ],
+    art: 'river-edge',
+    img: 'scene-river.jpeg'
+  },
+  {
+    id: 'bridge',
+    location: 'The Bridge Out',
+    sky: 'linear-gradient(180deg, #060810 0%, #0a0e1a 50%, #060808 100%)',
+    ground: 'linear-gradient(180deg, #0a0c10 0%, #060810 100%)',
+    desc: 'The village ends here. The bridge crosses the Blue River — old stone, solid. On the other side, a road disappears into the tree line. No sign marks where it goes.',
+    spots: [
+      { id:'shrine', x:'35%', y:'44%', label:'Small Shrine',
+        title:'A Roadside Shrine',
+        text:'Stone, old. A candle in a glass holder, still lit.\n\nSomeone was here recently.\n\nThe candle is for no saint you recognize. The offering — a small blue stone — isn\'t part of any practice you know. Maybe it doesn\'t have to be.' },
+    ],
+    npcs: [],
+    art: 'bridge',
+    img: 'scene-bridge.jpeg',
+    final: true
+  },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentScene = 0;
+let spotPanelOpen = false;
+
+// ── SCENE RENDERING ───────────────────────────────────────────────────────────
+function buildSceneArt(scene) {
+  const container = document.getElementById('scene-bg');
+  container.innerHTML = '';
+
+  // Use real image if available, fall back to CSS gradient
+  if (scene.img) {
+    container.style.background = '#080c10';
+    container.style.backgroundImage = `url('../../game-bg/${scene.img}')`;
+    container.style.backgroundSize = 'cover';
+    container.style.backgroundPosition = 'center';
+  } else {
+    container.style.background = scene.sky;
+    container.style.backgroundImage = '';
+    // Ground fallback
+    const ground = document.createElement('div');
+    ground.className = 'scene-ground';
+    ground.style.background = scene.ground;
+    container.appendChild(ground);
+    buildArt(scene.art, container, scene);
+  }
+
+  // NPCs
+  scene.npcs.forEach((npc, i) => {
+    const el = document.createElement('div');
+    el.className = 'npc';
+    el.style.right = npc.right;
+    el.style.bottom = npc.bottom;
+    el.style.setProperty('--npc-color', npc.color);
+    el.style.setProperty('--npc-height', npc.height);
+    if (npc.sitting) {
+      el.style.transform = 'translateY(8px)';
+    }
+    el.innerHTML = `<div class="npc-head"></div><div class="npc-body"></div>`;
+    container.appendChild(el);
+  });
+
+  // Interactive spots
+  const save = getSave();
+  scene.spots.forEach(spot => {
+    const el = document.createElement('div');
+    el.className = 'spot-marker' + (save.walkingSim.spotsRead.includes(spot.id) ? ' read' : '');
+    el.style.left = spot.x;
+    el.style.top = spot.y;
+    el.innerHTML = `<div class="spot-dot"></div><div class="spot-label">${spot.label}</div>`;
+    el.onclick = () => openSpot(spot);
+    container.appendChild(el);
+  });
+}
+
+function buildArt(type, container) {
+  if (type === 'road-in') {
+    // Trees lining the road
+    [15,10,8,20,12].forEach((w, i) => {
+      const t = document.createElement('div');
+      t.className = 'tree';
+      t.style.left = (8 + i*12) + '%';
+      t.style.bottom = '38%';
+      t.style.setProperty('--tw', w+'px');
+      t.style.setProperty('--th', (40+i*8)+'px');
+      t.style.setProperty('--tree-color', '#0a1a0a');
+      t.innerHTML = `<div class="tree-top"></div><div class="tree-trunk"></div>`;
+      container.appendChild(t);
+    });
+    [10,14,8,12].forEach((w, i) => {
+      const t = document.createElement('div');
+      t.className = 'tree';
+      t.style.right = (6 + i*13) + '%';
+      t.style.bottom = '38%';
+      t.style.setProperty('--tw', w+'px');
+      t.style.setProperty('--th', (35+i*10)+'px');
+      t.style.setProperty('--tree-color', '#091409');
+      t.innerHTML = `<div class="tree-top"></div><div class="tree-trunk"></div>`;
+      container.appendChild(t);
+    });
+    // Road stripe
+    const road = document.createElement('div');
+    road.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:38%;background:linear-gradient(180deg,transparent,rgba(20,16,10,0.6));';
+    container.appendChild(road);
+
+    // Sign post
+    const sign = document.createElement('div');
+    sign.style.cssText = 'position:absolute;left:24%;bottom:38%;width:3px;height:55px;background:#1a1208;';
+    container.appendChild(sign);
+    const signboard = document.createElement('div');
+    signboard.style.cssText = 'position:absolute;left:22%;bottom:calc(38% + 40px);width:60px;height:22px;background:#1a1208;border:1px solid #2a1a0a;';
+    container.appendChild(signboard);
+
+  } else if (type === 'market') {
+    // Stall awnings
+    ['#1a1018','#101818','#181010'].forEach((c, i) => {
+      const stall = document.createElement('div');
+      stall.className = 'building';
+      stall.style.left = (10 + i*28) + '%';
+      stall.style.width = '22%';
+      stall.style.height = '60px';
+      stall.style.setProperty('--bld-color', c);
+      stall.style.setProperty('--bld-top', '#2a1a18');
+      container.appendChild(stall);
+    });
+
+  } else if (type === 'forge-ext') {
+    // Forge building
+    const forge = document.createElement('div');
+    forge.className = 'building';
+    forge.style.cssText = 'left:30%;width:38%;height:110px;background:#100c08;border-top:3px solid #1a1208;';
+    const chimney = document.createElement('div');
+    chimney.style.cssText = 'position:absolute;top:-40px;right:30%;width:14px;height:40px;background:#100c08;';
+    const smoke = document.createElement('div');
+    smoke.className = 'smoke-wisp';
+    smoke.style.cssText = 'top:-20px;left:4px;animation-duration:2.5s;';
+    chimney.appendChild(smoke);
+    forge.appendChild(chimney);
+    // Forge door
+    const door = document.createElement('div');
+    door.style.cssText = 'position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:24px;height:38px;background:#0a0806;border-radius:12px 12px 0 0;';
+    // glow inside door
+    const glow = document.createElement('div');
+    glow.style.cssText = 'position:absolute;bottom:0;left:0;right:0;height:60%;background:radial-gradient(ellipse at bottom,rgba(217,119,6,0.5),transparent 70%);';
+    door.appendChild(glow);
+    forge.appendChild(door);
+    container.appendChild(forge);
+
+    // Trees background
+    [6,12].forEach((l,i) => {
+      const t = document.createElement('div');
+      t.className = 'tree';
+      t.style.left = l+'%';
+      t.style.bottom = '38%';
+      t.style.setProperty('--tw','14px');
+      t.style.setProperty('--th','48px');
+      t.style.setProperty('--tree-color','#0a1208');
+      t.innerHTML = `<div class="tree-top"></div><div class="tree-trunk"></div>`;
+      container.appendChild(t);
+    });
+
+  } else if (type === 'river-edge') {
+    // River band
+    const riverWrap = document.createElement('div');
+    riverWrap.className = 'river';
+    riverWrap.style.cssText = 'bottom:20%;height:22%;';
+    const riverBand = document.createElement('div');
+    riverBand.className = 'river-band';
+    riverBand.style.cssText = 'height:100%;background:linear-gradient(180deg,#0a1828 0%,#0e2038 50%,#0a1828 100%);';
+    // ripples
+    [20,45,65,80].forEach(left => {
+      const r = document.createElement('div');
+      r.className = 'ripple';
+      r.style.left = left+'%';
+      r.style.width = (40+Math.random()*40)+'%';
+      r.style.top = (20+Math.random()*60)+'%';
+      riverBand.appendChild(r);
+    });
+    riverWrap.appendChild(riverBand);
+    container.appendChild(riverWrap);
+
+    // Dock planks
+    const dock = document.createElement('div');
+    dock.style.cssText = 'position:absolute;bottom:40%;left:55%;width:100px;height:10px;background:#1a1208;transform-origin:left center;transform:rotate(-5deg);';
+    container.appendChild(dock);
+
+    // Far bank trees
+    [30,42,55,70,80].forEach((l,i) => {
+      const t = document.createElement('div');
+      t.className = 'tree';
+      t.style.left = l+'%';
+      t.style.bottom = '40%';
+      t.style.setProperty('--tw',(8+i*2)+'px');
+      t.style.setProperty('--th',(28+i*6)+'px');
+      t.style.setProperty('--tree-color','#080e08');
+      t.innerHTML = `<div class="tree-top"></div><div class="tree-trunk"></div>`;
+      container.appendChild(t);
+    });
+
+  } else if (type === 'bridge') {
+    // River below bridge
+    const river = document.createElement('div');
+    river.style.cssText = 'position:absolute;bottom:22%;left:0;right:0;height:18%;background:linear-gradient(180deg,#060c18,#0a1428);';
+    container.appendChild(river);
+
+    // Bridge structure
+    const bridge = document.createElement('div');
+    bridge.style.cssText = 'position:absolute;bottom:36%;left:0;right:0;height:12px;background:#1a1410;border-top:2px solid #2a2018;';
+    container.appendChild(bridge);
+
+    // Bridge sides (railings)
+    const railL = document.createElement('div');
+    railL.style.cssText = 'position:absolute;bottom:37%;left:0;width:3px;height:28px;background:#1a1410;';
+    const railR = document.createElement('div');
+    railR.style.cssText = 'position:absolute;bottom:37%;right:0;width:3px;height:28px;background:#1a1410;';
+    container.appendChild(railL);
+    container.appendChild(railR);
+
+    // Forest beyond
+    [5,15,25,35,65,75,85,95].forEach((l,i) => {
+      const t = document.createElement('div');
+      t.className = 'tree';
+      t.style.left = l+'%';
+      t.style.bottom = '36%';
+      t.style.setProperty('--tw',(10+i%3*4)+'px');
+      t.style.setProperty('--th',(40+i%4*12)+'px');
+      t.style.setProperty('--tree-color','#060e06');
+      t.innerHTML = `<div class="tree-top"></div><div class="tree-trunk"></div>`;
+      container.appendChild(t);
+    });
+
+    // Shrine
+    const shrine = document.createElement('div');
+    shrine.style.cssText = 'position:absolute;bottom:38%;left:32%;width:18px;height:22px;background:#141010;border-top:2px solid #1a1414;';
+    const candle = document.createElement('div');
+    candle.style.cssText = 'position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:3px;height:8px;background:#1a1208;';
+    const flame = document.createElement('div');
+    flame.style.cssText = 'position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:5px;height:7px;background:radial-gradient(circle,rgba(251,191,36,0.9),rgba(217,119,6,0.5));border-radius:50% 50% 20% 20%;animation:flickerFlame 1s ease-in-out infinite alternate;';
+    candle.appendChild(flame);
+    shrine.appendChild(candle);
+    container.appendChild(shrine);
+  }
+}
+
+// ── SPOT INTERACTION ─────────────────────────────────────────────────────────
+function openSpot(spot) {
+  document.getElementById('spot-title').textContent = spot.title;
+  document.getElementById('spot-text').innerHTML = spot.text.replace(/\n/g,'<br>');
+  document.getElementById('spot-panel').classList.add('open');
+  spotPanelOpen = true;
+  markSpotRead(spot.id);
+  // Update dot style
+  document.querySelectorAll('.spot-marker').forEach(el => {
+    if (el.querySelector('.spot-label').textContent === spot.label) {
+      el.classList.add('read');
+    }
+  });
+}
+
+function closeSpot() {
+  document.getElementById('spot-panel').classList.remove('open');
+  spotPanelOpen = false;
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function renderScene(idx, direction) {
+  const overlay = document.getElementById('transition-overlay');
+  overlay.classList.add('fading');
+
+  setTimeout(() => {
+    const scene = SCENES[idx];
+    document.getElementById('location-header').textContent = scene.location;
+    document.getElementById('scene-desc').textContent = scene.desc;
+    buildSceneArt(scene);
+
+    // Final scene
+    if (scene.final) {
+      setTimeout(() => {
+        document.getElementById('final-moment').classList.add('show');
+        document.getElementById('nav-row').style.display = 'none';
+      }, 600);
+    } else {
+      document.getElementById('final-moment').classList.remove('show');
+      document.getElementById('nav-row').style.display = 'flex';
+    }
+
+    // Back button
+    document.getElementById('btn-back').disabled = idx === 0;
+
+    updateDots();
+    overlay.classList.remove('fading');
+  }, 500);
+}
+
+function goForward() {
+  if (spotPanelOpen) { closeSpot(); return; }
+  if (currentScene < SCENES.length - 1) {
+    currentScene++;
+    renderScene(currentScene, 1);
+  }
+}
+
+function goBack() {
+  if (currentScene > 0) {
+    document.getElementById('final-moment').classList.remove('show');
+    document.getElementById('nav-row').style.display = 'flex';
+    currentScene--;
+    renderScene(currentScene, -1);
+  }
+}
+
+function restartWalk() {
+  currentScene = 0;
+  renderScene(0, 0);
+}
+
+function updateDots() {
+  const dots = document.getElementById('progress-dots');
+  dots.innerHTML = SCENES.map((s,i) =>
+    `<div class="prog-dot ${i===currentScene?'active':i<currentScene?'visited':''}"></div>`
+  ).join('');
+}
+
+// Also add flickerFlame keyframe dynamically
+const styleEl = document.createElement('style');
+styleEl.textContent = `@keyframes flickerFlame { 0%{transform:translateX(-50%) scaleY(1)} 100%{transform:translateX(-50%) scaleY(0.8) scaleX(1.1)} }`;
+document.head.appendChild(styleEl);
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderScene(0, 0);
+</script>
+</body>
+</html>
