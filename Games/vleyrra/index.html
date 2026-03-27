@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vleyrra: The First Night</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  :root {
+    --silver: #d6e4f0;
+    --silver-dim: #7a9ab0;
+    --silver-glow: #b8d4e8;
+    --bg: #04060c;
+    --card: #080c14;
+    --text: #ccdae8;
+    --text-dim: #6a8a9a;
+    --border: rgba(180,220,240,0.15);
+    --glow-color: rgba(180,220,255,0.18);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* NAV */
+  nav {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 20px;
+    border-bottom:1px solid var(--border);
+    background:rgba(4,6,12,0.95);
+    flex-shrink:0;
+    z-index:100;
+  }
+  nav a {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    color:var(--text-dim);
+    text-decoration:none;
+    text-transform:uppercase;
+    transition:color 0.2s;
+  }
+  nav a:hover { color:var(--silver); }
+  .nav-title {
+    font-family:'Cinzel',serif;
+    font-size:12px;
+    letter-spacing:0.25em;
+    color:var(--silver);
+    text-transform:uppercase;
+  }
+
+  /* SCENE CONTAINER */
+  #scene-container {
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* SCENE BACKGROUND */
+  #scene-bg {
+    position:absolute;
+    inset:0;
+    background-size: cover;
+    background-position: center;
+    transition: opacity 0.4s ease;
+  }
+
+  /* Atmospheric overlay */
+  #scene-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, rgba(4,6,12,0.5) 0%, transparent 30%, transparent 55%, rgba(4,6,12,0.75) 100%),
+      linear-gradient(90deg, rgba(4,6,12,0.35) 0%, transparent 20%, transparent 80%, rgba(4,6,12,0.35) 100%);
+    pointer-events: none;
+  }
+
+  /* Bioluminescent ambient pulse */
+  #glow-layer {
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:2;
+    animation: glowPulse 6s ease-in-out infinite;
+    background: radial-gradient(ellipse at 50% 40%, rgba(120,180,255,0.06) 0%, transparent 60%);
+  }
+  @keyframes glowPulse {
+    0%,100% { opacity:0.6; }
+    50%      { opacity:1; }
+  }
+
+  /* Floating light mote particles */
+  .mote {
+    position:absolute;
+    border-radius:50%;
+    background:rgba(180,220,255,0.7);
+    pointer-events:none;
+    z-index:3;
+    animation: moteFloat linear infinite;
+  }
+  @keyframes moteFloat {
+    0%   { transform:translateY(0) translateX(0) scale(1); opacity:0; }
+    10%  { opacity:1; }
+    90%  { opacity:0.8; }
+    100% { transform:translateY(-80px) translateX(var(--drift,10px)) scale(0.3); opacity:0; }
+  }
+
+  /* Scene layers */
+  .scene-sky {
+    position:absolute;
+    top:0; left:0; right:0;
+    height:55%;
+  }
+  .scene-ground {
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:38%;
+  }
+
+  /* Glowing tree */
+  .glow-tree {
+    position:absolute;
+    bottom:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .glow-tree-trunk {
+    width:10px;
+    height:var(--trunk-h, 60px);
+    background:var(--trunk-c, #0a1020);
+    border-radius:2px;
+    box-shadow: 0 0 8px var(--tree-glow, rgba(100,160,255,0.2));
+  }
+  .glow-tree-canopy {
+    width:var(--canopy-w, 50px);
+    height:var(--canopy-h, 80px);
+    border-radius:50% 50% 40% 40%;
+    background:var(--canopy-c, #08183a);
+    box-shadow: 0 0 20px var(--tree-glow, rgba(100,160,255,0.3)),
+                inset 0 0 30px rgba(100,160,255,0.05);
+    margin-bottom:-2px;
+  }
+
+  /* Crystal spire */
+  .spire {
+    position:absolute;
+    bottom:0;
+    width:0;
+    height:0;
+    border-left: var(--sw,8px) solid transparent;
+    border-right: var(--sw,8px) solid transparent;
+    border-bottom: var(--sh,120px) solid var(--sc, #080f20);
+    filter: drop-shadow(0 0 12px rgba(180,220,255,0.4));
+  }
+
+  /* NPC Silhouettes */
+  .npc {
+    position:absolute;
+    bottom:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0;
+    opacity:0.6;
+  }
+  .npc-head {
+    width:14px; height:14px;
+    border-radius:50%;
+    background:var(--npc-color, #0a0e1a);
+  }
+  .npc-body {
+    width:18px;
+    height:var(--npc-height, 38px);
+    background:var(--npc-color, #0a0e1a);
+    border-radius:3px 3px 0 0;
+  }
+
+  /* Ward rings */
+  .ward-ring {
+    position:absolute;
+    border-radius:50%;
+    border:1px solid rgba(140,200,255,0.2);
+    animation:wardPulse 4s ease-in-out infinite;
+    pointer-events:none;
+  }
+  @keyframes wardPulse {
+    0%,100%{ opacity:0.15; transform:scale(1); }
+    50%    { opacity:0.4;  transform:scale(1.04); }
+  }
+
+  /* INTERACTIVE SPOTS */
+  .spot-marker {
+    position:absolute;
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    z-index:20;
+    transition: opacity 0.3s;
+  }
+  .spot-marker:hover .spot-label { opacity:1; }
+  .spot-dot {
+    width:12px; height:12px;
+    border:1px solid var(--silver-dim);
+    border-radius:50%;
+    background:rgba(180,220,255,0.08);
+    animation: dotPulse 2.5s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%,100%{ box-shadow:0 0 0 0 rgba(180,220,255,0.3); }
+    50%    { box-shadow:0 0 0 6px rgba(180,220,255,0); }
+  }
+  .spot-label {
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color:var(--silver-dim);
+    opacity:0.6;
+    transition:opacity 0.2s;
+    white-space:nowrap;
+    background:rgba(4,6,12,0.8);
+    padding:2px 6px;
+  }
+  .spot-marker.read .spot-dot {
+    opacity:0.3;
+    animation:none;
+  }
+
+  /* LOCATION HEADER */
+  #location-header {
+    position:absolute;
+    top:12px;
+    left:50%;
+    transform:translateX(-50%);
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    z-index:30;
+    white-space:nowrap;
+    background:rgba(4,6,12,0.65);
+    padding:4px 12px;
+    border:1px solid var(--border);
+  }
+
+  /* SCENE NARRATIVE */
+  #narrative-area {
+    position:absolute;
+    bottom:0;
+    left:0;
+    right:0;
+    background:linear-gradient(transparent, rgba(4,6,12,0.95) 30%);
+    padding:40px 20px 20px;
+    z-index:30;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    pointer-events:none;
+  }
+
+  #scene-desc {
+    font-style:italic;
+    font-size:16px;
+    color:var(--text-dim);
+    line-height:1.65;
+    text-align:center;
+    max-width:520px;
+    margin:0 auto;
+    transition: opacity 0.6s;
+  }
+
+  /* SPOT TEXT PANEL */
+  #spot-panel {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:var(--card);
+    border:1px solid var(--border);
+    padding:24px 28px;
+    max-width:min(420px,88vw);
+    width:100%;
+    z-index:50;
+    display:none;
+    animation:panelIn 0.3s ease;
+  }
+  @keyframes panelIn {
+    from { opacity:0; transform:translate(-50%,-45%); }
+    to   { opacity:1; transform:translate(-50%,-50%); }
+  }
+  #spot-panel.open { display:block; }
+  .spot-panel-title {
+    font-family:'Cinzel',serif;
+    font-size:11px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--silver-dim);
+    margin-bottom:10px;
+  }
+  .spot-panel-text {
+    font-style:italic;
+    font-size:15px;
+    color:var(--text);
+    line-height:1.65;
+    white-space: pre-line;
+  }
+  .spot-close {
+    margin-top:14px;
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:6px 16px;
+    cursor:pointer;
+    transition:color 0.2s, border-color 0.2s;
+  }
+  .spot-close:hover { color:var(--silver); border-color:var(--silver-dim); }
+
+  /* NAVIGATION */
+  #nav-row {
+    position:absolute;
+    bottom:16px;
+    right:16px;
+    z-index:40;
+    display:flex;
+    gap:10px;
+    pointer-events:all;
+  }
+  .nav-btn {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    background:rgba(4,6,12,0.9);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    padding:8px 16px;
+    cursor:pointer;
+    transition:color 0.2s, border-color 0.2s;
+  }
+  .nav-btn:hover { color:var(--silver); border-color:var(--silver-dim); }
+  .nav-btn.primary { color:var(--silver); border-color:var(--silver-dim); }
+  .nav-btn.primary:hover { border-color:var(--silver); background:rgba(180,220,255,0.04); }
+  .nav-btn:disabled { opacity:0.3; cursor:default; }
+
+  /* PROGRESS DOTS */
+  #progress-dots {
+    position:absolute;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:8px;
+    z-index:40;
+  }
+  .prog-dot {
+    width:6px; height:6px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    background:transparent;
+    transition:background 0.3s, border-color 0.3s;
+  }
+  .prog-dot.active { background:var(--silver); border-color:var(--silver); }
+  .prog-dot.visited { background:var(--text-dim); border-color:var(--text-dim); }
+
+  /* SCENE TRANSITION */
+  #transition-overlay {
+    position:absolute;
+    inset:0;
+    background:var(--bg);
+    z-index:80;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity 0.5s;
+  }
+  #transition-overlay.fading { opacity:1; }
+
+  /* FINAL SCENE */
+  #final-moment {
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    z-index:60;
+    padding:40px 24px;
+    text-align:center;
+    gap:20px;
+    display:none;
+    background:linear-gradient(180deg, rgba(4,6,12,0) 0%, rgba(4,6,12,0.8) 40%, rgba(4,6,12,0.95) 100%);
+  }
+  #final-moment.show { display:flex; }
+  .final-text {
+    font-style:italic;
+    font-size:18px;
+    color:var(--text-dim);
+    max-width:460px;
+    line-height:1.7;
+    animation: fadeUp 1.5s ease forwards;
+  }
+  @keyframes fadeUp {
+    from{opacity:0;transform:translateY(10px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .final-divider {
+    width:60px; height:1px;
+    background:var(--border);
+    animation: fadeUp 1.5s ease 0.5s forwards;
+    opacity:0;
+  }
+  .final-note {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    opacity:0;
+    animation: fadeUp 1.5s ease 1s forwards;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html">← Games</a>
+  <div class="nav-title">Vleyrra: The First Night</div>
+  <a href="../../index.html">Lore Navigator →</a>
+</nav>
+
+<div id="scene-container">
+  <div id="scene-bg"></div>
+  <div id="glow-layer"></div>
+  <div id="location-header"></div>
+
+  <div id="narrative-area">
+    <div id="scene-desc"></div>
+  </div>
+
+  <div id="nav-row">
+    <button class="nav-btn" id="btn-back" onclick="goBack()" disabled>← Back</button>
+    <button class="nav-btn primary" id="btn-forward" onclick="goForward()">Continue →</button>
+  </div>
+
+  <div id="progress-dots"></div>
+
+  <div id="spot-panel">
+    <div class="spot-panel-title" id="spot-title"></div>
+    <div class="spot-panel-text" id="spot-text"></div>
+    <button class="spot-close" onclick="closeSpot()">← Walk on</button>
+  </div>
+
+  <div id="final-moment">
+    <p class="final-text">Sanvi hugs Nate like she's been counting the minutes. He lets her. He's embarrassed about it, which is funny, considering everything.</p>
+    <div class="final-divider"></div>
+    <p class="final-text" style="font-size:15px;animation-delay:0.6s">
+      Then Gerhart says my name — says I'm a mage, says I was sent by someone they know — and the Queen looks at me. For the first time since the village, I stop running. I'm not sure what I am yet. But I'm safe. For now, that's enough.
+    </p>
+    <div class="final-note" style="margin-top:10px">Avery Blue Alysdair · Kingdom of the Blinding Light · hidden from the Mage Hunters</div>
+    <button class="nav-btn primary" style="margin-top:20px;z-index:70" onclick="restartWalk()">Walk again</button>
+    <a href="../index.html" class="nav-btn" style="margin-top:6px;z-index:70;text-decoration:none">Back to Games</a>
+  </div>
+
+  <div id="transition-overlay"></div>
+</div>
+
+<script>
+// ── SAVE ─────────────────────────────────────────────────────────────────────
+const SAVE_KEY = 'kalmirth_games';
+function getSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY)) || {};
+    if (!d.vleyrra) d.vleyrra = { spotsRead: [] };
+    return d;
+  } catch(e) { return { vleyrra: { spotsRead: [] } }; }
+}
+function markSpotRead(id) {
+  const d = getSave();
+  if (!d.vleyrra.spotsRead.includes(id)) d.vleyrra.spotsRead.push(id);
+  localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+}
+
+// ── SCENE DATA ────────────────────────────────────────────────────────────────
+const SCENES = [
+  {
+    id: 'forest-alone',
+    location: 'Vleyrra Forest · Midnight',
+    desc: 'I stop running when my legs stop working. I lean against a tree — one of the glowing ones, silver-blue at the joints — and I cry. I\'m not proud of it but I also don\'t have a lot of options right now. The village is behind me. My family is — I don\'t know where my family is. The Black Leaf came for me. I am the reason any of this happened.',
+    spots: [
+      { id:'what-dad-said', x:'30%', y:'52%', label:'What Dad Said',
+        title:'His Last Words Before I Left',
+        text:'"Go south. Into Vleyrra. Walk toward the light — you\'ll know it when you see it. The Mage Hunters will follow as far as the tree line and no further. The forest doesn\'t let them in. Find Nate. He\'ll take you the rest of the way."\n\nHe said it like he was certain. He was shaking. I didn\'t ask how he knew. We didn\'t have time.\n\nI didn\'t say goodbye to Callen properly. I keep thinking about that.' },
+      { id:'glowing-roots', x:'68%', y:'60%', label:'Glowing Roots',
+        title:'The Light Beneath',
+        text:'The roots cross the path like something enormous breathing under the ground. Silver-blue at the joints. Pulsing — not steady, but slow.\n\nI crouch down and count.\n\nTwelve seconds. Exactly twelve. Every time.\n\nI\'ve been running from people who want to kill me and I\'m counting root pulses in a magic forest at midnight.\n\nThis is, apparently, who I am.' },
+    ],
+    npcs: [],
+    img: 'vleyrra-alone.jpeg'
+  },
+  {
+    id: 'imp-encounter',
+    location: 'Vleyrra Forest · Dawn',
+    desc: 'I\'ve been wandering for two days. I smell terrible, I\'ve eaten berries that were maybe fine, and something just jumped on me from a tree.\n\nThen — a sound like a bowstring pulling light itself taut — and the thing is pinned to a trunk three feet from my face.\n\nA boy my age lands in front of me, carrying the dead creature by the neck like a trophy, and says: "Didn\'t see you there. Sorry!" He has been alone in this forest for a week. He does not look sorry at all.',
+    spots: [
+      { id:'nate-intro', x:'62%', y:'38%', label:'The Boy',
+        title:'Nate Lucca',
+        text:'"I\'m Nate, by the way. And what\'s your name, mysterious girl?"\n\nHe holds out his hand.\n\nI don\'t take it. I look at the ground instead and say my name very quietly.\n\n"Avery?" he says. "Your name has a funny ring to it but you\'re obviously strange looking so yeah that\'s alright."\n\nI don\'t respond. He\'s not wrong about the strange looking part, but it still feels like a lot to say to someone you just met.' },
+      { id:'the-bow', x:'35%', y:'44%', label:'The Bow of Light',
+        title:'What He\'s Carrying',
+        text:'He notices me looking at it — the thing in his hand that I\'m fairly certain is a bow made entirely of light — and immediately hides it.\n\nThe bow disappears. He\'s holding a pin.\n\n"I... uh... alright... um—"\n\n"You\'re the light," I say. (I\'ve been alone in a forest for two days, I\'m not at my most coherent.)\n\nHe jumps back, draws the bow again, and points it at my face.\n\nI make a crystal out of a handful of dirt to prove I\'m not going to report him. It seems to work.' },
+    ],
+    npcs: [
+      { right:'30%', bottom:'0', height:'44px', color:'#080e1c' },
+    ],
+    img: 'vleyrra-encounter.jpeg'
+  },
+  {
+    id: 'rain-shelter',
+    location: 'Under the Big Leaves',
+    desc: 'The sky goes dark and then the sky opens. We end up under a cluster of enormous leaves — I don\'t know what kind of plant they belong to, they\'re taller than I am — while the rain comes down loud enough that we have to raise our voices. Nate produces bread from somewhere in his pack and hands me a piece without being asked. I say "thank you" and he laughs at me for it.',
+    spots: [
+      { id:'the-bread', x:'40%', y:'55%', label:'The Bread',
+        title:'Nate\'s Bread',
+        text:'"You don\'t need to be like that," he says.\n\n"Like what?"\n\n"So... formal. You said thank you like I was handing you something at a market."\n\nI don\'t know what to say to that. I eat the bread. It\'s good. Actually good.\n\nHe then announces that he\'s going to make a soup from the dead imp as soon as we reach his camp.\n\nI stop eating.\n\n"What?" he says.' },
+      { id:'the-imp', x:'68%', y:'50%', label:'The Imp',
+        title:'The Soup',
+        text:'"It\'s great for a soup. Don\'t look at me like that."\n\nI am looking at him like that.\n\n"You\'ve never eaten wild food before, princess." (I dislike being called princess.) "Don\'t worry. I\'m very good at making soup. As a humble servant, I will cook you the best soup ever." He gives me a formal nod, mocking.\n\nHe then falls asleep.\n\nI sit there in the rain listening to him breathe and thinking: he is completely strange. I feel slightly better about everything.' },
+    ],
+    npcs: [
+      { right:'55%', bottom:'0', height:'40px', color:'#080e1c', sitting: true },
+    ],
+    img: 'vleyrra-rain.jpeg'
+  },
+  {
+    id: 'nate-camp',
+    location: 'Nate\'s Camp · Night',
+    desc: 'He lights the fire with his palm. Just opens his hand and there it is. I watch him do it with more interest than is probably polite, but he doesn\'t seem to notice. Or he pretends not to. The camp is a small clearing with a rock formation like a shallow cave — just big enough for one person. He points me at it. Keeps the fire for himself.',
+    spots: [
+      { id:'the-fire', x:'38%', y:'55%', label:'The Fire',
+        title:'Light Magic',
+        text:'The fire he summoned is warm, but it doesn\'t quite look like fire. Too still. Too deliberate. It doesn\'t flicker unless he decides it should.\n\nI keep watching it while he skins the imp, which — I decide not to watch that part.\n\nI find the spice box in the cave instead. There are elf carvings on it. I run my fingers over them and think about my mom saying elves are not friendly creatures.\n\nShe\'s been wrong about things before.' },
+      { id:'the-soup', x:'65%', y:'45%', label:'The Soup',
+        title:'The Best Soup Ever (Allegedly)',
+        text:'It is not the best soup ever.\n\nIt is — fine. It is, technically, edible. It is not actively bad in the way I had prepared myself for.\n\nHe watches me take the first sip with the focused attention of a person who has made a bet they haven\'t announced.\n\nI keep my face as still as I can.\n\n"I told you so," he says, and starts eating his own bowl.\n\nI finish mine. I would not like to do it again.' },
+    ],
+    npcs: [
+      { right:'28%', bottom:'0', height:'44px', color:'#080e1c' },
+    ],
+    img: 'vleyrra-camp.jpeg'
+  },
+  {
+    id: 'forest-walk',
+    location: 'Vleyrra Forest · The Walk',
+    desc: 'In the morning, he wakes up late, is horrified about it, and we leave immediately. The forest has purple leaves. I don\'t know how I didn\'t notice them yesterday. They are very purple. I keep looking up at them. Nate keeps looking at the trees and the bushes, which is a different kind of looking — watching for things that move wrong.',
+    spots: [
+      { id:'purple-leaves', x:'35%', y:'32%', label:'Purple Leaves',
+        title:'The Canopy',
+        text:'"A part of me," I tell him, "has always wanted to wander through a forest alone. Free."\n\n"You\'re right," he says. "It\'s pretty much the same for us." And then he goes quiet in the way people go quiet when they\'ve said something true by accident.\n\nI don\'t ask him what he means. I look up at the purple leaves instead. They don\'t glow the way the silver ones do — they just exist, vivid and strange, like the forest decided it hadn\'t been noticed enough.' },
+      { id:'gerhart-ellen', x:'65%', y:'40%', label:'The Search Party',
+        title:'Gerhart & Ellen',
+        text:'A blast of light hits the tree we\'re hiding behind. Nate stands up, draws his bow — then lowers it.\n\n"There you are, Nathaniel," says a man with gray pointy hair. His name, I find out quickly, is Gerhart. He is very stressed. Apparently Nate ran away from the kingdom to go adventuring alone and hasn\'t come back for a week. His mother — the queen, I later discover — sent people to find him.\n\nA girl with a herb basket hits Nate over the head with it. Her name is Ellen. She immediately turns to me and asks if I\'m hurt.\n\nI say no. She smiles at me like she believes it.\n\nGerhart says something about reporting to the queen and I miss the rest because the word "queen" is still settling.' },
+    ],
+    npcs: [
+      { right:'22%', bottom:'0', height:'42px', color:'#080e1c' },
+      { right:'38%', bottom:'0', height:'38px', color:'#0c1018' },
+    ],
+    img: 'vleyrra-walk.jpeg'
+  },
+  {
+    id: 'the-crack',
+    location: 'The Mountain Entrance',
+    desc: 'Near the mountain, there\'s a crack in the rock face. That\'s the only word for it — a crack, narrow, with blinding white-gold light pouring out of it like it can\'t be contained. This is what Dad meant. "Dive into the light." He was being literal. I think about the Mage Hunters, who have been looking for this place for fifty years. And I understand: you cannot find a door that looks like a wound in a rock.',
+    spots: [
+      { id:'the-entrance', x:'45%', y:'40%', label:'The Crack',
+        title:'The Hidden Door',
+        text:'"You might want to close your eyes for this one," Nate says, and he\'s smiling in a way that means he already knows what I\'m about to see.\n\nEllen takes my hand.\n\nI close my eyes.\n\nThe light is so bright I can see it through my eyelids — warm, total, like standing inside a sunrise. I let Ellen lead me through.\n\nThe Black Leaf has never stepped through this light. That\'s not a guess. The forest simply will not let them near enough to find it.' },
+      { id:'ellen-talk', x:'68%', y:'55%', label:'Ellen',
+        title:'A Question from Ellen',
+        text:'She keeps hold of my hand a little longer than the crossing requires.\n\n"So, Avery, right?" she says.\n\nI nod.\n\n"Are you hurt?"\n\nI shake my head. "No. Thank you."\n\nShe smiles at me sideways. "Okay. So what\'s your story?"\n\nI don\'t know how to answer that. My story is: I am a girl from a village that\'s probably burning. My story is: I am the reason. My story is: a boy I\'ve known for one day and his friends are the only people in the world right now who know where I am.\n\n"It\'s a little complicated," I say. She nods like she\'s fine with that.' },
+    ],
+    npcs: [
+      { right:'40%', bottom:'0', height:'40px', color:'#080e1c' },
+      { right:'55%', bottom:'0', height:'38px', color:'#0c1018' },
+    ],
+    img: 'vleyrra-crack.jpeg'
+  },
+  {
+    id: 'the-kingdom',
+    location: 'Kingdom of the Blinding Light',
+    desc: 'A kingdom, hidden behind a mountain. Walls of carved white stone that might be the mountain itself — towers that rise from inside the rock to somewhere I can\'t see the top of. Water flowing beneath a stone bridge. Light mages going about their day in a crowded square, and some of them looking at me sideways. I take a breath. I follow Nate up the stairs.',
+    spots: [
+      { id:'the-square', x:'30%', y:'50%', label:'The Square',
+        title:'The Royal Square',
+        text:'Someone stops to stare.\n\nI am, by most measures, very stare-at-able right now. My clothes are torn. I rolled my outer skirt into a bag this morning to carry berries. I have not slept properly in three days.\n\nThe mage who\'s staring is a child, maybe eight years old.\n\nI give her a small wave.\n\nShe runs away.\n\nNate laughs quietly ahead of me. I decide not to say anything.' },
+      { id:'sanvi-moment', x:'65%', y:'38%', label:'The Throne Room',
+        title:'The Queen',
+        text:'The doors open. Gerhart announces the queen.\n\nNate goes in first.\n\nSanvi — the queen, his mother — runs to hug him the way my mother would if I came home three days late from a forest. He lets her. He\'s embarrassed about it.\n\nThen Gerhart says my name and Sanvi looks at me with a specific kind of look: the one that means she\'s deciding whether to trust me.\n\n"Who sent you?"\n\n"My dad. Nathaniel Alysdair."\n\nSomething shifts in her face. She asks more questions. I answer them.\n\nFor the first time in three days, someone in front of me knows what I am.' },
+    ],
+    npcs: [
+      { right:'18%', bottom:'0', height:'46px', color:'#060c1c' },
+      { right:'38%', bottom:'0', height:'44px', color:'#080e1a' },
+    ],
+    img: 'vleyrra-kingdom.jpeg',
+    final: true
+  },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let currentScene = 0;
+let spotPanelOpen = false;
+
+// ── PARTICLES ─────────────────────────────────────────────────────────────────
+function spawnMotes(count) {
+  const container = document.getElementById('scene-container');
+  document.querySelectorAll('.mote').forEach(m => m.remove());
+  for (let i = 0; i < count; i++) {
+    const mote = document.createElement('div');
+    mote.className = 'mote';
+    const size = 2 + Math.random() * 3;
+    const x = 5 + Math.random() * 90;
+    const delay = Math.random() * 8;
+    const dur = 8 + Math.random() * 12;
+    const drift = (Math.random() - 0.5) * 40;
+    mote.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${x}%;
+      bottom:${10 + Math.random() * 60}%;
+      --drift:${drift}px;
+      animation-duration:${dur}s;
+      animation-delay:-${delay}s;
+    `;
+    container.appendChild(mote);
+  }
+}
+
+// ── SCENE RENDERING ───────────────────────────────────────────────────────────
+function buildSceneArt(scene) {
+  const container = document.getElementById('scene-bg');
+  container.innerHTML = '';
+
+  if (scene.img) {
+    container.style.background = '#04060c';
+    container.style.backgroundImage = `url('../../game-bg/${scene.img}')`;
+    container.style.backgroundSize = 'cover';
+    container.style.backgroundPosition = 'center';
+  } else {
+    container.style.background = scene.sky || '#04060c';
+    container.style.backgroundImage = '';
+  }
+
+  // NPCs
+  scene.npcs.forEach(npc => {
+    const el = document.createElement('div');
+    el.className = 'npc';
+    el.style.right = npc.right;
+    el.style.bottom = npc.bottom;
+    el.style.setProperty('--npc-color', npc.color);
+    el.style.setProperty('--npc-height', npc.height);
+    if (npc.sitting) el.style.transform = 'translateY(8px)';
+    el.innerHTML = `<div class="npc-head"></div><div class="npc-body"></div>`;
+    container.appendChild(el);
+  });
+
+  // Interactive spots
+  const save = getSave();
+  scene.spots.forEach(spot => {
+    const el = document.createElement('div');
+    el.className = 'spot-marker' + (save.vleyrra.spotsRead.includes(spot.id) ? ' read' : '');
+    el.style.left = spot.x;
+    el.style.top = spot.y;
+    el.innerHTML = `<div class="spot-dot"></div><div class="spot-label">${spot.label}</div>`;
+    el.onclick = () => openSpot(spot);
+    container.appendChild(el);
+  });
+
+  // Mote density by scene
+  const moteCounts = { 'forest-alone':4, 'imp-encounter':8, 'rain-shelter':6, 'nate-camp':10, 'forest-walk':14, 'the-crack':20, 'the-kingdom':22 };
+  spawnMotes(moteCounts[scene.id] || 10);
+}
+
+function renderScene(index, direction) {
+  const scene = SCENES[index];
+  const overlay = document.getElementById('transition-overlay');
+
+  overlay.classList.add('fading');
+  setTimeout(() => {
+    buildSceneArt(scene);
+    document.getElementById('location-header').textContent = scene.location;
+    document.getElementById('scene-desc').textContent = scene.desc;
+    document.getElementById('btn-back').disabled = index === 0;
+    document.getElementById('btn-forward').textContent = index === SCENES.length - 1 ? 'Enter the throne room →' : 'Continue →';
+    document.getElementById('final-moment').classList.remove('show');
+
+    // Progress dots
+    const dotsEl = document.getElementById('progress-dots');
+    dotsEl.innerHTML = '';
+    SCENES.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'prog-dot' + (i === index ? ' active' : i < index ? ' visited' : '');
+      dotsEl.appendChild(d);
+    });
+
+    overlay.classList.remove('fading');
+  }, 500);
+}
+
+function goForward() {
+  if (spotPanelOpen) return;
+  if (currentScene === SCENES.length - 1) {
+    showFinal();
+    return;
+  }
+  currentScene++;
+  renderScene(currentScene, 1);
+}
+
+function goBack() {
+  if (spotPanelOpen || currentScene === 0) return;
+  currentScene--;
+  renderScene(currentScene, -1);
+}
+
+function openSpot(spot) {
+  document.getElementById('spot-title').textContent = spot.title;
+  document.getElementById('spot-text').textContent = spot.text;
+  document.getElementById('spot-panel').classList.add('open');
+  spotPanelOpen = true;
+  markSpotRead(spot.id);
+
+  // Mark dot as read
+  document.querySelectorAll('.spot-marker').forEach(el => {
+    if (el.querySelector('.spot-label').textContent === spot.label) {
+      el.classList.add('read');
+    }
+  });
+}
+
+function closeSpot() {
+  document.getElementById('spot-panel').classList.remove('open');
+  spotPanelOpen = false;
+}
+
+function showFinal() {
+  const overlay = document.getElementById('transition-overlay');
+  overlay.classList.add('fading');
+  setTimeout(() => {
+    buildSceneArt(SCENES[SCENES.length - 1]);
+    document.getElementById('location-header').textContent = SCENES[SCENES.length - 1].location;
+    document.getElementById('scene-desc').textContent = '';
+    document.getElementById('final-moment').classList.add('show');
+    document.getElementById('nav-row').style.display = 'none';
+    overlay.classList.remove('fading');
+  }, 500);
+}
+
+function restartWalk() {
+  currentScene = 0;
+  document.getElementById('nav-row').style.display = 'flex';
+  renderScene(0, 0);
+}
+
+// ── KEYBOARD ──────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'Enter') goForward();
+  if (e.key === 'ArrowLeft') goBack();
+  if (e.key === 'Escape') closeSpot();
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderScene(0, 0);
+</script>
+</body>
+</html>
