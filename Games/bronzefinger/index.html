@@ -837,6 +837,20 @@ function startPayment() {
       rxEl.textContent = rx;
       rxEl.style.display = 'block';
 
+      // Achievement Code
+      if (payment.coin) {
+        const existing = document.getElementById('ach-code-box');
+        if (existing) existing.remove();
+        const codeDiv = document.createElement('div');
+        codeDiv.id = 'ach-code-box';
+        codeDiv.style.cssText = "margin-top:16px;font-family:'Cinzel',serif;font-size:10px;color:var(--gold);border:1px solid var(--gold-dim);padding:10px;background:rgba(200,155,60,0.1);max-width:340px;text-align:center;animation:fadeIn 0.6s ease;";
+        codeDiv.innerHTML = "LORE NAVIGATOR CODE UNLOCKED<br><span style='font-size:16px;letter-spacing:3px;'>K-FORGE-COIN</span><br><span style='font-size:8px;opacity:0.7;letter-spacing:1px;'>REDEEM IN ACHIEVEMENTS</span>";
+        document.getElementById('payment-area').appendChild(codeDiv);
+      } else {
+        const existing = document.getElementById('ach-code-box');
+        if (existing) existing.remove();
+      }
+
       // Next customer btn
       setTimeout(() => {
         const remaining = CUSTOMERS_PER_DAY - dayCustomers;

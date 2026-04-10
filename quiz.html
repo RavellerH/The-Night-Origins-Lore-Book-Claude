@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalmirth — Faction Allegiance Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --card:            #0f1622;
+    --card-dark:       #090e18;
+    --card-light:      #172030;
+    --ink:             #e8dccb;
+    --ink-soft:        #a89f8c;
+    --gold:            #C89B3C;
+    --gold-dark:       #8a6928;
+    --gold-bright:     #e8b84b;
+    --sidebar-bg:      #05080e;
+    --border:          #1e2e40;
+    --divider:         rgba(200,155,60,0.25);
+    --shadow:          rgba(0,0,0,0.7);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Open Sans', system-ui, sans-serif;
+    background: #040810;
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url('back.jpeg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.1;
+    z-index: -1;
+    pointer-events: none;
+    filter: blur(2px) saturate(0.5);
+  }
+
+  .container {
+    max-width: 600px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .parchment {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: 1px solid rgba(200,155,60,0.4);
+    border-radius: 4px;
+    box-shadow: 0 12px 48px var(--shadow);
+    overflow: hidden;
+    position: relative;
+  }
+
+  .parchment::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-bright) 50%, var(--gold) 70%, transparent);
+  }
+
+  .parchment-inner {
+    padding: 40px;
+  }
+
+  .section-title {
+    font-family: 'Cinzel', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gold);
+    border-bottom: 1px solid var(--divider);
+    padding-bottom: 15px;
+    margin-bottom: 25px;
+    letter-spacing: 2px;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .note {
+    background: rgba(200,155,60,0.06);
+    border-left: 3px solid var(--gold-dark);
+    padding: 15px;
+    margin-bottom: 30px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+
+  /* ─── QUIZ STYLES ─── */
+  #quiz-container { margin-top: 20px; }
+
+  .quiz-progress {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 30px;
+  }
+
+  .quiz-pip {
+    width: 30px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: all 0.3s;
+  }
+
+  .quiz-pip.active { background: var(--gold); box-shadow: 0 0 8px var(--gold-dark); }
+  .quiz-pip.done { background: var(--gold-dark); opacity: 0.6; }
+
+  .quiz-question {
+    animation: slideIn 0.4s ease-out;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .quiz-q-text {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--ink);
+    margin-bottom: 25px;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .quiz-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .quiz-option {
+    background: var(--card-dark);
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 14px 20px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+    text-align: left;
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  .quiz-option:hover {
+    border-color: var(--gold-dark);
+    color: var(--ink);
+    background: rgba(200,155,60,0.05);
+  }
+
+  .quiz-option.selected {
+    border-color: var(--gold);
+    color: var(--gold-bright);
+    background: rgba(200,155,60,0.12);
+    box-shadow: inset 0 0 10px rgba(200,155,60,0.1);
+  }
+
+  .quiz-nav {
+    margin-top: 35px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .quiz-btn {
+    background: var(--gold-dark);
+    color: #fff;
+    border: none;
+    padding: 12px 30px;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 2px;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: all 0.3s;
+  }
+
+  .quiz-btn.active {
+    opacity: 1;
+    pointer-events: auto;
+    background: var(--gold);
+  }
+
+  .quiz-btn:hover {
+    background: var(--gold-bright);
+    box-shadow: 0 0 15px rgba(200,155,60,0.4);
+    transform: translateY(-1px);
+  }
+
+  /* ─── RESULT CARD ─── */
+  .quiz-result-card {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    animation: zoomIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes zoomIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .quiz-result-header {
+    padding: 25px;
+    font-family: 'Cinzel', serif;
+    font-size: 24px;
+    text-align: center;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--divider);
+  }
+
+  .quiz-result-body {
+    padding: 30px;
+    background: var(--card-dark);
+    text-align: center;
+  }
+
+  .quiz-result-quote {
+    font-style: italic;
+    color: var(--gold-dark);
+    margin-bottom: 20px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .quiz-result-desc {
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    line-height: 1.8;
+    margin-bottom: 30px;
+  }
+
+  .share-title {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    margin-bottom: 15px;
+  }
+
+  .share-btns {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+
+  .share-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 12px;
+    text-decoration: none;
+    border-radius: 20px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .share-btn:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(200,155,60,0.1);
+  }
+
+  .quiz-retake-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink-soft);
+    padding: 8px 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .quiz-retake-btn:hover {
+    color: var(--ink);
+    border-color: var(--ink-soft);
+  }
+
+  .back-link {
+    display: block;
+    text-align: center;
+    margin-top: 30px;
+    color: var(--gold-dark);
+    text-decoration: none;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .back-link:hover { color: var(--gold); }
+
+  @media (max-width: 480px) {
+    .parchment-inner { padding: 25px 20px; }
+    .section-title { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="parchment">
+    <div class="parchment-inner">
+      <div id="quiz-header-content">
+        <div class="section-title">Faction Allegiance</div>
+        <div class="note">Six questions. No right or wrong answers. Discover where your path lies in the continent of Night Etdler.</div>
+      </div>
+      
+      <div id="quiz-container">
+        <div class="quiz-progress" id="quiz-pips"></div>
+        <div id="quiz-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <a href="index.html" class="back-link">← Return to Lore Navigator</a>
+</div>
+
+<script>
+const QUIZ_QUESTIONS = [
+  {
+    q: 'When conflict arises, your first instinct is to…',
+    opts: [
+      { text: 'Step in front of whoever is in danger', faction: 'light' },
+      { text: 'Listen carefully before acting', faction: 'nature' },
+      { text: 'Adapt — find a new approach entirely', faction: 'shape' },
+      { text: 'Wait. Let it develop. Act with certainty.', faction: 'dark' },
+      { text: 'Act now. Hesitation is a wound.', faction: 'fire' },
+    ]
+  },
+  {
+    q: 'What do you believe is the most honest thing about the world?',
+    opts: [
+      { text: 'Light and life are the same thing', faction: 'light' },
+      { text: 'Everything alive is connected', faction: 'nature' },
+      { text: 'Nothing stays one shape forever', faction: 'shape' },
+      { text: 'Darkness was here first and will be here last', faction: 'dark' },
+      { text: 'Only what survives the burning deserves to survive', faction: 'fire' },
+    ]
+  },
+  {
+    q: 'Which sacrifice would you make willingly?',
+    opts: [
+      { text: 'Give my strength so others do not suffer', faction: 'light' },
+      { text: 'Give my solitude to protect what grows', faction: 'nature' },
+      { text: 'Give my current form to become what is needed', faction: 'shape' },
+      { text: 'Give my voice, and wait in silence', faction: 'dark' },
+      { text: 'Walk through what burns me, and not flinch', faction: 'fire' },
+    ]
+  },
+  {
+    q: 'Where would you spend the night before a battle?',
+    opts: [
+      { text: 'Somewhere with a view of the open sky', faction: 'light' },
+      { text: 'Deep in old forest, back against a tree', faction: 'nature' },
+      { text: 'Moving. No fixed place — movement is safety.', faction: 'shape' },
+      { text: 'In complete darkness. Still. Listening.', faction: 'dark' },
+      { text: 'Beside a fire, until it dies', faction: 'fire' },
+    ]
+  },
+  {
+    q: 'What does your magic feel like from the inside?',
+    opts: [
+      { text: 'Warmth that wants to go outward and protect', faction: 'light' },
+      { text: 'A conversation with something much older than me', faction: 'nature' },
+      { text: 'The moment before choosing — pure potential', faction: 'shape' },
+      { text: 'Stillness so deep it becomes its own kind of power', faction: 'dark' },
+      { text: 'Pressure that has to go somewhere', faction: 'fire' },
+    ]
+  },
+  {
+    q: 'What does victory mean to you?',
+    opts: [
+      { text: 'Everyone I was protecting is still standing', faction: 'light' },
+      { text: 'The balance is restored', faction: 'nature' },
+      { text: 'The shape of things has changed for the better', faction: 'shape' },
+      { text: 'I am still here when everything else has moved on', faction: 'dark' },
+      { text: 'What needed to burn has burned', faction: 'fire' },
+    ]
+  },
+];
+
+const QUIZ_RESULTS = {
+  light: {
+    name: 'Light Mage', color: 'rgba(200,180,60,0.15)', textColor: '#d4b84a',
+    quote: '"Light is life. Imagine every sun that exists — there is life there."',
+    desc: 'You lead with protection and belief. Your faith is not naive — it is cosmological. You believe something vast is watching over every world under every star, and that light given freely is the highest act. The Light Mages would welcome you without hesitation.'
+  },
+  nature: {
+    name: 'Nature Mage / Dryad', color: 'rgba(60,120,60,0.15)', textColor: '#70b870',
+    quote: '"The forest is conscious. The river remembers. The mountain watches."',
+    desc: 'You listen before you act, and you believe everything alive is speaking. You would kneel in soil and press your hands into bark and understand something no classroom can teach. Silene\'s people would know you immediately.'
+  },
+  shape: {
+    name: 'Shapeshifter Mage / Druid', color: 'rgba(100,60,150,0.15)', textColor: '#9868c0',
+    quote: '"Before there was a wolf or a man, there was the possibility of both. That possibility is divine."',
+    desc: 'You live in the space between forms. Change does not frighten you — it is what you worship. You fight not to destroy but to change the shape of things, and you understand that the moment you cannot hold a form forever is the moment you understand everything.'
+  },
+  dark: {
+    name: 'Dark Mage', color: 'rgba(40,50,90,0.25)', textColor: '#7080b8',
+    quote: '"When all light dies, the void remains."',
+    desc: 'Patience is your doctrine. You are rooted in something older than light — the first substance, the void that was there before anything else. Others see darkness as the absence of something. You know it is a presence. You will be here when everything else is gone.'
+  },
+  fire: {
+    name: 'Fire Mage', color: 'rgba(180,60,20,0.18)', textColor: '#d07040',
+    quote: '"You prove yourself through fire."',
+    desc: 'You do not walk around what burns. You walk toward it. Pain is information. Whatever survives the fire is real — and you intend to be real. The Burning God demands honesty of the absolute kind, and you are not afraid of what you might find out about yourself.'
+  },
+};
+
+let quizAnswers = {};
+let quizCurrentQ = 0;
+
+function initQuiz(reset) {
+  if (reset) { 
+    quizAnswers = {}; 
+    quizCurrentQ = 0; 
+    document.getElementById('quiz-header-content').style.display = 'block';
+  }
+  renderQuizQuestion();
+}
+
+function renderQuizQuestion() {
+  const pips = document.getElementById('quiz-pips');
+  if (pips) pips.innerHTML = QUIZ_QUESTIONS.map((_,i) =>
+    `<div class="quiz-pip ${i < quizCurrentQ ? 'done' : i === quizCurrentQ ? 'active' : ''}"></div>`
+  ).join('');
+  
+  const body = document.getElementById('quiz-body');
+  if (!body) return;
+  
+  const q = QUIZ_QUESTIONS[quizCurrentQ];
+  const shuffled = [...q.opts].sort(() => Math.random() - 0.5);
+  
+  body.innerHTML = `
+    <div class="quiz-question">
+      <div class="quiz-q-text">${quizCurrentQ + 1}. ${q.q}</div>
+      <div class="quiz-options">${shuffled.map((opt, i) =>
+        `<button class="quiz-option" onclick="selectQuizOpt(this,'${opt.faction}')">${opt.text}</button>`
+      ).join('')}</div>
+    </div>
+    <div class="quiz-nav"><button class="quiz-btn" id="quiz-next-btn" onclick="nextQuizQ()">
+      ${quizCurrentQ < QUIZ_QUESTIONS.length - 1 ? 'Next Question' : 'See My Faction'}
+    </button></div>`;
+}
+
+function selectQuizOpt(btn, faction) {
+  btn.closest('.quiz-options').querySelectorAll('.quiz-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  quizAnswers[quizCurrentQ] = faction;
+  const nextBtn = document.getElementById('quiz-next-btn');
+  if (nextBtn) nextBtn.classList.add('active');
+}
+
+function nextQuizQ() {
+  if (quizAnswers[quizCurrentQ] === undefined) return;
+  quizCurrentQ++;
+  if (quizCurrentQ >= QUIZ_QUESTIONS.length) {
+    const counts = {};
+    Object.values(quizAnswers).forEach(f => counts[f] = (counts[f]||0) + 1);
+    const winner = Object.entries(counts).sort((a,b) => b[1]-a[1])[0][0];
+    
+    // Save to local storage for the main navigator to pick up
+    try {
+        const state = JSON.parse(localStorage.getItem('kalmirth_state') || '{}');
+        state.quizResult = winner;
+        localStorage.setItem('kalmirth_state', JSON.stringify(state));
+    } catch(e) {}
+    
+    renderQuizResult(winner);
+  } else { 
+    renderQuizQuestion(); 
+  }
+}
+
+function renderQuizResult(faction) {
+  document.getElementById('quiz-header-content').style.display = 'none';
+  const r = QUIZ_RESULTS[faction];
+  const body = document.getElementById('quiz-body');
+  if (!body) return;
+  
+  const shareText = encodeURIComponent(`I belong to the ${r.name} faction in Kalmirth! Find your allegiance here:`);
+  const shareUrl = encodeURIComponent(window.location.href);
+  
+  body.innerHTML = `
+    <div class="quiz-result-card">
+      <div class="quiz-result-header" style="background:${r.color};color:${r.textColor}">${r.name}</div>
+      <div class="quiz-result-body">
+        <div class="quiz-result-quote">${r.quote}</div>
+        <div class="quiz-result-desc">${r.desc}</div>
+        
+        <div class="share-title">Share your allegiance</div>
+        <div class="share-btns">
+          <a href="https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrl}" target="_blank" class="share-btn">Twitter / X</a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u=${shareUrl}" target="_blank" class="share-btn">Facebook</a>
+        </div>
+        
+        <button class="quiz-retake-btn" onclick="initQuiz(true)">Retake Quiz</button>
+      </div>
+    </div>`;
+    
+  document.getElementById('quiz-pips').innerHTML = '';
+}
+
+// Start quiz
+initQuiz();
+</script>
+</body>
+</html>

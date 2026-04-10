@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalmirth — Story Threads Narrative Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --card:            #0f1622;
+    --card-dark:       #090e18;
+    --ink:             #e8dccb;
+    --ink-soft:        #a89f8c;
+    --gold:            #C89B3C;
+    --gold-dark:       #8a6928;
+    --gold-bright:     #e8b84b;
+    --border:          #1e2e40;
+    --divider:         rgba(200,155,60,0.2);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Open Sans', sans-serif;
+    background: #040810;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url('back.jpeg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.1;
+    z-index: -1;
+    filter: blur(2px) saturate(0.5);
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    width: 100%;
+    padding: 40px 20px;
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(4,8,16,0.9), transparent);
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 32px;
+    color: var(--gold);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .subtitle {
+    font-family: 'Open Sans', sans-serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 1px;
+  }
+
+  /* ─── CONTROLS ─── */
+  .controls {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    z-index: 10;
+  }
+
+  .btn {
+    background: rgba(200,155,60,0.1);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    padding: 8px 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: 0.3s;
+    text-decoration: none;
+  }
+
+  .btn:hover {
+    background: rgba(200,155,60,0.25);
+    border-color: var(--gold-bright);
+    box-shadow: 0 0 15px rgba(200,155,60,0.2);
+  }
+
+  /* ─── VIZ CONTAINER ─── */
+  #viz-wrapper {
+    width: 95%;
+    max-width: 1200px;
+    background: rgba(15, 22, 34, 0.7);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 40px;
+    position: relative;
+    margin-bottom: 60px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+  }
+
+  .threads-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ─── SVG STYLES ─── */
+  .thread-path {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke-width 0.3s, opacity 0.3s, filter 0.3s;
+    cursor: pointer;
+    filter: url(#pencil);
+  }
+
+  .thread-path:hover, .thread-path.active {
+    stroke-width: 5;
+    opacity: 1 !important;
+    filter: url(#pencil) drop-shadow(0 0 8px currentColor);
+  }
+
+  .thread-node {
+    transition: r 0.3s, stroke-width 0.3s, filter 0.3s;
+    cursor: help;
+  }
+
+  .thread-node:hover {
+    r: 8;
+    stroke-width: 3;
+    filter: brightness(1.2) drop-shadow(0 0 5px currentColor);
+  }
+
+  .column-label {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    fill: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .thread-label-item {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .thread-label-item:hover, .thread-label-item.active {
+    font-weight: 700;
+    font-size: 11px;
+    filter: drop-shadow(0 0 2px currentColor);
+  }
+
+  /* ─── TOOLTIP ─── */
+  #tooltip {
+    position: absolute;
+    z-index: 100;
+    background: var(--card-dark);
+    border: 1px solid var(--gold);
+    padding: 15px 20px;
+    border-radius: 4px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+    pointer-events: none;
+    max-width: 320px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    display: none;
+    transform: translate(-50%, -115%);
+    transition: opacity 0.2s;
+  }
+
+  #tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: -8px; left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid var(--gold);
+  }
+
+  #tooltip .tt-title { 
+    font-family: 'Cinzel', serif; 
+    color: var(--gold); 
+    font-weight: 700; 
+    margin-bottom: 6px; 
+    font-size: 12px; 
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid var(--divider);
+    padding-bottom: 4px;
+  }
+
+  #tooltip .tt-status { 
+    display: inline-block; 
+    padding: 3px 8px; 
+    border-radius: 2px; 
+    font-size: 10px; 
+    text-transform: uppercase; 
+    letter-spacing: 1.5px; 
+    margin-bottom: 10px; 
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* ─── LEGEND ─── */
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin-top: 40px;
+    padding: 25px;
+    background: rgba(200,155,60,0.05);
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+  }
+
+  .legend-item { 
+    display: flex; 
+    align-items: center; 
+    gap: 12px; 
+    color: var(--gold); 
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .legend-symbol { 
+    width: 24px; 
+    height: 24px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+  }
+
+  .sigil-introduced { width: 12px; height: 12px; border: 2px solid var(--gold); border-radius: 50%; }
+  .sigil-active { width: 14px; height: 14px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 8px var(--gold); }
+  .sigil-escalating { width: 12px; height: 12px; background: var(--gold); transform: rotate(45deg); }
+  .sigil-resolved { width: 14px; height: 14px; background: var(--gold); border: 3px solid var(--card-dark); border-radius: 50%; box-shadow: 0 0 0 1px var(--gold); }
+  .sigil-open { width: 10px; height: 10px; border: 1.5px dashed var(--gold); border-radius: 50%; }
+
+  footer {
+    padding: 40px;
+    color: var(--ink-soft);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Narrative Threads</h1>
+  <div class="subtitle">An Interactive Mapping of the Kalmirth Saga Chronology</div>
+</header>
+
+<div class="controls">
+  <a href="index.html" class="btn">← Back to Navigator</a>
+  <button class="btn" onclick="resetFocus()">Reset Visualization</button>
+</div>
+
+<div id="viz-wrapper">
+  <div id="tooltip"></div>
+  <svg id="threads-canvas" viewBox="0 0 1000 650" class="threads-svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <!-- Hand-drawn line filter -->
+      <filter id="pencil">
+        <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise" />
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.5" />
+      </filter>
+      <!-- Glow filter -->
+      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    <!-- Content generated by JS -->
+  </svg>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-symbol"><div class="sigil-introduced"></div></div> Introduced</div>
+    <div class="legend-item"><div class="legend-symbol"><div class="sigil-active"></div></div> Active / Focus</div>
+    <div class="legend-item"><div class="legend-symbol"><div class="sigil-escalating"></div></div> Escalating Threat</div>
+    <div class="legend-item"><div class="legend-symbol"><div class="sigil-resolved"></div></div> Resolved / Anchored</div>
+    <div class="legend-item"><div class="legend-symbol"><div class="sigil-open"></div></div> Open / Latent</div>
+  </div>
+</div>
+
+<footer>
+  &copy; 2026 Kalmirth Chronicles · Lore Navigator Ecosystem · [Interactivity v1.0]
+</footer>
+
+<script>
+const DATA = [
+  {
+    id: 1, name: "Avery's Identity", color: "#a8d8ea",
+    path: [
+      { book: "B1", status: "resolved", note: "Discovers she is the Crystal Origin. Chooses to become the symbol of hope." },
+      { book: "B2", status: "active", note: "Established leader — but faces existential crisis when the threat moves underground." },
+      { book: "B3", status: "open", note: "Figure of legend in Kalvoldra. Her ultimate fate remains woven into the stars." }
+    ]
+  },
+  {
+    id: 2, name: "The Deepborn Seals", color: "#9b59b6",
+    path: [
+      { book: "B1", status: "introduced", note: "First cracks appear at the Labyrinth Portal. The ancient elven seals are failing." },
+      { book: "B2", status: "escalating", note: "The Horde breaks through at Nordell. The truth about the Breach begins to surface." },
+      { book: "B3", status: "open", note: "The Deep Lord awakens. Dormant gods must face their own ancient history." }
+    ]
+  },
+  {
+    id: 3, name: "Faeron's Secret", color: "#bdc3c7",
+    path: [
+      { book: "B1", status: "active", note: "He watches the Alliance from the shadows, carrying the truth of the Breach." },
+      { book: "B2", status: "open", note: "Disappears into the Huge Woods. Is he the only living witness to the elves' betrayal?" },
+      { book: "B3", status: "open", note: "Centuries-old lineage revealed. His role as the Grandfather of Origins is key." }
+    ]
+  },
+  {
+    id: 4, name: "Fran + Zorgerath", color: "#8e44ad",
+    path: [
+      { book: "B1b", status: "escalating", note: "Purple crystal fragment found in Fran's body. 'You are part of him,' the voices whisper." },
+      { book: "B2", status: "active", note: "Fran is on Earth, powerless, but the Zorgerath amulet remains in the Underworld." },
+      { book: "B3", status: "resolved", note: "Conclusion of the 'Physical Strength' arc. Freedom for Zorgerath costs everything." }
+    ]
+  },
+  {
+    id: 5, name: "Zade + Dark Elf", color: "#27ae60",
+    path: [
+      { book: "B1", status: "introduced", note: "Zade defects from the Alliance, taking half the Dark Mages to serve a hidden patron." },
+      { book: "B2", status: "escalating", note: "Resurfaces in the north with advanced shadow-constructs. A visible global threat." },
+      { book: "B3", status: "open", note: "The identity of the Dark Elf patron is revealed as a survivor of the Great War." }
+    ]
+  },
+  {
+    id: 6, name: "Grace's Fate", color: "#f1c40f",
+    path: [
+      { book: "B1b", status: "resolved", note: "Found held at Hazelwood. Reunited with Fran and returns to Earth safely." },
+      { book: "B2", status: "open", note: "Home in Brighton, but the 'fever' suggests her Origin powers weren't fully lost." },
+      { book: "B3", status: "open", note: "The call of the Underworld amulet may draw the sisters back across the veil." }
+    ]
+  },
+  {
+    id: 7, name: "The Portal System", color: "#e91e63",
+    path: [
+      { book: "B1", status: "introduced", note: "Anomalies in memory retention signal the first major instability in the cycle." },
+      { book: "B2", status: "escalating", note: "Portal stress increases as Fran's return thins the veil between Earth and Kalmirth." },
+      { book: "B3", status: "resolved", note: "The portal shatters permanently, creating a bridge between all four continents." }
+    ]
+  },
+  {
+    id: 8, name: "Callen's Redemption", color: "#7f8c8d",
+    path: [
+      { book: "B1", status: "resolved", note: "Discards his Mage Hunter mantle. Chooses peace over the weapons that made him." },
+      { book: "B2", status: "open", note: "Living a simple life in Blue River, but the Deepborn threat requires his speed." },
+      { book: "B3", status: "open", note: "Faces the legacy of his father, Nathaniel, in the final battle for the White Kingdom." }
+    ]
+  },
+  {
+    id: 9, name: "Black Leaf Remnants", color: "#c0392b",
+    path: [
+      { book: "B1", status: "resolved", note: "Night Etdler HQ falls. The organization is forced into the rural shadows." },
+      { book: "B2", status: "active", note: "Kaeron HQ takes command, using Deepborn propaganda to fuel anti-mage sentiment." },
+      { book: "B3", status: "open", note: "The ultimate showdown with the Iron Guard in the heart of the human continent." }
+    ]
+  },
+  {
+    id: 10, name: "The White Kingdom", color: "#ecf0f1",
+    path: [
+      { book: "B1", status: "introduced", note: "Mentioned only in whispers. A land beyond the sea where the elven gods fled." },
+      { book: "B2", status: "open", note: "A background goal for the Alliance scouts. No direct contact yet." },
+      { book: "B3", status: "active", note: "The primary setting. The last bastion of the ancient civilization on Kalvoldra." }
+    ]
+  }
+];
+
+const BOOKS = ["B1", "B1b", "B2", "B3"];
+const BOOK_LABELS = ["Book 1", "Book 1b", "Book 2", "Book 3"];
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+const canvas = document.getElementById('threads-canvas');
+const tooltip = document.getElementById('tooltip');
+
+function init() {
+  const W = 1000;
+  const H = 650;
+  const PX = 180;
+  const PY = 80;
+  const colW = (W - PX - 100) / (BOOKS.length - 1);
+  const rowH = (H - PY * 2) / (DATA.length - 1);
+
+  // 1. Draw Columns
+  BOOKS.forEach((b, i) => {
+    const x = PX + i * colW;
+    const line = document.createElementNS(SVG_NS, "line");
+    line.setAttribute("x1", x);
+    line.setAttribute("y1", PY - 30);
+    line.setAttribute("x2", x);
+    line.setAttribute("y2", H - PY + 30);
+    line.setAttribute("stroke", "var(--divider)");
+    line.setAttribute("stroke-dasharray", "5,5");
+    canvas.appendChild(line);
+
+    const text = document.createElementNS(SVG_NS, "text");
+    text.setAttribute("x", x);
+    text.setAttribute("y", PY - 45);
+    text.setAttribute("class", "column-label");
+    text.setAttribute("text-anchor", "middle");
+    text.textContent = BOOK_LABELS[i];
+    canvas.appendChild(text);
+  });
+
+  // 2. Draw Paths
+  DATA.forEach((t, idx) => {
+    const y = PY + idx * rowH;
+    let d = "";
+    
+    t.path.forEach((p, i) => {
+      const bIdx = BOOKS.indexOf(p.book);
+      const x = PX + bIdx * colW;
+      if (i === 0) d = `M ${x} ${y}`;
+      else {
+        const prevX = PX + BOOKS.indexOf(t.path[i-1].book) * colW;
+        const cpX = (prevX + x) / 2;
+        d += ` C ${cpX} ${y}, ${cpX} ${y}, ${x} ${y}`;
+      }
+    });
+
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("class", "thread-path");
+    path.setAttribute("stroke", t.color);
+    path.setAttribute("data-id", t.id);
+    path.style.opacity = "0.4";
+    
+    path.addEventListener('mouseover', () => focusThread(t.id));
+    path.addEventListener('mouseout', () => focusThread(null));
+    canvas.appendChild(path);
+
+    // Label
+    const label = document.createElementNS(SVG_NS, "text");
+    label.setAttribute("x", PX - 25);
+    label.setAttribute("y", y + 4);
+    label.setAttribute("fill", t.color);
+    label.setAttribute("class", "thread-label-item");
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("data-id", t.id);
+    label.textContent = t.name;
+    label.addEventListener('click', () => focusThread(t.id));
+    canvas.appendChild(label);
+  });
+
+  // 3. Draw Nodes
+  DATA.forEach((t, idx) => {
+    const y = PY + idx * rowH;
+    t.path.forEach(p => {
+      const bIdx = BOOKS.indexOf(p.book);
+      const x = PX + bIdx * colW;
+      
+      const g = document.createElementNS(SVG_NS, "g");
+      g.style.cursor = "help";
+
+      let node;
+      const status = p.status;
+      
+      if (status === 'resolved') {
+        node = document.createElementNS(SVG_NS, "circle");
+        node.setAttribute("cx", x); node.setAttribute("cy", y); node.setAttribute("r", "6");
+        node.setAttribute("fill", t.color);
+        node.setAttribute("stroke", "var(--card-dark)");
+        node.setAttribute("stroke-width", "3");
+      } else if (status === 'active') {
+        node = document.createElementNS(SVG_NS, "circle");
+        node.setAttribute("cx", x); node.setAttribute("cy", y); node.setAttribute("r", "7");
+        node.setAttribute("fill", t.color);
+        node.style.filter = "url(#glow)";
+      } else if (status === 'escalating') {
+        node = document.createElementNS(SVG_NS, "rect");
+        node.setAttribute("x", x-5); node.setAttribute("y", y-5); node.setAttribute("width", "10"); node.setAttribute("height", "10");
+        node.setAttribute("fill", t.color);
+        node.setAttribute("transform", `rotate(45 ${x} ${y})`);
+      } else if (status === 'introduced') {
+        node = document.createElementNS(SVG_NS, "circle");
+        node.setAttribute("cx", x); node.setAttribute("cy", y); node.setAttribute("r", "5");
+        node.setAttribute("fill", "none");
+        node.setAttribute("stroke", t.color);
+        node.setAttribute("stroke-width", "2");
+      } else {
+        node = document.createElementNS(SVG_NS, "circle");
+        node.setAttribute("cx", x); node.setAttribute("cy", y); node.setAttribute("r", "4");
+        node.setAttribute("fill", "none");
+        node.setAttribute("stroke", t.color);
+        node.setAttribute("stroke-width", "1.5");
+        node.setAttribute("stroke-dasharray", "2,2");
+      }
+      
+      node.setAttribute("class", "thread-node");
+      g.appendChild(node);
+      
+      g.addEventListener('mouseover', (e) => showTooltip(e, t.name, p.status, p.note));
+      g.addEventListener('mouseout', hideTooltip);
+      canvas.appendChild(g);
+    });
+  });
+}
+
+function showTooltip(e, name, status, note) {
+  const statusColors = {
+    introduced: '#3498db',
+    active: '#f39c12',
+    escalating: '#e74c3c',
+    resolved: '#2ecc71',
+    open: '#95a5a6'
+  };
+
+  tooltip.innerHTML = `
+    <div class="tt-title">${name}</div>
+    <div class="tt-status" style="background:${statusColors[status] || '#555'}">${status}</div>
+    <div class="tt-note">${note}</div>
+  `;
+  tooltip.style.display = 'block';
+  
+  // Position tooltip
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX;
+  const y = e.clientY;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = y + 'px';
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
+}
+
+function focusThread(id) {
+  const paths = document.querySelectorAll('.thread-path');
+  const labels = document.querySelectorAll('.thread-label-item');
+  
+  if (id === null) {
+    paths.forEach(p => { p.classList.remove('active'); p.style.opacity = "0.4"; });
+    labels.forEach(l => l.classList.remove('active'));
+    return;
+  }
+
+  paths.forEach(p => {
+    const isTarget = p.getAttribute('data-id') == id;
+    p.classList.toggle('active', isTarget);
+    p.style.opacity = isTarget ? "1" : "0.05";
+  });
+
+  labels.forEach(l => {
+    l.classList.toggle('active', l.getAttribute('data-id') == id);
+  });
+}
+
+function resetFocus() {
+  focusThread(null);
+}
+
+init();
+</script>
+
+</body>
+</html>

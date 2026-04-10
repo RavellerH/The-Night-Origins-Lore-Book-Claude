@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalmirth — Labyrinth of Fate (Plot Diagram)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --card:            #0f1622;
+    --card-dark:       #05080c;
+    --ink:             #e8dccb;
+    --ink-soft:        #a89f8c;
+    --gold:            #C89B3C;
+    --gold-dark:       #8a6928;
+    --gold-bright:     #e8b84b;
+    --deepborn:        #8e44ad;
+    --crystal:         #a8d8ea;
+    --border:          #1e2e40;
+    --divider:         rgba(200,155,60,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Open Sans', sans-serif;
+    background: #020408;
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url('back.jpeg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.08;
+    z-index: -1;
+    filter: blur(3px) grayscale(0.5);
+  }
+
+  header {
+    width: 100%;
+    padding: 60px 20px 30px;
+    text-align: center;
+    background: linear-gradient(to bottom, rgba(2,4,8,1), transparent);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 36px;
+    color: var(--gold);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(200,155,60,0.3);
+  }
+
+  .subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+
+  /* ─── CONTROLS ─── */
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    background: rgba(15, 22, 34, 0.8);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    padding: 8px 18px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    border-radius: 2px;
+  }
+
+  .btn:hover, .btn.active {
+    background: var(--gold-dark);
+    color: #000;
+    box-shadow: 0 0 20px rgba(200,155,60,0.4);
+  }
+
+  /* ─── LABYRINTH CONTAINER ─── */
+  #labyrinth-container {
+    width: 100%;
+    max-width: 1000px;
+    position: relative;
+    padding: 40px 20px 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .labyrinth-svg {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* ─── SVG PATHS ─── */
+  .plot-line {
+    fill: none;
+    stroke-width: 3;
+    stroke-linecap: round;
+    transition: stroke-width 0.3s, opacity 0.3s, filter 0.3s;
+  }
+
+  .plot-line.avery { stroke: var(--crystal); stroke-opacity: 0.7; }
+  .plot-line.fran { stroke: var(--deepborn); stroke-opacity: 0.7; }
+  .plot-line.common { stroke: var(--gold); stroke-opacity: 0.7; }
+
+  .plot-node {
+    cursor: pointer;
+    transition: transform 0.3s, filter 0.3s;
+  }
+
+  .plot-node:hover {
+    transform: scale(1.3);
+    filter: brightness(1.3) drop-shadow(0 0 10px currentColor);
+  }
+
+  .node-pulse {
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { r: 6; opacity: 0.8; }
+    50% { r: 12; opacity: 0; }
+    100% { r: 6; opacity: 0; }
+  }
+
+  /* ─── LAYERS ─── */
+  .layer-label {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    fill: var(--gold);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  /* ─── TOOLTIP ─── */
+  #plot-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(5, 8, 12, 0.95);
+    border: 1px solid var(--gold);
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 20px 60px rgba(0,0,0,1);
+    pointer-events: none;
+    max-width: 350px;
+    color: var(--ink);
+    display: none;
+    backdrop-filter: blur(10px);
+    transition: opacity 0.2s;
+  }
+
+  #plot-tooltip .tt-book {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--gold-bright);
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+  }
+
+  #plot-tooltip .tt-title {
+    font-family: 'Cinzel', serif;
+    font-size: 16px;
+    color: var(--ink);
+    font-weight: 700;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--divider);
+    padding-bottom: 8px;
+  }
+
+  #plot-tooltip .tt-desc {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  #plot-tooltip .tt-meta {
+    margin-top: 15px;
+    font-size: 11px;
+    font-style: italic;
+    color: var(--gold-dark);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ─── SIDEBAR TOGGLES ─── */
+  .filter-panel {
+    position: fixed;
+    left: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(15, 22, 34, 0.6);
+    border: 1px solid var(--border);
+    padding: 20px;
+    border-radius: 4px;
+    backdrop-filter: blur(5px);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+  }
+
+  .filter-panel h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .filter-btn {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--ink-soft);
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+    padding: 5px 0;
+    transition: 0.2s;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    color: var(--gold);
+    padding-left: 5px;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    padding: 100px 20px 40px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 11px;
+    letter-spacing: 1px;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>The Labyrinth of Fate</h1>
+  <div class="subtitle">Visualizing the Interconnected Chronology of Kalmirth</div>
+  
+  <div class="toolbar">
+    <a href="index.html" class="btn">← Back to Navigator</a>
+    <button class="btn active" onclick="toggleLayer('all')">Full Series</button>
+    <button class="btn" onclick="toggleLayer('b1')">Prologue (B1/1b)</button>
+    <button class="btn" onclick="toggleLayer('b2')">The Breach (B2)</button>
+    <button class="btn" onclick="toggleLayer('b3')">The Epic (B3)</button>
+  </div>
+</header>
+
+<div class="filter-panel">
+  <h3>Track Journey</h3>
+  <button class="filter-btn active" data-path="all">Show All</button>
+  <button class="filter-btn" data-path="avery">Avery's Path</button>
+  <button class="filter-btn" data-path="fran">Fran's Path</button>
+  <button class="filter-btn" data-path="callen">Callen's Path</button>
+  <button class="filter-btn" data-path="nate">Nate's Path</button>
+</div>
+
+<div id="plot-tooltip"></div>
+
+<div id="labyrinth-container">
+  <svg id="labyrinth-svg" viewBox="0 0 800 2400" class="labyrinth-svg">
+    <defs>
+      <filter id="node-glow">
+        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+    
+    <!-- Path connecting nodes -->
+    <path id="path-main" class="plot-line common" d="" />
+    <path id="path-avery" class="plot-line avery" d="" />
+    <path id="path-fran" class="plot-line fran" d="" />
+    
+    <!-- Layers generated by JS -->
+  </svg>
+</div>
+
+<footer>
+  &copy; 2026 Chronicles of Kalmirth · [Plot Engine v2.0] · All Rights Reserved
+</footer>
+
+<script>
+const PLOT_DATA = [
+  // BOOK 1 & 1b
+  { id: 'b1_1', layer: 'b1', x: 400, y: 150, book: 'Book 1', title: 'Arrival at Blue River', desc: 'Avery arrives in Kalmirth. The first crystal magic is manifested. The Black Leaf descends on the village.', path: ['avery', 'callen'] },
+  { id: 'b1_2', layer: 'b1', x: 250, y: 300, book: 'Book 1', title: 'The Separation', desc: 'Avery escapes into Vleyrra forest alone. Callen is captured by Zachariel to become a Mage Hunter.', path: ['avery', 'callen'] },
+  { id: 'b1_3', layer: 'b1', x: 550, y: 300, book: 'Book 1b', title: 'The Forced Breach', desc: 'Fran arrives with memories intact. She bonds with Myst and begins her search for Grace.', path: ['fran'] },
+  { id: 'b1_4', layer: 'b1', x: 250, y: 500, book: 'Book 1', title: 'City of Blinding Light', desc: 'Avery meets Nate and begins her training. She discovers she is the Crystal Origin.', path: ['avery', 'nate'] },
+  { id: 'b1_5', layer: 'b1', x: 400, y: 600, book: 'Mixed', title: 'The Underworld Meeting', desc: 'Avery and Fran intersect in the Underworld Labyrinth (Ch. 63). First contact between Earth Origins.', path: ['avery', 'fran'] },
+  { id: 'b1_6', layer: 'b1', x: 550, y: 800, book: 'Book 1b', title: 'Grace is Found', desc: 'Fran rescues Grace from Hazelwood. They return to Earth via the Nevella crystals.', path: ['fran'] },
+  { id: 'b1_7', layer: 'b1', x: 250, y: 900, book: 'Book 1', title: 'Avery\'s Encasement', desc: 'To spare Callen from killing her, Avery voluntarily seals herself in crystal for 3 months.', path: ['avery', 'callen'] },
+  { id: 'b1_8', layer: 'b1', x: 400, y: 1050, book: 'Book 1', title: 'The Alliance Forms', desc: 'The Oath Circle is sworn around the crystal. Avery emerges. The Black Leaf HQ is disbanded.', path: ['avery', 'callen', 'nate'] },
+  
+  // BOOK 2
+  { id: 'b2_1', layer: 'b2', x: 400, y: 1250, book: 'Book 2', title: 'Surface Signs', desc: 'The Blue River dims. Hellhoods spread propaganda. The Deepborn awakening begins in earnest.', path: ['avery', 'nate'] },
+  { id: 'b2_2', layer: 'b2', x: 300, y: 1400, book: 'Book 2', title: 'The Breach at Nordell', desc: 'Commander Thea Holt faces the first massive surface incursion. The Alliance mobilizes.', path: ['avery'] },
+  { id: 'b2_3', layer: 'b2', x: 500, y: 1550, book: 'Book 2', title: 'The Old Truth', desc: 'Faeron reveals the elves broke the Deepborn seals. The foundations of the Alliance fracture.', path: ['avery', 'nate'] },
+  { id: 'b2_4', layer: 'b2', x: 400, y: 1700, book: 'Book 2', title: 'The Sacrifice', desc: 'A mass ritual is performed to reverse the corruption, costing the lives of key elven elders.', path: ['avery'] },
+  
+  // BOOK 3
+  { id: 'b3_1', layer: 'b3', x: 400, y: 1900, book: 'Book 3', title: 'The Journey to Kalvoldra', desc: 'Isaac Trouders carries the Book across the world. Origins arrive simultaneously on all continents.', path: ['common'] },
+  { id: 'b3_2', layer: 'b3', x: 300, y: 2050, book: 'Book 3', title: 'Battle of Last Kingdoms', desc: 'The climactic struggle on Kalvoldra. Magnus is killed by Deveroth. The Book is stolen.', path: ['common'] },
+  { id: 'b3_3', layer: 'b3', x: 500, y: 2200, book: 'Book 3', title: 'Border Apocalypse', desc: 'Deveroth falls the walls between kingdoms. A world-scale Great War erupts.', path: ['common'] },
+  { id: 'b3_4', layer: 'b3', x: 400, y: 2350, book: 'Book 3', title: 'The Final Choice', desc: 'Deveroth is defeated. The surviving Origins must choose: Return to Earth or stay as masters of Kalmirth.', path: ['common'] }
+];
+
+const svg = document.getElementById('labyrinth-svg');
+const tooltip = document.getElementById('plot-tooltip');
+
+function init() {
+  // Layer Labels
+  drawLayerLabel('Prologue: Surface', 80);
+  drawLayerLabel('The Breach: Vertical Depth', 1150);
+  drawLayerLabel('The Shattered World: Web of Origins', 1800);
+
+  // Paths
+  updatePaths('all');
+
+  // Nodes
+  PLOT_DATA.forEach(node => {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("class", `plot-node node-${node.layer}`);
+    g.setAttribute("data-id", node.id);
+    g.setAttribute("data-paths", node.path.join(' '));
+
+    // Outer pulse for important nodes
+    if (node.id === 'b1_5' || node.id === 'b3_4') {
+      const pulse = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      pulse.setAttribute("cx", node.x);
+      pulse.setAttribute("cy", node.y);
+      pulse.setAttribute("r", 10);
+      pulse.setAttribute("fill", "var(--gold)");
+      pulse.setAttribute("class", "node-pulse");
+      g.appendChild(pulse);
+    }
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", node.x);
+    circle.setAttribute("cy", node.y);
+    circle.setAttribute("r", 8);
+    circle.setAttribute("fill", getNodeColor(node));
+    circle.setAttribute("filter", "url(#node-glow)");
+    
+    g.appendChild(circle);
+
+    // Label
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", node.x + 15);
+    text.setAttribute("y", node.y + 5);
+    text.setAttribute("fill", "var(--ink-soft)");
+    text.setAttribute("font-family", "Cinzel");
+    text.setAttribute("font-size", "10");
+    text.textContent = node.title;
+    g.appendChild(text);
+
+    g.addEventListener('mouseover', (e) => showTooltip(e, node));
+    g.addEventListener('mouseout', hideTooltip);
+    g.addEventListener('click', () => {
+      // Zoom or highlight logic
+    });
+
+    svg.appendChild(g);
+  });
+}
+
+function drawLayerLabel(text, y) {
+  const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  label.setAttribute("x", 400);
+  label.setAttribute("y", y);
+  label.setAttribute("class", "layer-label");
+  label.setAttribute("text-anchor", "middle");
+  label.textContent = text;
+  svg.appendChild(label);
+}
+
+function getNodeColor(node) {
+  if (node.path.includes('avery') && node.path.includes('fran')) return 'var(--gold)';
+  if (node.path.includes('avery')) return 'var(--crystal)';
+  if (node.path.includes('fran')) return 'var(--deepborn)';
+  return 'var(--gold)';
+}
+
+function showTooltip(e, node) {
+  tooltip.innerHTML = `
+    <div class="tt-book">${node.book}</div>
+    <div class="tt-title">${node.title}</div>
+    <div class="tt-desc">${node.desc}</div>
+    <div class="tt-meta">
+      <span>Focus: ${node.path.join(' & ')}</span>
+    </div>
+  `;
+  tooltip.style.display = 'block';
+  tooltip.style.opacity = '1';
+  
+  const x = e.clientX + 20;
+  const y = e.clientY - 20;
+  
+  // Adjust if off-screen
+  tooltip.style.left = `${Math.min(x, window.innerWidth - 370)}px`;
+  tooltip.style.top = `${Math.min(y, window.innerHeight - 200)}px`;
+}
+
+function hideTooltip() {
+  tooltip.style.display = 'none';
+  tooltip.style.opacity = '0';
+}
+
+function updatePaths(filter) {
+  const mainD = [];
+  const averyD = [];
+  const franD = [];
+
+  // Filter and sort nodes for pathing
+  const nodes = PLOT_DATA.sort((a, b) => a.y - b.y);
+
+  nodes.forEach((node, i) => {
+    if (node.path.includes('common') || (node.path.includes('avery') && node.path.includes('fran'))) {
+      mainD.push(`${i===0 ? 'M' : 'L'} ${node.x} ${node.y}`);
+    }
+    
+    if (node.path.includes('avery')) {
+      averyD.push(`${averyD.length===0 ? 'M' : 'L'} ${node.x} ${node.y}`);
+    }
+    
+    if (node.path.includes('fran')) {
+      franD.push(`${franD.length===0 ? 'M' : 'L'} ${node.x} ${node.y}`);
+    }
+  });
+
+  document.getElementById('path-main').setAttribute('d', mainD.join(' '));
+  document.getElementById('path-avery').setAttribute('d', averyD.join(' '));
+  document.getElementById('path-fran').setAttribute('d', franD.join(' '));
+}
+
+function toggleLayer(layer) {
+  const nodes = document.querySelectorAll('.plot-node');
+  const btns = document.querySelectorAll('.toolbar .btn');
+  
+  btns.forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  nodes.forEach(n => {
+    if (layer === 'all' || n.classList.contains(`node-${layer}`)) {
+      n.style.opacity = '1';
+      n.style.pointerEvents = 'auto';
+    } else {
+      n.style.opacity = '0.1';
+      n.style.pointerEvents = 'none';
+    }
+  });
+}
+
+// Filter Tracks
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    const path = this.dataset.path;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+
+    const lines = document.querySelectorAll('.plot-line');
+    const nodes = document.querySelectorAll('.plot-node');
+
+    if (path === 'all') {
+      lines.forEach(l => l.style.opacity = '0.7');
+      nodes.forEach(n => n.style.opacity = '1');
+    } else {
+      lines.forEach(l => {
+        l.style.opacity = l.id.includes(path) ? '1' : '0.05';
+      });
+      nodes.forEach(n => {
+        const paths = n.dataset.paths.split(' ');
+        n.style.opacity = paths.includes(path) ? '1' : '0.1';
+      });
+    }
+  });
+});
+
+init();
+</script>
+
+</body>
+</html>

@@ -998,6 +998,21 @@ function showCatch(fish) {
   rl.className = RARITY_COLOR[fish.rarity];
   const badge = document.getElementById('catch-new-badge');
   badge.classList.toggle('show', isNew);
+
+  // Achievement Code
+  if (fish.id === 'ashfin') {
+    const existing = document.getElementById('ach-code-box');
+    if (existing) existing.remove();
+    const codeEl = document.createElement('div');
+    codeEl.id = 'ach-code-box';
+    codeEl.style.cssText = "margin-top:10px;font-family:'Cinzel',serif;font-size:10px;color:var(--gold);border:1px solid var(--gold-dim);padding:8px;background:rgba(200,155,60,0.1);position:relative;z-index:10;";
+    codeEl.innerHTML = "SECRET CODE UNLOCKED<br><span style='font-size:14px;letter-spacing:2px;'>K-FISH-ASHFIN</span><br><span style='font-size:8px;opacity:0.7;'>Redeem in Lore Navigator Achievements</span>";
+    document.getElementById('catch-card').appendChild(codeEl);
+  } else {
+    const existing = document.getElementById('ach-code-box');
+    if (existing) existing.remove();
+  }
+
   document.getElementById('catch-overlay').classList.add('show');
   renderJournal();
 }

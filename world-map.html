@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalmirth — Interactive World Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold:            #C89B3C;
+    --gold-dark:       #8a6928;
+    --gold-bright:     #e8b84b;
+    --ink:             #e8dccb;
+    --ink-soft:        #a89f8c;
+    --bg:              #020408;
+    --card:            #0f1622;
+    --border:          #1e2e40;
+    --deepborn:        #8e44ad;
+    --elven:           #27ae60;
+    --human:           #3498db;
+    --hunter:          #c0392b;
+    --river:           #00f2ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Open Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── UI OVERLAY ─── */
+  header {
+    position: absolute;
+    top: 0; width: 100%;
+    padding: 25px 40px;
+    z-index: 100;
+    pointer-events: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: linear-gradient(to bottom, rgba(2,4,8,0.9), transparent);
+  }
+
+  .header-content { pointer-events: auto; }
+  h1 { font-family: 'Cinzel', serif; font-size: 28px; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; }
+  .subtitle { font-family: 'Cinzel', serif; font-size: 10px; color: var(--ink-soft); letter-spacing: 2px; }
+
+  .controls {
+    position: absolute;
+    bottom: 30px; left: 30px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(15, 22, 34, 0.8);
+    padding: 20px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+    border-radius: 4px;
+  }
+
+  .control-group h3 { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold); margin-bottom: 8px; letter-spacing: 1px; }
+  
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .map-btn {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--gold-dark);
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: 0.2s;
+    letter-spacing: 1px;
+  }
+  .map-btn:hover, .map-btn.active { background: var(--gold-dark); color: #000; }
+
+  .layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    padding: 4px 0;
+  }
+  .layer-toggle input { accent-color: var(--gold); }
+
+  /* ─── SIDEBAR ─── */
+  #info-panel {
+    position: absolute;
+    right: 30px; top: 100px; bottom: 30px;
+    width: 350px;
+    background: rgba(15, 22, 34, 0.9);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(15px);
+    padding: 30px;
+    z-index: 100;
+    transform: translateX(400px);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: -20px 0 50px rgba(0,0,0,0.5);
+  }
+  #info-panel.visible { transform: translateX(0); }
+
+  .info-header { border-bottom: 1px solid var(--divider); padding-bottom: 15px; margin-bottom: 20px; }
+  .info-type { font-family: 'Cinzel', serif; font-size: 10px; color: var(--gold-bright); letter-spacing: 2px; text-transform: uppercase; }
+  .info-title { font-family: 'Cinzel', serif; font-size: 24px; color: var(--gold); margin: 5px 0; }
+  .info-desc { font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .info-meta { margin-top: 20px; font-size: 12px; border-top: 1px solid rgba(200,155,60,0.1); padding-top: 15px; }
+  .meta-tag { display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 10px; text-transform: uppercase; font-weight: 700; margin-right: 5px; }
+
+  /* ─── MAP CANVAS ─── */
+  #map-viewport {
+    flex: 1;
+    cursor: grab;
+    background: radial-gradient(circle at center, #0a121e 0%, #020408 100%);
+    overflow: hidden;
+    position: relative;
+  }
+  #map-viewport:active { cursor: grabbing; }
+
+  .world-map-svg {
+    width: 100%;
+    height: 100%;
+    user-select: none;
+  }
+
+  /* ─── SVG ELEMENTS ─── */
+  .continent {
+    fill: #121a2a;
+    stroke: var(--gold-dark);
+    stroke-width: 1.5;
+    transition: fill 0.3s, filter 0.3s;
+    filter: url(#paper-texture);
+  }
+  .continent:hover { fill: #1a253a; }
+
+  .biolume {
+    pointer-events: none;
+    filter: blur(8px);
+    opacity: 0.4;
+    mix-blend-mode: screen;
+    animation: pulse-glow 4s infinite alternate;
+  }
+
+  @keyframes pulse-glow {
+    from { opacity: 0.3; }
+    to { opacity: 0.6; }
+  }
+
+  .river-path {
+    fill: none;
+    stroke: var(--river);
+    stroke-width: 3;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 5px var(--river));
+    opacity: 0.8;
+  }
+
+  .marker {
+    cursor: pointer;
+    transition: transform 0.3s;
+  }
+  .marker:hover { transform: scale(1.5); }
+  .marker circle { fill: var(--gold); stroke: #000; stroke-width: 1; }
+  .marker text { 
+    font-family: 'Cinzel', serif; font-size: 8px; fill: var(--ink-soft); 
+    text-anchor: middle; pointer-events: none;
+    filter: drop-shadow(0 0 2px #000);
+  }
+
+  .deepborn-crack {
+    fill: none;
+    stroke: var(--deepborn);
+    stroke-width: 2;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    transition: stroke-dashoffset 2s ease-in-out;
+    filter: drop-shadow(0 0 8px var(--deepborn));
+    opacity: 0;
+  }
+  body.show-corruption .deepborn-crack { opacity: 0.8; stroke-dashoffset: 0; }
+
+  .territory { opacity: 0; transition: opacity 0.5s; pointer-events: none; }
+  body.show-territory .territory { opacity: 0.25; }
+
+  /* ─── ZOOM CONTROLS ─── */
+  .zoom-btns {
+    position: absolute;
+    bottom: 30px; right: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 100;
+  }
+  .zoom-btn {
+    width: 40px; height: 40px;
+    background: rgba(15, 22, 34, 0.8);
+    border: 1px solid var(--border);
+    color: var(--gold);
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .zoom-btn:hover { background: var(--card); }
+
+</style>
+</head>
+<body class="show-territory">
+
+<header>
+  <div class="header-content">
+    <h1>The Chart of Kalmirth</h1>
+    <div class="subtitle">Imperial Cartography Office · Archive Record 001</div>
+  </div>
+  <div class="header-content">
+    <a href="index.html" class="map-btn">← Lore Navigator</a>
+  </div>
+</header>
+
+<div class="controls">
+  <div class="control-group">
+    <h3>View Layers</h3>
+    <label class="layer-toggle">
+      <input type="checkbox" checked onchange="document.body.classList.toggle('show-territory')">
+      Political Territories
+    </label>
+    <label class="layer-toggle">
+      <input type="checkbox" onchange="document.body.classList.toggle('show-corruption')">
+      Deepborn Corruption
+    </label>
+  </div>
+  
+  <div class="control-group">
+    <h3>Focus Continent</h3>
+    <div class="btn-row">
+      <button class="map-btn" onclick="focusContinent('night-etdler')">Night Etdler</button>
+      <button class="map-btn" onclick="focusContinent('kaeron')">Kaeron</button>
+      <button class="map-btn" onclick="focusContinent('kalvoldra')">Kalvoldra</button>
+    </div>
+  </div>
+</div>
+
+<div id="info-panel">
+  <button class="map-btn" style="align-self: flex-end; margin-bottom: 10px;" onclick="closePanel()">✕</button>
+  <div id="info-content">
+    <div class="info-header">
+      <div class="info-type" id="loc-type">Region</div>
+      <h2 class="info-title" id="loc-title">Select a Location</h2>
+    </div>
+    <div class="info-desc" id="loc-desc">
+      Click on a marker to reveal its history and significance in the annals of Kalmirth.
+    </div>
+    <div class="info-meta" id="loc-meta"></div>
+  </div>
+</div>
+
+<div id="map-viewport">
+  <svg id="world-map" class="world-map-svg" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <filter id="paper-texture">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="5" result="noise" />
+        <feDiffuseLighting in="noise" lighting-color="#fff" surfaceScale="2">
+          <feDistantLight azimuth="45" elevation="60" />
+        </feDiffuseLighting>
+        <feComposite operator="in" in2="SourceGraphic" />
+      </filter>
+      
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="3" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+
+    <g id="map-transform">
+      <!-- ─── CONTINENTS ─── -->
+      
+      <!-- Night Etdler -->
+      <path id="night-etdler" class="continent" d="M700,100 C850,80 950,150 1000,300 C1050,450 950,600 850,700 C750,750 600,700 550,550 C500,400 550,150 700,100 Z" />
+      
+      <!-- Kaeron -->
+      <path id="kaeron" class="continent" d="M150,200 C300,150 400,250 450,400 C480,550 400,700 250,750 C100,780 50,600 80,400 C100,250 150,200 Z" />
+      
+      <!-- Kalvoldra -->
+      <path id="kalvoldra" class="continent" d="M200,50 C350,30 500,80 550,150 C580,250 450,350 350,380 C250,400 100,350 80,200 C100,100 150,60 200,50 Z" />
+      
+      <!-- Esterbay -->
+      <path id="esterbay" class="continent" d="M1000,50 C1100,40 1150,100 1180,200 C1200,350 1100,450 1000,480 C900,500 850,400 880,250 C900,100 950,60 1000,50 Z" />
+
+      <!-- ─── LAYERS ─── -->
+      
+      <!-- Territories -->
+      <g class="territory">
+        <circle cx="850" cy="350" r="150" fill="var(--elven)" /> <!-- Elven Heart -->
+        <circle cx="750" cy="550" r="100" fill="var(--human)" /> <!-- Nordell Area -->
+        <path d="M200,600 Q300,700 400,600" stroke="var(--hunter)" stroke-width="40" fill="none" opacity="0.5" /> <!-- Syronnia Patrol -->
+      </g>
+
+      <!-- Night Etdler Features -->
+      <g id="night-etdler-features">
+        <path id="blue-river" class="river-path" d="M650,250 Q750,400 850,550 T950,700" />
+        <circle cx="900" cy="200" r="60" class="biolume" fill="#0044ff" /> <!-- Gyorellya Glow -->
+      </g>
+
+      <!-- Corruption -->
+      <g class="corruption">
+        <path class="deepborn-crack" d="M800,400 L820,420 L810,450 L840,470 L830,500" />
+        <path class="deepborn-crack" d="M700,300 L720,280 L750,290 L770,260" />
+      </g>
+
+      <!-- ─── MARKERS ─── -->
+      
+      <!-- Night Etdler Markers -->
+      <g class="marker" onclick="showInfo('blue-river-village')">
+        <circle cx="720" cy="380" r="5" />
+        <text y="395" x="720">Blue River Village</text>
+      </g>
+      
+      <g class="marker" onclick="showInfo('nordell')">
+        <circle cx="820" cy="580" r="7" />
+        <text y="595" x="820">Nordell</text>
+      </g>
+
+      <g class="marker" onclick="showInfo('whitemarble')">
+        <circle cx="850" cy="180" r="6" />
+        <text y="195" x="850">Whitemarble</text>
+      </g>
+
+      <g class="marker" onclick="showInfo('euthoria')">
+        <circle cx="950" cy="650" r="6" />
+        <text y="665" x="950">Euthoria</text>
+      </g>
+
+      <g class="marker" onclick="showInfo('black-leaf-hq')">
+        <circle cx="880" cy="550" r="5" fill="#f00" />
+        <text y="540" x="880">Black Leaf HQ</text>
+      </g>
+
+      <!-- Kaeron Markers -->
+      <g class="marker" onclick="showInfo('kaeron-city')">
+        <circle cx="250" cy="650" r="8" fill="#333" />
+        <text y="675" x="250">Great Black City</text>
+      </g>
+
+      <g class="marker" onclick="showInfo('syronnia')">
+        <circle cx="250" cy="730" r="5" fill="#555" />
+        <text y="750" x="250">Syronnia</text>
+      </g>
+
+      <!-- Kalvoldra Markers -->
+      <g class="marker" onclick="showInfo('white-city')">
+        <circle cx="350" cy="150" r="7" fill="#fff" />
+        <text y="170" x="350">The White City</text>
+      </g>
+
+    </g>
+  </svg>
+
+  <div class="zoom-btns">
+    <button class="zoom-btn" onclick="zoom(1.2)">+</button>
+    <button class="zoom-btn" onclick="zoom(0.8)">−</button>
+    <button class="zoom-btn" onclick="resetZoom()">⟲</button>
+  </div>
+</div>
+
+<script>
+const LOCATIONS = {
+  'blue-river-village': {
+    title: 'Blue River Village',
+    type: 'Settlement',
+    desc: 'An independent mixed community settled by the voice of the River Goddess. Known for its four-story library and the annual "Ode to River Goddess" choral festival.',
+    meta: '<span class="meta-tag" style="background:var(--elven)">Safe Haven</span>'
+  },
+  'nordell': {
+    title: 'Kingdom of Nordell',
+    type: 'Imperial City',
+    desc: 'The apex of human power in Night Etdler. A massive circular fortress city divided into three districts: Jhessail Castle, the Upper District (Goldencrest), and the Lower District.',
+    meta: '<span class="meta-tag" style="background:var(--human)">Human Power</span>'
+  },
+  'whitemarble': {
+    title: 'Whitemarble',
+    type: 'Academic City',
+    desc: 'The intellectual heart of the North, situated near the White River. Built entirely of marble, it houses the Lorcon Magi School and the Haynes Library.',
+    meta: '<span class="meta-tag" style="background:var(--human)">Scholarly</span>'
+  },
+  'euthoria': {
+    title: 'Euthoria',
+    type: 'Artistic Capital',
+    desc: 'A modern, visually progressive city where mages are noble citizens. Famous for its red-brick architecture and the Lingkar Magi Euthoria.',
+    meta: '<span class="meta-tag" style="background:var(--elven)">Mage Friendly</span>'
+  },
+  'black-leaf-hq': {
+    title: 'Black Leaf HQ (Night Etdler)',
+    type: 'Fortress',
+    desc: 'The former operational center of the Mage Hunters. Site of Fran\'s prisoner liberation. Now a fractured ruin following the Alliance victory.',
+    meta: '<span class="meta-tag" style="background:var(--hunter)">Hunter Base</span>'
+  },
+  'kaeron-city': {
+    title: 'The Great Black City',
+    type: 'Metropolis',
+    desc: 'The cultural and military capital of Kaeron. The institutional heart of the Black Leaf organization and the birthplace of human military doctrine.',
+    meta: '<span class="meta-tag" style="background:var(--hunter)">Main HQ</span>'
+  },
+  'syronnia': {
+    title: 'Syronnia',
+    type: 'Neglected Territory',
+    desc: 'A poor, rugged region at the southern tip of Kaeron. A land of bandits and survivors, and the birthplace of Nathaniel and Zachariel Alysdair.',
+    meta: '<span class="meta-tag" style="background:#555">Bandit Lands</span>'
+  },
+  'white-city': {
+    title: 'The White City',
+    type: 'Technological Hub',
+    desc: 'The capital of the Kalvoldra High Kingdom. A marvel of magical engineering where ancient technology and modern scholarship converge.',
+    meta: '<span class="meta-tag" style="background:var(--gold)">Apex Hub</span>'
+  }
+};
+
+const mapTransform = document.getElementById('map-transform');
+const infoPanel = document.getElementById('info-panel');
+let currentScale = 1;
+let currentX = 0;
+let currentY = 0;
+
+// Pan logic
+let isDragging = false;
+let startX, startY;
+
+const viewport = document.getElementById('map-viewport');
+viewport.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  isDragging = true;
+  startX = e.clientX - currentX;
+  startY = e.clientY - currentY;
+});
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  currentX = e.clientX - startX;
+  currentY = e.clientY - startY;
+  updateTransform();
+});
+
+window.addEventListener('mouseup', () => isDragging = false);
+
+function zoom(factor) {
+  currentScale *= factor;
+  updateTransform();
+}
+
+function resetZoom() {
+  currentScale = 1;
+  currentX = 0;
+  currentY = 0;
+  updateTransform();
+}
+
+function updateTransform() {
+  mapTransform.setAttribute('transform', `translate(${currentX}, ${currentY}) scale(${currentScale})`);
+}
+
+function showInfo(id) {
+  const data = LOCATIONS[id];
+  if (!data) return;
+  
+  document.getElementById('loc-type').textContent = data.type;
+  document.getElementById('loc-title').textContent = data.title;
+  document.getElementById('loc-desc').textContent = data.desc;
+  document.getElementById('loc-meta').innerHTML = data.meta;
+  
+  infoPanel.classList.add('visible');
+}
+
+function closePanel() {
+  infoPanel.classList.remove('visible');
+}
+
+function focusContinent(id) {
+  const targets = {
+    'night-etdler': { x: -400, y: -100, s: 1.5 },
+    'kaeron': { x: 200, y: -200, s: 1.8 },
+    'kalvoldra': { x: 300, y: 100, s: 2 }
+  };
+  
+  const t = targets[id];
+  if (t) {
+    currentX = t.x;
+    currentY = t.y;
+    currentScale = t.s;
+    updateTransform();
+  }
+}
+
+// Initial positioning
+updateTransform();
+</script>
+
+</body>
+</html>

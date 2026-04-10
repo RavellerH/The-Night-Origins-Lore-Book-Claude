@@ -1,0 +1,2280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Night Origins — The Blue River Village</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  :root {
+    --silver: #d6e4f0;
+    --silver-dim: #7a9ab0;
+    --silver-glow: #b8d4e8;
+    --gold: #C89B3C;
+    --gold-dim: #8a6928;
+    --bg: #04060c;
+    --card: #080c14;
+    --text: #ccdae8;
+    --text-dim: #6a8a9a;
+    --border: rgba(180,220,240,0.15);
+    --border-gold: rgba(200,155,60,0.3);
+    --glow-color: rgba(180,220,255,0.18);
+    --warmth: 1;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* BACKGROUND DEPTH */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 20% 30%, rgba(40, 80, 120, 0.08) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(120, 80, 40, 0.05) 0%, transparent 50%),
+      url('../../back.jpeg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.12;
+    z-index: -1;
+    filter: blur(2px);
+  }
+
+  /* NAV */
+  nav {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 30px;
+    border-bottom:1px solid var(--border);
+    background:rgba(4,6,12,0.9);
+    backdrop-filter: blur(10px);
+    flex-shrink:0;
+    z-index:100;
+  }
+  nav a {
+    font-family:'Cinzel',serif;
+    font-size:11px;
+    letter-spacing:0.2em;
+    color:var(--text-dim);
+    text-decoration:none;
+    text-transform:uppercase;
+    transition:all 0.3s;
+    cursor:pointer;
+  }
+  nav a:hover { color:var(--gold); text-shadow: 0 0 10px rgba(200,155,60,0.4); }
+  .nav-title {
+    font-family:'Cinzel',serif;
+    font-size:14px;
+    letter-spacing:0.3em;
+    color:var(--gold);
+    text-transform:uppercase;
+    text-shadow: 0 0 15px rgba(200,155,60,0.2);
+  }
+
+  /* CHAPTER SELECT */
+  #chapter-select {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    overflow:hidden;
+    background: #020408;
+    position: relative;
+  }
+  
+  #chapter-select::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 50%, rgba(200,155,60,0.08) 0%, transparent 70%);
+    animation: bgGlow 10s ease-in-out infinite;
+    pointer-events: none;
+  }
+  
+  @keyframes bgGlow {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  #chapter-select h1 {
+    font-family:'Cinzel',serif;
+    font-size:32px;
+    letter-spacing:0.6em;
+    color:var(--silver);
+    text-transform:uppercase;
+    margin-bottom:12px;
+    z-index: 10;
+    text-shadow: 0 0 30px rgba(180,220,255,0.3);
+  }
+  
+  #chapter-select .series-label {
+    font-family:'Cinzel',serif;
+    font-size:11px;
+    color:var(--gold-dim);
+    letter-spacing:0.4em;
+    text-transform: uppercase;
+    margin-bottom:60px;
+    z-index: 10;
+    opacity: 0.8;
+  }
+  
+  .carousel-container {
+    position: relative;
+    width: 100%;
+    height: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    perspective: 2000px;
+  }
+
+  .chapter-grid {
+    display:flex;
+    gap:40px;
+    width:100%;
+    height: 100%;
+    overflow-x:auto;
+    padding:0;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    align-items: center;
+    cursor: grab;
+    scroll-behavior: smooth;
+  }
+  .chapter-grid::-webkit-scrollbar { display: none; }
+
+  /* Buffer for scroll snapping to center */
+  .chapter-grid::before, .chapter-grid::after {
+    content: '';
+    flex: 0 0 calc(50vw - 170px);
+  }
+
+  .chapter-card {
+    flex: 0 0 340px;
+    height: 460px;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    border: 1px solid rgba(200,155,60,0.1);
+    background: #080c14;
+    padding: 45px 35px;
+    cursor: pointer;
+    transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    opacity: 0.2;
+    transform: scale(0.75) rotateY(35deg);
+    filter: blur(4px) grayscale(1);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+    margin: 0;
+    z-index: 1;
+  }
+  
+  .chapter-card.active {
+    opacity: 1;
+    transform: scale(1.1) rotateY(0deg);
+    filter: blur(0) grayscale(0);
+    border-color: var(--gold);
+    box-shadow: 
+      0 0 100px rgba(200,155,60,0.1),
+      0 40px 80px rgba(0,0,0,0.9);
+    z-index: 10;
+    background: #0c121c;
+  }
+
+  /* Neighbors */
+  .chapter-card.prev-1 { transform: scale(0.9) rotateY(20deg); opacity: 0.6; filter: blur(1px) grayscale(0.5); z-index: 5; }
+  .chapter-card.next-1 { transform: scale(0.9) rotateY(-20deg); opacity: 0.6; filter: blur(1px) grayscale(0.5); z-index: 5; }
+
+  .chapter-card .bg-num {
+    position: absolute;
+    top: -20px;
+    right: -10px;
+    font-family: 'Cinzel', serif;
+    font-size: 180px;
+    font-weight: 700;
+    color: rgba(200,155,60,0.03);
+    line-height: 1;
+    z-index: 0;
+    pointer-events: none;
+    transition: all 0.8s;
+  }
+  
+  .chapter-card.active .bg-num {
+    color: rgba(200,155,60,0.08);
+    transform: translateY(10px);
+  }
+
+  .carousel-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 60px;
+    height: 60px;
+    border: 1px solid rgba(200,155,60,0.2);
+    background: transparent;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    font-size: 24px;
+    transition: all 0.4s;
+    border-radius: 50%;
+  }
+  .carousel-nav:hover {
+    background: var(--gold);
+    color: #000;
+    box-shadow: 0 0 30px rgba(200,155,60,0.4);
+    transform: translateY(-50%) scale(1.1);
+  }
+  .carousel-nav.left { left: 60px; }
+  .carousel-nav.right { right: 60px; }
+
+  /* INDEX COUNTER */
+  .carousel-counter {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .carousel-counter .current { font-size: 24px; color: var(--silver); }
+  .carousel-counter .divider { width: 40px; height: 1px; background: var(--border-gold); }
+
+  .chapter-card::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background: linear-gradient(to top, rgba(2,4,8,1) 0%, transparent 70%);
+    pointer-events:none;
+    z-index: 1;
+  }
+  
+  .chapter-num {
+    font-family:'Cinzel',serif;
+    font-size:11px;
+    letter-spacing:0.5em;
+    color:var(--gold);
+    text-transform:uppercase;
+    margin-bottom:10px;
+    z-index: 2;
+  }
+  .chapter-title {
+    font-family:'Cinzel',serif;
+    font-size:22px;
+    letter-spacing:0.2em;
+    color:var(--silver);
+    text-transform:uppercase;
+    margin-bottom:15px;
+    z-index: 2;
+  }
+  .chapter-pov-label {
+    font-family:'Crimson Pro',serif;
+    font-style:italic;
+    font-size:14px;
+    color:var(--text-dim);
+    margin-bottom:20px;
+    letter-spacing:0.12em;
+    z-index: 2;
+  }
+  .chapter-tagline {
+    font-family:'Crimson Pro',serif;
+    font-style:italic;
+    font-size:15px;
+    color:var(--silver-dim);
+    line-height:1.7;
+    z-index: 2;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.6s 0.3s;
+  }
+  .chapter-card.active .chapter-tagline {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .chapter-card:hover:not(.active) {
+    border-color:rgba(180,220,240,0.4);
+    background:rgba(12,18,28,0.7);
+    opacity: 0.7;
+  }
+
+  /* CHAPTER TITLE CARD */
+  #chapter-card {
+    display:none;
+    position:absolute;
+    inset:0;
+    background:var(--bg);
+    z-index:80;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:40px;
+  }
+  #chapter-card.active { display:flex; }
+  .chapter-card-num {
+    font-family:'Cinzel',serif;
+    font-size:11px;
+    letter-spacing:0.35em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    margin-bottom:12px;
+  }
+  .chapter-card-title {
+    font-family:'Cinzel',serif;
+    font-size:22px;
+    letter-spacing:0.2em;
+    color:var(--silver);
+    text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .chapter-card-pov {
+    font-family:'Crimson Pro',serif;
+    font-style:italic;
+    font-size:13px;
+    color:var(--text-dim);
+    letter-spacing:0.15em;
+    margin-bottom:24px;
+  }
+  .chapter-card-quote {
+    font-family:'Crimson Pro',serif;
+    font-style:italic;
+    font-size:16px;
+    color:var(--silver-dim);
+    max-width:480px;
+    line-height:1.7;
+    margin-bottom:32px;
+  }
+
+  /* SCENE CONTAINER */
+  #scene-container {
+    display:none;
+    flex:1;
+    position:relative;
+    overflow:hidden;
+    flex-direction:column;
+  }
+  #scene-container.active { display:flex; }
+
+  /* SCENE BACKGROUND */
+  #scene-bg {
+    position:absolute;
+    inset:0;
+    background-size:cover;
+    background-position:center;
+    transition:opacity 0.4s ease;
+  }
+  #scene-bg::after {
+    content:'';
+    position:absolute;
+    inset:0;
+    background:
+      linear-gradient(180deg, rgba(4,6,12,0.5) 0%, transparent 30%, transparent 55%, rgba(4,6,12,0.82) 100%),
+      linear-gradient(90deg, rgba(4,6,12,0.35) 0%, transparent 20%, transparent 80%, rgba(4,6,12,0.35) 100%);
+    pointer-events:none;
+  }
+
+  /* GLOW LAYER */
+  #glow-layer {
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:2;
+    animation:glowPulse 6s ease-in-out infinite;
+    background:radial-gradient(ellipse at 50% 40%, var(--glow-color) 0%, transparent 60%);
+  }
+  @keyframes glowPulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+  /* MOTES */
+  .mote {
+    position:absolute;
+    border-radius:50%;
+    pointer-events:none;
+    z-index:3;
+    animation:moteFloat linear infinite;
+  }
+  @keyframes moteFloat {
+    0%   { transform:translateY(0) translateX(0) scale(1); opacity:0; }
+    10%  { opacity:1; }
+    90%  { opacity:0.8; }
+    100% { transform:translateY(-80px) translateX(var(--drift,10px)) scale(0.3); opacity:0; }
+  }
+
+  /* POV INDICATOR */
+  #pov-indicator {
+    position:absolute;
+    top:12px;
+    right:16px;
+    z-index:20;
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.3em;
+    text-transform:uppercase;
+    padding:4px 8px;
+    border:1px solid var(--border);
+    background:rgba(4,6,12,0.8);
+    opacity:0;
+    transition:opacity 0.6s;
+  }
+  #pov-indicator.visible { opacity:1; }
+  #pov-indicator.pov-avery { color:#9abdd0; border-color:rgba(120,180,220,0.3); }
+  #pov-indicator.pov-nathaniel { color:#c4a060; border-color:rgba(180,140,60,0.3); }
+  #pov-indicator.pov-world { color:#8aaa8a; border-color:rgba(120,160,120,0.25); }
+  #pov-indicator.pov-assault { color:#a06060; border-color:rgba(160,80,80,0.3); }
+
+  /* LOCATION HEADER */
+  #location-header {
+    position:absolute;
+    top:14px;
+    left:18px;
+    z-index:20;
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.28em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+
+  /* NARRATIVE AREA */
+  #narrative-area {
+    position:absolute;
+    bottom:70px;
+    left:0;
+    right:0;
+    z-index:10;
+    padding:0 28px;
+    pointer-events:none;
+  }
+  #scene-desc {
+    font-family:'Crimson Pro',serif;
+    font-style:italic;
+    font-size:16px;
+    line-height:1.75;
+    color:var(--text);
+    text-align:center;
+    max-width:700px;
+    margin:0 auto;
+    text-shadow: 0 1px 12px rgba(4,6,12,0.95);
+  }
+
+  /* NAV ROW */
+  #nav-row {
+    position:absolute;
+    bottom:18px;
+    right:24px;
+    z-index:20;
+    display:flex;
+    gap:12px;
+  }
+  .nav-btn {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    padding:8px 20px;
+    border:1px solid var(--border);
+    background:rgba(4,6,12,0.85);
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .nav-btn:hover:not(:disabled) { border-color:rgba(180,220,240,0.5); color:var(--silver); }
+  .nav-btn:disabled { opacity:0.3; cursor:default; }
+  .nav-btn.primary { color:var(--silver); border-color:rgba(180,220,240,0.35); }
+  .nav-btn.primary:hover { background:rgba(180,220,255,0.08); }
+
+  /* PROGRESS DOTS */
+  #progress-dots {
+    position:absolute;
+    bottom:8px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:20;
+    display:flex;
+    gap:6px;
+  }
+  .progress-dot {
+    width:4px; height:4px;
+    border-radius:50%;
+    background:var(--text-dim);
+    opacity:0.3;
+    transition:opacity 0.3s, background 0.3s;
+  }
+  .progress-dot.active { opacity:1; background:var(--silver); }
+  .progress-dot.visited { opacity:0.6; }
+
+  /* SPOT MARKERS */
+  .spot-marker {
+    position:absolute;
+    z-index:15;
+    cursor:pointer;
+  }
+  .spot-dot {
+    width:8px; height:8px;
+    border-radius:50%;
+    background:rgba(180,220,255,0.7);
+    box-shadow:0 0 8px rgba(180,220,255,0.5);
+    animation:spotPulse 2.5s ease-in-out infinite;
+    transition:all 0.2s;
+  }
+  .spot-dot.read {
+    background:rgba(180,220,255,0.25);
+    box-shadow:none;
+    animation:none;
+  }
+  @keyframes spotPulse { 0%,100%{transform:scale(1);opacity:0.8} 50%{transform:scale(1.4);opacity:1} }
+  .spot-label {
+    position:absolute;
+    left:14px;
+    top:-1px;
+    font-family:'Cinzel',serif;
+    font-size:8px;
+    letter-spacing:0.2em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    white-space:nowrap;
+    pointer-events:none;
+    opacity:0.7;
+  }
+  .spot-marker:hover .spot-dot { box-shadow:0 0 14px rgba(180,220,255,0.8); }
+  .spot-marker:hover .spot-label { opacity:1; color:var(--silver); }
+
+  /* SPOT PANEL */
+  #spot-panel {
+    position:absolute;
+    inset:0;
+    z-index:50;
+    background:rgba(4,6,12,0.95);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:36px 32px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s;
+  }
+  #spot-panel.open { opacity:1; pointer-events:all; }
+  .spot-panel-title {
+    font-family:'Cinzel',serif;
+    font-size:12px;
+    letter-spacing:0.3em;
+    color:var(--silver);
+    text-transform:uppercase;
+    margin-bottom:20px;
+  }
+  .spot-panel-text {
+    font-family:'Crimson Pro',serif;
+    font-style:italic;
+    font-size:16px;
+    line-height:1.8;
+    color:var(--text);
+    max-width:580px;
+    text-align:center;
+    white-space:pre-line;
+  }
+  .spot-close {
+    margin-top:28px;
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    padding:8px 20px;
+    border:1px solid var(--border);
+    background:transparent;
+    color:var(--text-dim);
+    cursor:pointer;
+    transition:all 0.2s;
+  }
+  .spot-close:hover { color:var(--silver); border-color:rgba(180,220,240,0.4); }
+
+  /* FINAL SCREEN */
+  #final-screen {
+    display:none;
+    position:absolute;
+    inset:0;
+    z-index:70;
+    background:rgba(4,6,12,0.97);
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:40px;
+  }
+  #final-screen.active { display:flex; }
+  .final-text {
+    font-family:'Crimson Pro',serif;
+    font-style:italic;
+    font-size:16px;
+    line-height:1.8;
+    color:var(--text);
+    max-width:560px;
+    margin-bottom:12px;
+    animation:fadeUp 0.8s ease both;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+  .final-divider {
+    width:60px;
+    height:1px;
+    background:var(--border);
+    margin:16px auto;
+  }
+  .final-note {
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.3em;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    margin-bottom:28px;
+  }
+
+  /* TRANSITION OVERLAY */
+  #transition-overlay {
+    position:absolute;
+    inset:0;
+    background:#020408;
+    z-index:90;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.45s;
+  }
+  #transition-overlay.fade-in { opacity:1; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="../index.html">← All Games</a>
+  <span class="nav-title">Night Origins</span>
+  <a id="nav-chapters" onclick="returnToChapters()" style="cursor:pointer">Chapters ↑</a>
+</nav>
+
+<!-- CHAPTER SELECT -->
+<div id="chapter-select"></div>
+
+<!-- CHAPTER TITLE CARD (overlay) -->
+<div id="chapter-card">
+  <div class="chapter-card-num" id="cc-num"></div>
+  <div class="chapter-card-title" id="cc-title"></div>
+  <div class="chapter-card-pov" id="cc-pov"></div>
+  <div class="chapter-card-quote" id="cc-quote"></div>
+  <button class="nav-btn primary" id="cc-begin" onclick="beginChapterFromCard()">Begin →</button>
+</div>
+
+<!-- SCENE CONTAINER -->
+<div id="scene-container">
+  <div id="scene-bg"></div>
+  <div id="glow-layer"></div>
+  <div id="location-header"></div>
+  <div id="pov-indicator"></div>
+
+  <div id="narrative-area">
+    <div id="scene-desc"></div>
+  </div>
+
+  <div id="nav-row">
+    <button class="nav-btn" id="btn-back" onclick="goBack()" disabled>← Back</button>
+    <button class="nav-btn primary" id="btn-forward" onclick="goForward()">Continue →</button>
+  </div>
+
+  <div id="progress-dots"></div>
+
+  <div id="spot-panel">
+    <div class="spot-panel-title" id="spot-title"></div>
+    <div class="spot-panel-text" id="spot-text"></div>
+    <button class="spot-close" onclick="closeSpot()">← Walk on</button>
+  </div>
+
+  <div id="final-screen">
+    <p class="final-text">I run south. The crystal from the river is still in my pocket. I take it out and hold it while I walk.</p>
+    <p class="final-text" style="font-size:15px;animation-delay:0.5s">It is warm. That is wrong — everything I made tonight was cold. This one has been warm since the river, since the morning, since before anything happened. I hold it and I walk south into Vleyrra. The trees close behind me. I don't look back.</p>
+    <div class="final-divider"></div>
+    <div class="final-note">Avery Blue Alysdair · Vleyrra Forest · two days south of everything she knew</div>
+    <a href="../vleyrra/index.html" class="nav-btn primary" style="margin-bottom:8px;text-decoration:none;display:inline-block">→ Continue in The First Night</a>
+    <button class="nav-btn" onclick="returnToChapters()">← Back to Chapters</button>
+  </div>
+
+  <div id="transition-overlay"></div>
+</div>
+
+<script>
+// ── SAVE ──────────────────────────────────────────────────────────────────────
+const SAVE_KEY = 'kalmirth_games';
+function getSave() {
+  try {
+    const d = JSON.parse(localStorage.getItem(SAVE_KEY)) || {};
+    if (!d.night_origins) d.night_origins = { spotsRead: [] };
+    return d;
+  } catch(e) { return { night_origins: { spotsRead: [] } }; }
+}
+function markSpotRead(id) {
+  const d = getSave();
+  if (!d.night_origins.spotsRead.includes(id)) d.night_origins.spotsRead.push(id);
+  localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+}
+function isSpotRead(id) { return getSave().night_origins.spotsRead.includes(id); }
+
+// ── CHAPTER DATA ──────────────────────────────────────────────────────────────
+const CHAPTERS = [
+  {
+    num: 'Prologue',
+    title: 'Night Etdler',
+    pov: 'world',
+    povLabel: 'The World',
+    povClass: 'pov-world',
+    tagline: 'A continent where trees stretch as far as eyes can see. A river that shines from below. A village that built its walls on peace, and forgot them.',
+    warmth: 0.7,
+    moteColor: 'rgba(140,200,160,0.55)',
+    moteCount: 8,
+    glowColor: 'rgba(120,180,140,0.12)',
+    bg: 'radial-gradient(ellipse at 50% 25%, #071a0e 0%, #030a06 55%, #010403 100%)',
+    scenes: [
+      {
+        id: 'world-trees',
+        location: 'Night Etdler · The Continent',
+        desc: 'Trees stretch from coast to coast across a continent that has never been fully mapped. Beneath the oldest ones, light moves — bioluminescent moss, glowing fruit, creatures that carry their own lanterns. Elves walk the high branches. Imps pick fruit from the low ones. Humans hunt on the ground and tell themselves they understand the arrangement. The world is alive in the way it never fully explains.',
+        bg: 'radial-gradient(ellipse at 50% 20%, #081a0c 0%, #030a06 60%, #010304 100%)',
+        img: 'no-world-trees.jpeg',
+        spots: [
+          { id:'the-great-war', x:'28%', y:'48%', label:'The Great War',
+            title:'What Ended It',
+            text:'The Great War was the last time this world nearly unmade itself. Not one kingdom against another — all of them, at once, and the things beneath them too. It ended with a peace treaty between humans and elves, written in a language older than either of them. The treaty holds. It has held for a long time.\n\nBeneath the roots, something else is still moving. Whatever started in the Great War did not finish. The treaty between humans and elves did not include it. It was simply buried deeper, and given time.' },
+          { id:'the-deepborn', x:'68%', y:'55%', label:'The Deepborn',
+            title:'What Moves in the Dark',
+            text:'No one has given them a name the way you name something you understand. The farmers call them shadows under the ground. The elves have a longer word that translates badly. The children of Blue River Village have been told nothing at all.\n\nThey are old. They were here before the trees. The Great War cracked the seals that had been keeping them contained, and the seals have been cracking since. Slowly. Slowly enough that each generation decides the problem belongs to the next one.\n\nThe problem does not agree.' },
+        ]
+      },
+      {
+        id: 'blue-river',
+        location: 'The Blue River · Night Etdler',
+        desc: 'There is a river where the water shines from below. Not from above — from the creatures living in it, bioluminescent, carrying their own light. People call it the Blue River. Some of them believe the light belongs to a goddess. One man claimed to hear her voice, called by name, offered water from her hands. He gathered others. They built a village at the edge. Peace is not the same as safety.',
+        bg: 'radial-gradient(ellipse at 40% 65%, #041e36 0%, #020c18 50%, #010408 100%)',
+        img: 'no-blue-river.jpeg',
+        spots: [
+          { id:'the-goddess', x:'35%', y:'52%', label:'The Goddess',
+            title:'The Man Who Heard Her',
+            text:'He came alone and stayed for a week at the riverbank. On the third night, he said, the water spoke to him. His name, drawn out long in a voice that blended with the wind. He knelt. She offered water from her palms and promised to watch over him as long as he remained.\n\nHe went back and told twelve people. They followed him. They built.\n\nWhether the goddess exists is a question the village has never agreed on. Whether the river protects them is a question they have stopped asking. The peace has been long. Long enough to become invisible.' },
+          { id:'why-village', x:'65%', y:'45%', label:'Why People Came',
+            title:'What They Were Looking For',
+            text:'Most of them were not from here. Strong warriors, war-leaders from other continents, people who had fought in the old wars and needed somewhere that was not still burning. They found the river. They found the goddess story.\n\nThey wanted to believe something was protecting them. That is not a weakness. That is the oldest thing about people.\n\nThey stayed. They had children. The children had children. By the third generation, no one remembered the wars. By the fifth, the walls were overgrown.' },
+        ]
+      },
+      {
+        id: 'the-village',
+        location: 'Blue River Village · History',
+        desc: 'The village survived the Nordell Empire — the greatest human kingdom on the continent, which had the habit of wanting everything it could see. The battle lasted years. They almost lost. Then the wood elves intervened, and the empire stepped back. Peace. The elves declared the village independent. The village celebrated and stopped watching its walls. Great forces move in the shadow beneath this world. The villagers do not know their names. Not yet.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #0e1620 0%, #060a10 55%, #030508 100%)',
+        img: 'no-village-history.jpeg',
+        spots: [
+          { id:'the-peace', x:'30%', y:'50%', label:'The Peace',
+            title:'What the Peace Cost',
+            text:'The peace with Nordell was everything they had fought for. They got it. The kingdom retreated. The elves guaranteed the village\'s independence. A fair trade at every market. No armies.\n\nThey stopped maintaining the walls because the walls felt like a reminder of fear, and they were done being afraid. They stopped posting watchmen because there was nothing to watch for.\n\nThe village focused on development. Roads. Trades. Schools. A blacksmith good enough that people came from two towns over. A river festival every year at the first full moon after planting.\n\nThey were happy. For a very long time, they were happy.' },
+          { id:'the-ancient-treaty', x:'70%', y:'44%', label:'The Treaty',
+            title:'The Ancient Peace',
+            text:'The ancient peace treaty between humans and elves was written after the Great War. It has no author anyone alive can name. It is older than the village, older than the Nordell Empire, older than most of the trees.\n\nThe elves upheld it when Nordell marched. They upheld it again, quietly, in smaller ways, over the following hundred years. Not because they love humans — they do not, particularly. Because the alternative is the world unmade again, and elves have longer memories.\n\nThe treaty does not mention what grows beneath.' },
+        ]
+      },
+      {
+        id: 'the-girl',
+        location: 'The Blue River · Dawn',
+        desc: 'The day it changes begins like any other day. A girl at the water\'s edge. Long blue hair trailing in the current. Her hand below the surface. She is not playing. She is focused in the way of someone checking whether the world still works the way it did yesterday. She puts her hand in. Waits. Smiles. Does it again.',
+        bg: 'radial-gradient(ellipse at 42% 60%, #051828 0%, #020a14 50%, #010408 100%)',
+        img: 'no-the-girl.jpeg',
+        spots: []
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter I',
+    title: 'The Blue River',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: 'Something forms in her palm. Amber. Warm. She has never told anyone about it before today.',
+    warmth: 1.0,
+    moteColor: 'rgba(120,190,255,0.75)',
+    moteCount: 14,
+    glowColor: 'rgba(100,170,255,0.14)',
+    bg: 'radial-gradient(ellipse at 40% 65%, #041e36 0%, #020c18 50%, #010408 100%)',
+    scenes: [
+      {
+        id: 'avery-alone',
+        location: 'The Blue River · Morning',
+        desc: 'My hand is in the water and I am trying. Not playing, not praying to the goddess — I gave up praying when I was twelve, the goddess has never answered in any language I can verify. This is an experiment. I have a theory I have been testing for three weeks. Today I am proving it. The light from below moves around my fingers. That is not the current. That is me.',
+        bg: 'radial-gradient(ellipse at 38% 68%, #041e36 0%, #020c18 50%, #010408 100%)',
+        img: 'no-avery-alone.jpeg',
+        spots: [
+          { id:'the-elven-book', x:'32%', y:'50%', label:'The Elven Book',
+            title:'What Professor Milos Found',
+            text:'Professor Milos brought it to class wrapped in cloth, the way you carry something borrowed from someone who doesn\'t know you have it. An elven text — practical alchemy, he said. The kind elves use in daily life, not ceremony. He let us copy the first three chapters.\n\nI copied all of it. Both sides of every page.\n\nHe never said anything. Or he knew, and decided it was mine to keep.\n\nMost of the class read it once and put it away. I read it until the binding softened. I tried the bread experiment from chapter seven. I tried the waterproofing paste from chapter two. I tried several things that didn\'t work and two that worked in ways the book didn\'t predict.\n\nThe crystal isn\'t in the book. The crystal is mine.' },
+          { id:'the-river-feel', x:'67%', y:'58%', label:'The River',
+            title:'What I Feel When I Touch It',
+            text:'The Blue River is cold above the surface and warm below it, which the book says is because of the bioluminescent fish and the depth of the channel. That is true. That is also not what I mean.\n\nWhat I mean is: when my hand goes below the surface, there is a pull. Like something recognizing me. Like the light has been waiting.\n\nI have told no one this. It sounds like the goddess story, which is the kind of thing Callen would tease me about for weeks. But the pull is real. And three weeks ago I followed it, and the water gathered, and the crystal formed.\n\nI don\'t know what i am. I have a theory. I am still proving it.' },
+        ]
+      },
+      {
+        id: 'callen-arrives',
+        location: 'The Blue River · Still Morning',
+        desc: 'Callen arrives the way he always does — at full volume, already talking, running the last part to make an entrance out of it. He has been looking for me all day. He finds my being at the river alone suspicious. He asks if I\'m playing with water, and I tell him it\'s an experiment, obviously. He brings up the bread. I keep my face level. We are not engaging with the bread today.',
+        bg: 'radial-gradient(ellipse at 45% 60%, #041e36 0%, #020c18 50%, #010408 100%)',
+        img: 'no-callen-arrives.jpeg',
+        spots: [
+          { id:'the-bread', x:'38%', y:'48%', label:'The Bread Thing',
+            title:'What Actually Happened',
+            text:'The elven bread from chapter seven was supposed to last three months without spoiling. I followed the recipe exactly. Callen ate four slices. He was sick for two days.\n\nIn my defense: the bread did not spoil. The bread was structurally fine. The problem was a secondary reaction I hadn\'t anticipated, which the book\'s third chapter explained in a footnote I had not yet reached.\n\nCallen was the one who got scolded. I was not scolded because Mom took one look at my face and understood that the face was already doing the scolding.\n\nHe brings it up every three weeks or so. Mostly when he wants leverage.\n\nIt\'s been three weeks.' },
+          { id:'the-deal', x:'66%', y:'44%', label:'The Deal',
+            title:'Why I Take It',
+            text:'He offers terms: if he guesses what I\'m doing and gets it right, I owe him something. If he\'s wrong, he apologizes properly — not the Callen version of an apology, the real version.\n\nHe guesses a glowing toad. "No toads," I tell him. He guesses something worse than a toad. I tell him no.\n\nHe is guessing wrong on purpose. He is watching me almost smile while he does it, and the almost-smile is the apology, in his own language.\n\nI know this. I take the deal anyway, because I am going to win it, and because watching him guess wrong is the most comfortable I\'ve felt since I started testing this theory alone.' },
+        ]
+      },
+      {
+        id: 'the-crystal',
+        location: 'The Blue River · The Moment',
+        desc: 'Silence. He actually manages it. I close my eyes, put both hands in the water, and pull — not with my arms but with the part of me that knows the light from below is mine to ask for. Warm. In my palm. I open my eyes. Amber, small, perfectly faceted. The light inside it is the Blue River, compressed. He says "Wow" with no volume at all, which has never happened before in his life. He grabs it immediately. "It\'s warm — how?" I tell him I don\'t know how. I\'ve always been able to. He says: "Dad needs to see this." I say no. Not yet.',
+        bg: 'radial-gradient(ellipse at 42% 55%, #0a2640 0%, #031220 50%, #010608 100%)',
+        img: 'no-the-crystal.jpeg',
+        spots: [
+          { id:'what-making-feels', x:'35%', y:'52%', label:'The Crystal',
+            title:'What Making One Feels Like',
+            text:'It starts as warmth in my palms — the warmth the river always has when I put my hands in, separate from the cold above. Then a tension, like the water becoming aware of me. I pull, and it gathers, and it hardens — not cold the way ice hardens, but crystallizing, organizing around a light that was already there.\n\nThe warmth doesn\'t leave. It stays inside.\n\nThe first time it happened I dropped it. It hit the riverbed and I held my breath, and then the light was still there, still warm, and I reached in and picked it up and sat on the bank for a long time without saying anything.\n\nI don\'t have language for it yet. I am working on language for it.' },
+          { id:'why-not-dad', x:'65%', y:'46%', label:'Why Not Dad',
+            title:'Why She Says Wait',
+            text:'"Dad needs to see this" — I know why Callen says it. Dad stands by the river every week, alone, just watching. Callen thinks he\'s praying. Maybe he is.\n\nBut there is something in the way Dad watches that river that is different from the way other people watch it. Something that looks like he is checking for something specific. Like he knows what he\'s looking for and hasn\'t found it yet.\n\nI don\'t have a name for that feeling. I just know that showing him the crystal is a door, and once a door opens it doesn\'t go back to being a wall.\n\nNot yet. I need to understand what I can do before anyone else decides what it means.' },
+        ]
+      },
+      {
+        id: 'walk-home',
+        location: 'Village Path · Midday',
+        desc: 'He keeps the crystal. I ask for it back. He says "my crystal" with the expression of someone stating a legal fact. Then: "Hey — you\'ve finished the book, huh?" Yeah. "Welcome back, sis. Miss you a lot." He says it the way he says everything that means something — casually, so it has room to be denied. He brings up a boy who asks after me. I punch his shoulder. He laughs. Then I remind him he promised, and he delivers the apology: "I am very much grateful that your experiment today did not cause more problems so that I won\'t be scolded again for today." Bravo. Yeay. He rubs my head. This is love, apparently.',
+        bg: 'radial-gradient(ellipse at 50% 45%, #0e1620 0%, #060a10 55%, #030508 100%)',
+        img: 'no-walk-home.jpeg',
+        spots: [
+          { id:'the-apology', x:'30%', y:'50%', label:'The Apology',
+            title:'The Formal Version',
+            text:'The real apology would be: "I went too far with the bread story. I made you feel small. I\'m sorry."\n\nWhat he delivers instead is a legal document excusing himself from consequences while technically fulfilling the terms of the bet. He clears his throat first. He uses the phrase "oh my dearly little sister." He maintains eye contact throughout with the dignity of a man accepting an award.\n\nI say "bravo, yeay" in a completely flat voice.\n\nHe rubs my head, which I allow because I already got what I came for. He knows I got what I came for. That\'s the agreement we don\'t have to say out loud.' },
+          { id:'uncle-zach', x:'66%', y:'48%', label:'Uncle Zach',
+            title:'Why the Mention Makes Her Walk Faster',
+            text:'Uncle Zachariel visits three or four times a year. He never comes empty-handed — not in the gift sense, but in the story sense. He always arrives mid-anecdote. He always has a theory about something. He always asks me what I\'ve been reading, actually asks, and then actually listens to the answer.\n\nHe told me once that curiosity is the only thing that keeps a person interesting to themselves. I wrote that down.\n\nHe is the only adult who talks to me like the answer is going to surprise him. Most adults already know what they think before they ask. Zachariel doesn\'t. Or he\'s better at pretending.\n\nI have a lot of questions about the elven text. He has been to places with elves. I walk faster.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter II',
+    title: 'The Group at the Oak',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"Nice one, freak. Keep it up." — The word sits there. This is not the first time.',
+    warmth: 0.9,
+    moteColor: 'rgba(180,210,240,0.55)',
+    moteCount: 10,
+    glowColor: 'rgba(140,180,220,0.10)',
+    bg: 'radial-gradient(ellipse at 50% 40%, #0c1520 0%, #060a10 55%, #030508 100%)',
+    scenes: [
+      {
+        id: 'the-oak',
+        location: 'Village Square · The Oak',
+        desc: 'Callen raises the crystal before we\'ve fully arrived. Silas is off the root before Callen finishes lifting it. Jane leans in: "It\'s a crystal!" Kathrine looks at it from a height, without curiosity. "Just a stone." Silas thinks it might be an egg. Jane agrees with the specific enthusiasm of someone who had already hoped for exactly that. Kathrine tells them they are dumbasses. She is probably right about the egg. Then she looks at me.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #0c1520 0%, #060a10 55%, #030508 100%)',
+        img: 'no-the-oak.jpeg',
+        spots: [
+          { id:'silas', x:'60%', y:'42%', label:'Silas',
+            title:'What She Has Noticed',
+            text:'I have noticed Silas the way you notice weather — not because I went looking for it, but because it was there and kept being there. He talks at the right speed. He doesn\'t finish other people\'s sentences. He is the only one in the group who asks things instead of telling them.\n\nI have not said any of this to Callen because Callen would make it into a conversation that would last the rest of the year.\n\nThe fact that he specifically turns to me when he asks where the crystal came from — instead of asking Callen, the way everyone asks Callen — is something I am filing away in the part of my mind marked "not now, think about this later."' },
+          { id:'bram', x:'30%', y:'55%', label:'Bram',
+            title:'The Quiet One',
+            text:'Bram is always slightly apart from the rest of them. Not excluded — apart. Like he chose the angle. He steps back when the crystal comes out. He says "that\'s weird" in a voice that sounds more unsettled than the words.\n\nI don\'t know what to make of him. Most people in a group like this have an obvious purpose — the loud one, the skeptic, the enthusiast. Bram doesn\'t perform anything. He just watches and occasionally says the thing everyone else was thinking but decided not to say.\n\nI find that interesting. I also find it slightly worrying, though I couldn\'t tell you why yet.' },
+        ]
+      },
+      {
+        id: 'freak',
+        location: 'Village Square · After',
+        desc: 'Silas asks where we found it — he turns to me specifically, which is unusual. My face does something embarrassing. Callen says he helped me focus. Silas smiles like he expected that. Then Kathrine turns to me. The expression she keeps for me specifically. Steady. Deliberate. "Oh wow. Nice one, freak. Keep it up. It might be useful someday." I look at the ground. The word sits there. I don\'t have anything to do with it. This is not the first time.',
+        bg: 'radial-gradient(ellipse at 50% 38%, #0a1218 0%, #050810 58%, #020408 100%)',
+        img: 'no-freak.jpeg',
+        spots: [
+          { id:'nice-one-freak', x:'35%', y:'48%', label:'The Word',
+            title:'What She Does With It',
+            text:'Freak is not the worst thing anyone has ever said to me. It\'s not even the worst thing Kathrine has said to me. But it is the one with the longest reach — the kind of word that follows you home and sits on the end of your bed while you\'re trying to sleep.\n\nI don\'t get angry. Anger requires believing the person has the right to matter, and I haven\'t decided about that yet.\n\nWhat I do is: put it somewhere. A shelf in the back of my mind where I keep things I don\'t have a response to. I look at it sometimes. I try to figure out whether she\'s right. I haven\'t decided that yet either.' },
+          { id:'callen-defending', x:'66%', y:'44%', label:'His Defense',
+            title:'Why She Wishes He Wouldn\'t',
+            text:'Callen\'s instinct when Kathrine does this is to argue. He squares up. He says Kate isn\'t that bad, which is technically defending Kathrine while also defending me, which is a thing only Callen could manage.\n\nI wish he wouldn\'t.\n\nNot because he\'s wrong. Because his defending me announces to everyone that the word landed. That I need defending. That the ground is the ground because I put myself there.\n\nI already know the ground. I don\'t need it pointed out.\n\nI am working on this.' },
+        ]
+      },
+      {
+        id: 'kathrine-exit',
+        location: 'Village Square · Leaving',
+        desc: 'Silas, Jane, Bram head for the river. Callen waves them off. Kathrine rises without hurrying — the specific unhurry of someone who has decided not to care. "I guess I\'d better follow them." To Callen: "Bye, Callen." She turns. I say her name — small voice: "Bye, Kate." She stops. Turns halfway. A pause. Then: "Don\'t talk to me." She adds the first word as she walks away. Her footsteps fade. The square is quiet.',
+        bg: 'radial-gradient(ellipse at 50% 38%, #0a1218 0%, #050810 58%, #020408 100%)',
+        img: 'no-kathrine-exit.jpeg',
+        spots: [
+          { id:'she-stopped', x:'40%', y:'46%', label:'She Stopped',
+            title:'What That Means',
+            text:'She stopped.\n\nI said her name and she stopped — before the second word, before the "don\'t talk to me." She stopped, and then she turned, and then she said it.\n\nShe didn\'t have to stop. She could have kept walking and pretended not to hear. That would have been easier and cleaner and she clearly knows how to do that.\n\nThe stop means something. I don\'t know what yet. People don\'t stop unless something makes them stop.\n\nI file it next to "Silas asking me specifically" in the part of my mind marked "not now, think about this later." That shelf is getting crowded.' },
+          { id:'freak-again', x:'68%', y:'52%', label:'Again',
+            title:'Why the Second Time Is Worse',
+            text:'The first time, she was performing for the group. Establishing position. That\'s a thing I understand, even if I don\'t like it.\n\nThe second time, we were alone. Callen was there but he wasn\'t the audience. There was no audience. It was just her, and the word, and me.\n\nThe second time you do something, it\'s on purpose.\n\nI know this. I keep thinking about the stop, about the half-turn. I keep turning it over.\n\nBye, Kate, I said. Small voice.\n\nShe heard it.' },
+        ]
+      },
+      {
+        id: 'i-dont-understand',
+        location: 'Village Path · Walking',
+        desc: 'Callen says Kate isn\'t that bad. He says this from a position of complete ease with the world, which is where he says everything from. I tell him I can\'t even talk to one of them — I\'m too different, I don\'t have what they have, I doubt we\'ll get along. He says to try. I tell him I have. He says try harder. I tell him he is the weirdest of them all. He smiles: "How do you know for sure?" He doesn\'t have an answer. Neither do I. The crystal is in his pocket. The warmth of it crosses the distance between us.',
+        bg: 'radial-gradient(ellipse at 50% 45%, #0c1520 0%, #060a10 55%, #030508 100%)',
+        img: 'no-dont-understand.jpeg',
+        spots: [
+          { id:'what-callen-thinks-easy', x:'42%', y:'48%', label:'Why It\'s Easy for Him',
+            title:'The Gap Between Them',
+            text:'People open for Callen automatically. They turn toward him the way things turn toward warmth. I have watched this my whole life and I don\'t know how to learn it.\n\nHe doesn\'t know he does it. That\'s the gap.\n\nHe genuinely thinks it\'s a question of trying hard enough — that if I say the right words at the right volume, the group will rearrange itself to include me. He thinks he could teach me.\n\nHe can\'t teach me. What he has isn\'t a skill. It\'s a way of moving through the world that assumes the world will move back. I don\'t assume that. I haven\'t assumed that in years.\n\nI love him for not knowing this. I am also very tired of it, sometimes.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter III',
+    title: 'The Brothers',
+    pov: 'nathaniel',
+    povLabel: 'Nathaniel',
+    povClass: 'pov-nathaniel',
+    tagline: '"There\'s no future for us." — He says it looking away. From the path, through the trees: children\'s voices.',
+    warmth: 0.75,
+    moteColor: 'rgba(200,170,100,0.5)',
+    moteCount: 8,
+    glowColor: 'rgba(180,140,60,0.10)',
+    bg: 'radial-gradient(ellipse at 50% 55%, #1a1008 0%, #090608 60%, #030204 100%)',
+    scenes: [
+      {
+        id: 'brothers-laughing',
+        location: 'The House · Outside · Afternoon',
+        desc: 'Zachariel is mid-story and the table is taking a beating. He hits it twice, checks Nathaniel\'s expression, hits it a third time. *BRAK BRAK BRAK.* Nathaniel has his hand over his eyes, shoulders shaking. A woman walking past with a market basket gives them the expression of someone who has accepted this house long ago. Zachariel leans forward, losing the thread entirely: "And then — and then — her ears came out but her head got stuck!! Help! Help! she said—" He stops. Neither of them can speak for a moment.',
+        bg: 'radial-gradient(ellipse at 50% 55%, #1a1008 0%, #090608 60%, #030204 100%)',
+        img: 'no-brothers-laughing.jpeg',
+        spots: [
+          { id:'zachariel-story', x:'60%', y:'44%', label:'Zachariel\'s Story',
+            title:'The One He Was Telling',
+            text:'An elven cartographer. A survey mission in the deep Vleyrra interior. A guide who insisted on taking a shortcut through a hollow tree that turned out to be occupied — not by animals, by a family of three elves who had been using the hollow as a house for eighty years and did not appreciate the interruption.\n\nThe elven cartographer, being an elf herself, tried to apologize in the formal register. The formal register requires ear exposure as a sign of sincerity. Her ears came out. Her head, which was considerably larger than anticipated for the tunnel geometry, did not follow.\n\nThis happened at midday. The survey team waited two hours. The three elves inside eventually helped from their end.\n\nNathaniel has heard this story four times. It gets better every time.' },
+          { id:'the-passing-woman', x:'28%', y:'52%', label:'The Villager',
+            title:'What She\'s Seen',
+            text:'Mira has lived three houses down from the Alysdair family for eleven years. She has watched this man come and go — four, five times a year, never more than a week, always the same entrance: mid-story, at full volume, already making Nathaniel laugh before he\'s through the gate.\n\nShe does not know what Nathaniel does. She does not know what the big one does either. Men who move like that, who laugh like that, who go quiet the way Nathaniel goes quiet when the big one leaves — she has seen men like them before, in the before-times.\n\nShe gives them the basket-expression. She keeps walking. She doesn\'t ask.' },
+        ]
+      },
+      {
+        id: 'the-shift',
+        location: 'The House · Outside · Settling',
+        desc: 'The laughter settles the way it always does between them — slowly, like water going still. Zachariel leans back with the ease of a man who has come a long way to be here. "How about you, bro? Anything good?" Nathaniel looks at the treeline. "Pretty boring, actually. Same stuff every day." Small smile. "My adventures are only with the woman I married now." Zachariel\'s smile drops half a degree. "Damn, bro. You miss all the fun." Then, leaning forward, humor gone: "Your talent is wasted here. We are fighters. The legendary duo." Nathaniel looks at his cup.',
+        bg: 'radial-gradient(ellipse at 50% 50%, #1a1008 0%, #090608 60%, #030204 100%)',
+        img: 'no-the-shift.jpeg',
+        spots: [
+          { id:'the-organization', x:'32%', y:'46%', label:'What They Are',
+            title:'The Organization',
+            text:'The player can infer what is not said.\n\nThey are fighters. The legendary duo. They have an oath. There are others. There is something they are supposed to do — something that Nathaniel has been stationed here to accomplish, away from the rest of them, for eleven years.\n\nThey hunt. They find. They report.\n\nNathaniel looks at the treeline because he can\'t look at Zachariel while he says "boring." He chose this. He chose it with his whole life. He looks at the trees because the trees are the reason he chose it — the village, the river, the woman he married, the two children coming up the path right now, laughing about something.' },
+          { id:'nathaniel-watch', x:'68%', y:'50%', label:'The Watch',
+            title:'Why He Stands by the River',
+            text:'Once a week, Nathaniel goes to the Blue River alone. He stands there for an hour. Sometimes more. He does not fish. He does not pray, exactly. He watches.\n\nCallen thinks he\'s praying. Avery thinks he doubts the goddess.\n\nNeither of them is right. Neither of them is entirely wrong.\n\nHe stands there because he was told something, once, about what he would know when he saw it. He goes every week because it hasn\'t happened yet, and because every week it doesn\'t happen is a week he gets to keep what he has.\n\nEvery week he hopes, with everything in him, that the river is just a river.' },
+        ]
+      },
+      {
+        id: 'no-future',
+        location: 'The House · Outside · Heavy',
+        desc: '"I still don\'t understand why it should be you. Why." Nathaniel, tired in the way of a man who has answered this before: "This task can only be done by someone who trains his brains more than his muscles — and you know there\'s no one better than me." Then: "I have a family here, Zach. Our family. Our future. Outside the organization." Zachariel looks away. "There\'s no future for us." The silence that follows has already said everything. Then, from the path through the trees: children\'s voices. Coming closer.',
+        bg: 'radial-gradient(ellipse at 50% 45%, #140e06 0%, #080608 60%, #030204 100%)',
+        img: 'no-future.jpeg',
+        spots: [
+          { id:'no-future-spot', x:'35%', y:'50%', label:'No Future',
+            title:'What Zachariel Believes',
+            text:'"There\'s no future for us" — he says it with the flatness of a man who has looked clearly at a thing and reported what he saw. Not with grief. With accuracy.\n\nFrom his position: they were born into something that doesn\'t end. The organization takes. The world takes. People like them don\'t retire. They don\'t build houses and watch their children walk up paths laughing. That\'s not how the story goes for people who do what they do.\n\nNathaniel chose to believe otherwise. He chose it with eleven years of ordinary days.\n\nZachariel thinks this is the most beautiful delusion he has ever watched a person build.\n\nHe doesn\'t say that. He says: "There\'s no future for us." He lets it land.' },
+          { id:'children-arriving', x:'68%', y:'46%', label:'Children Arriving',
+            title:'What Nathaniel\'s Face Does',
+            text:'He hears them before Zachariel does. Callen\'s voice, at full volume, already mid-sentence. Avery\'s quieter, underneath.\n\nNathaniel\'s face does not change visibly. What changes is something in the set of it — the specific stillness of a man who has just been reminded of the answer to a question he wasn\'t quite sure how to answer.\n\n*This* is the future. Right there on the path. Coming closer.\n\nHe doesn\'t say that either. He picks up his cup. He waits for the gate to open.\n\nZachariel watches him. He sees it. He says nothing.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter IV',
+    title: 'Home',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"She\'s dangerous." — I have never heard that register in my father\'s voice. Something beneath, not above.',
+    warmth: 0.65,
+    moteColor: 'rgba(210,180,120,0.55)',
+    moteCount: 10,
+    glowColor: 'rgba(200,160,80,0.10)',
+    bg: 'radial-gradient(ellipse at 50% 50%, #1a0e06 0%, #080608 60%, #030204 100%)',
+    scenes: [
+      {
+        id: 'home-arrival',
+        location: 'The House · Arrival',
+        desc: 'They are already laughing when we arrive. The sound comes through the trees before we can see them — Zachariel\'s at full volume, Dad\'s underneath his. I walk past them with a nod because I don\'t know what else to do and the crystal is still something I\'m deciding about. Zachariel calls after me: "Avery! I\'ve been waiting all day — how far are you in the elven text?" I turn back. I have seven questions about the third chapter alone. He forgets he was mid-sentence.',
+        bg: 'radial-gradient(ellipse at 50% 50%, #1a0e06 0%, #080608 60%, #030204 100%)',
+        img: 'no-home-arrival.jpeg',
+        spots: [
+          { id:'zachs-questions', x:'42%', y:'48%', label:'His Questions',
+            title:'Why His Interest Felt Like Love',
+            text:'Every adult in my life has a version of "how are your studies" that means "are you making trouble." Even the teachers. They ask the question but they\'ve already decided what the correct answer looks like.\n\nZachariel asks about the elven text and then waits for the answer in the way of a person who has not already decided what it is. He asks follow-up questions. He argues with me when I\'m wrong, which is the most respectful thing anyone has ever done.\n\nHe told me last time that the elves don\'t actually call their written language a language — they call it a record system, because they believe words are too important to let become casual.\n\nI have been thinking about that for six months.' },
+        ]
+      },
+      {
+        id: 'the-demonstration',
+        location: 'The House · Inside',
+        desc: 'Mom is setting the table. Callen comes through the door like weather. "LOOK!!" She is genuinely surprised — she says it\'s beautiful, she leans in. Then I say it: "Actually, Mom. We didn\'t find it." She and Callen both look at me. I take a glass from the counter. Pour some water into my palm. Close my eyes. The water floats. Gathers. Hardens. I open my hand: a crystal. Clear this time, not amber — counter water has no river light in it. But the same structure. Mine. "See? I made it. Beautiful, isn\'t it?"',
+        bg: 'radial-gradient(ellipse at 50% 45%, #180c06 0%, #080608 60%, #030204 100%)',
+        img: 'no-demonstration.jpeg',
+        spots: [
+          { id:'what-this-feels', x:'38%', y:'48%', label:'Making This One',
+            title:'Without the River',
+            text:'The river crystal was easy. The river has been pulling toward me for years — all I did was answer.\n\nThe counter water has no light in it. No pull. I have to find the pull myself, from inside, reach for something that isn\'t already reaching back.\n\nIt is harder. It takes longer. The water resists in a way the river never has.\n\nBut it comes. Different light — not amber, not the Blue River. Whatever light lives in me when there\'s no river to borrow from. I don\'t know what to call it.\n\nI open my hand. It\'s clear. It\'s mine in a way the amber one wasn\'t entirely.' },
+          { id:'ryllae-face', x:'64%', y:'44%', label:'Mom\'s Face',
+            title:'What I See There',
+            text:'She stares at the crystal in my palm. Not with the joy she had a moment ago — something more careful. Something that looks like recognition.\n\nI don\'t have a name for it. I file it: Mom looks at the crystal the way people look at things they\'ve been half-expecting.\n\nShe doesn\'t say anything for a long moment. Then: "You made this?" Yes. "From water?" Yes.\n\nShe puts down the bowl she was carrying. She looks at me. The expression does something I can\'t fully read.\n\nLater I will understand what I was seeing. Not yet.' },
+        ]
+      },
+      {
+        id: 'the-hammer',
+        location: 'The House · Outside · After',
+        desc: 'I don\'t know they were in the doorway. Callen tells me later — they heard everything, saw everything. Outside: the sound of something heavy on wood, then a sound like two things breaking at once. Then silence. Callen\'s description: Zachariel put the crystal on the table, took the hammer from the toolbox, and hit it once. The hammer\'s iron head split cleanly. The crystal: unscathed. Zachariel holds up the broken iron. His voice, flat: "She\'s dangerous." I am standing in the door. I stay very still.',
+        bg: 'radial-gradient(ellipse at 50% 42%, #140e06 0%, #070508 60%, #030204 100%)',
+        img: 'no-the-hammer.jpeg',
+        spots: [
+          { id:'the-hammer-spot', x:'34%', y:'50%', label:'The Hammer',
+            title:'What I Can\'t Understand',
+            text:'Why test it with a hammer?\n\nIf someone showed you a thing and told you it was beautiful, the next step is not: put it on a table and try to break it.\n\nUnless you already knew what it was.\n\nUnless you already knew what that kind of unbreakable means.\n\nI turn this over and over in the doorway and I can\'t make it sit flat. He knew exactly what tool to reach for. He knew exactly what the test would prove. He has done this before, or something like this before.\n\nZachariel asks questions because he loves learning. That is what I had down for him. He asks because he is gathering information. I am revising that.' },
+          { id:'their-eyes', x:'66%', y:'44%', label:'Their Eyes',
+            title:'The Look Between Them',
+            text:'After Zachariel says "she\'s dangerous," Nathaniel and Zachariel look at each other.\n\nIt takes about one second.\n\nIn that second: a whole conversation happens in a language I don\'t know. I can see the shape of it but not the words. They know each other in a way that doesn\'t need talking. The look is not surprise — neither of them is surprised. The look is the look of two people who have been waiting for something and one of them has just confirmed it has arrived.\n\nI am standing in the doorway. I stay still. I try to understand what I just witnessed. I cannot.\n\nThis is the moment I start to be afraid, though I wouldn\'t say it that way.' },
+        ]
+      },
+      {
+        id: 'shes-our-family',
+        location: 'The House · Outside · Confrontation',
+        desc: '"She is *not* dangerous." Dad\'s hands on Zachariel\'s jacket. Both hands. Pulled close. "I won\'t let you report this. She\'s our family — she\'s *my daughter.*" "That\'s not the oath we took!" He doesn\'t release. "I *won\'t let you take my daughter.*" That register in his voice — beneath, not raised. Something that does not ask. Then Ryllae in the doorway: "Is there any problem here?" Silence. Dad releases. Zachariel rearranges his face in seconds — "everything\'s fine, hahaha, what brothers do—" Mom looks at both of them. "Come in. The kids are hungry." She goes inside. I follow her. The word \'dangerous\' goes under the table.',
+        bg: 'radial-gradient(ellipse at 50% 38%, #120a04 0%, #060408 60%, #030204 100%)',
+        img: 'no-confrontation.jpeg',
+        spots: [
+          { id:'dangerous-word', x:'34%', y:'46%', label:'Dangerous',
+            title:'What She Does With That Word',
+            text:'I hold the word "dangerous" at arm\'s length. Like something still hot.\n\nI don\'t look at it directly because looking directly means deciding what it means, and I am not ready to decide what it means. If I decide, I have to do something with the decision.\n\nWhat I do instead is file it. Carefully. In the place I keep things that I can\'t look at yet — with the hammer, with Mom\'s face, with the look between the brothers, with the register in Dad\'s voice I\'ve never heard before.\n\nThe shelf is very full now.\n\nLater. I will think about all of this later.\n\nAt dinner I laugh at Zachariel\'s story. The warmth of the table is real. Both things are true at once.' },
+          { id:'dads-voice', x:'66%', y:'52%', label:'Dad\'s Voice',
+            title:'That Register',
+            text:'Dad is not a loud person. He is the kind of quiet that takes up more space than shouting. But his voice, when he says "I won\'t let you take my daughter" — it is something I don\'t have a word for.\n\nNot loud. The opposite of loud, somehow. Compressed.\n\nThe word that comes closest: *certain.* Not angry. Not afraid. Certain the way the ground is certain — not because it\'s decided to be, but because it simply is.\n\nI have heard my father be kind, be careful, be patient. I have never heard him sound like something that will not move.\n\nThat sound is the most frightening thing that happened today. More than the hammer. More than the word.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter V',
+    title: 'The Night Before',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"Come bring another story if you want more." — The last warm evening. Everything still whole.',
+    warmth: 0.95,
+    moteColor: 'rgba(220,170,80,0.45)',
+    moteCount: 14,
+    glowColor: 'rgba(196,165,90,0.10)',
+    bg: 'radial-gradient(ellipse at 50% 40%, #1a100a 0%, #0c0806 60%, #050403 100%)',
+    scenes: [
+      {
+        id: 'family-dinner',
+        location: 'The House · Evening',
+        desc: 'Zachariel came with stories, as always. He ate too much and talked too loud and Ryllae scolded Callen for spilling his water across the table. Entirely ordinary. The kind of evening that only means something later.',
+        bg: 'radial-gradient(ellipse at 50% 60%, #1c1006 0%, #0c0806 55%, #050403 100%)',
+        img: 'no-family-dinner.jpeg',
+        spots: [
+          { id:'zachariel-elf-story', x:'52%', y:'38%', label:'Zachariel\'s Story',
+            title:'The One We Had Been Waiting For',
+            text:'He announced he had a new elf story and Callen nearly knocked over his cup again.\n\nZachariel\'s elf stories always follow the same shape: someone sensible makes a reasonable decision, and then an elf arrives and the reasonable decision becomes the worst possible choice through no fault of anyone except the general dignity of elf logistics. The humor is involuntary. The elf never knows they\'re funny.\n\nI\'ve heard twelve of them. They get better each time because he adds details.\n\nHe looked at me before he started: "I\'m sure you two gonna love this." He was watching for my reaction before the story even happened. He always does that. I\'ve never asked him why.' },
+          { id:'the-academic-guild', x:'30%', y:'58%', label:'The Academic Guild',
+            title:'What I Said Out Loud for the First Time',
+            text:'Callen slammed his glass on the table and declared he would join the hunter\'s guild and become the greatest hunter in the history of the village. Water went everywhere. Ryllae made him clean it himself.\n\nThen Zachariel looked at me.\n\nI stood up a little straighter. "I will join the academic guild. I want to learn all the secrets of the world."\n\nCallen made a face. Library, dust, boring.\n\n"No," I said. "We won\'t just stay in the library. We\'ll wander through the forest. Do experiments." I was looking somewhere past the wall when I said it, toward the idea of it. "And maybe one day I will finally meet with the elves."\n\nMom went quiet. Zachariel smiled. Callen blew a raspberry.\n\nI was seventeen days from learning I wouldn\'t need to join any guild at all.' },
+          { id:'about-the-elves', x:'66%', y:'52%', label:'What Mom Said',
+            title:'Why She Warned Me',
+            text:'"Elves are not friendly creatures, Avery. You should know that."\n\nShe said it gently, which is how she says things she means.\n\n"But maybe I\'ll meet a friendly one," I said. "Like the elf who visits this village sometimes. He\'s a good one, right?"\n\nMom: "He never smiles or says more than two words. He comes and goes as he pleases. They only care about the river and the forest."\n\nZachariel leaned in, voice low, like he was going to tell me a secret: "Your mom might be right. Elves were not friendly creatures. But—" He paused for effect. "—a ridiculous and funny ones, hahaha."\n\nI laughed before I meant to.\n\nShe was warning me about something real. I filed it in the same place I file everything real: behind the warmth of the table, behind the sound of Callen laughing, behind the light.' },
+        ]
+      },
+      {
+        id: 'crystal-at-the-door',
+        location: 'The House · Night',
+        desc: 'He was leaving. The dark outside the door was complete and quiet. I had something in my pocket I had made from water and light, which seemed like the right thing for a person who collected stories.',
+        bg: 'radial-gradient(ellipse at 50% 20%, #0e0c16 0%, #06060e 50%, #030308 100%)',
+        img: 'no-crystal-door.jpeg',
+        spots: [
+          { id:'what-he-doesnt-say', x:'48%', y:'42%', label:'What He Doesn\'t Say',
+            title:'The Thing I Didn\'t Understand Yet',
+            text:'He already knew.\n\nThat is not something I understood, standing on the porch in the dark with a glowing amber crystal in my palm. I had made it from the river, the way I always do — warmth pulled up through water, held until it organized itself into something solid and particular. I had never given one away before.\n\nHe took it like it was ordinary. He said he\'d keep it safe with all his heart. He knelt and kissed my forehead.\n\nHe already knew what I was. He had known since the hammer. He stood in our doorway and accepted the crystal from my hands and said goodbye and in the morning he was going to report me to his organization.\n\nThe night felt fine. I went back to bed.' },
+          { id:'callens-complaint', x:'64%', y:'62%', label:'Callen\'s Complaint',
+            title:'You Promised to Teach Me to Hunt',
+            text:'"Why are you in such a rush? I thought you would stay here for a few days. You promised to teach me to hunt, uncle. And it\'s been a year. A promise is a promise."\n\nCallen said this with real grievance, which is different from his performed grievance. His performed grievance has a specific quality of enjoying itself. His real grievance is quieter.\n\nZachariel rubbed his head: "Soon. I hope. Hahaha. Goodbye for now, child. Take care of your family."\n\nCallen looked at me after Zachariel left. I shrugged. He shrugged. We went back inside.\n\nHe never did teach Callen to hunt.' },
+        ]
+      },
+      {
+        id: 'brothers-argument',
+        location: 'Outside the House · Night',
+        desc: 'I was almost asleep when I heard their voices through the wall. Not the words — the shape of the words. One voice and then the other. My name, once. A long silence. I lay still and waited for sleep, which I am very good at choosing to believe is coming.',
+        bg: 'radial-gradient(ellipse at 30% 30%, #0a0a12 0%, #050508 50%, #020204 100%)',
+        img: 'no-brothers-night.jpeg',
+        spots: [
+          { id:'what-she-heard', x:'42%', y:'44%', label:'What I Heard',
+            title:'The Shape of It',
+            text:'Nathaniel\'s voice. Zachariel\'s voice. My name, once.\n\nI got out of bed and stood by the wall. I could hear the shape of it — low, then sharp, then a silence that lasted long enough that I started to think it was over. Then Zachariel\'s voice again, quieter.\n\nI could not make out the words. The walls in our house are old but they are thick.\n\nI went back to bed and told myself it was something to do with the organization — the word "organization" was one I\'d heard before without context — and that it would be fine. This is the specific kind of not-thinking I am very good at. I practice it regularly. I am, at this point, an expert.' },
+          { id:'black-tree-oath', x:'68%', y:'55%', label:'The Oath',
+            title:'The One I Didn\'t Know About',
+            text:'I learned about the Black Tree Oath much later, from Nathaniel, in pieces, over several conversations he clearly did not want to have.\n\nThe Oath was the thing that held Zachariel to the organization long after he should have left. Sworn under a black tree that no longer exists, in a language that most members could not read, with terms that did not fully resolve until Nathaniel explained them to me in the Vleyrra forest with the specific expression of a man recounting something he wished he could forget.\n\nZachariel believed in it absolutely. That was the thing about Zachariel. He was not a cruel person. He was a faithful one. The difference only matters in the outcome.\n\nNathaniel told me: "I\'ll wait for you in the morning, brother. I believe you would uphold the oath." He said it and walked away and Nathaniel stood outside in the dark and said nothing.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter VI',
+    title: 'The Search',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"That is precisely the problem." — A child\'s room, searched by someone afraid of what they might find.',
+    warmth: 0.45,
+    moteColor: 'rgba(200,150,80,0.35)',
+    moteCount: 7,
+    glowColor: 'rgba(160,110,50,0.07)',
+    bg: 'radial-gradient(ellipse at 50% 50%, #14080a 0%, #070508 60%, #030204 100%)',
+    scenes: [
+      {
+        id: 'nathaniel-storms-in',
+        location: 'The House · Avery\'s Room',
+        desc: 'I come home to my room wrong. The desk drawer is open. The stack of papers on the left side of the shelf has been moved — not put back, moved. The elven text is not where I left it.\n\nFrom down the hall: my father\'s voice. A register I have never heard. *"WHERE IS THAT BOOK? WHERE IS IT??"* Mom under his, firmer. *"Don\'t raise your voice at me."* Dad: *"She shouldn\'t be reading that book. She shouldn\'t learn all of this. Especially a child like her."* Mom: *"She\'s not a child anymore. She\'s very mature, you know."* Dad: *"That is precisely the problem."*\n\nThe elven text is sitting on my bed. He found it. He left it. I stand in the doorway for a long time without going in.',
+        bg: 'radial-gradient(ellipse at 50% 50%, #14080a 0%, #070508 60%, #030204 100%)',
+        img: 'no-nathaniel-storms.jpeg',
+        spots: [
+          { id:'the-book-search', x:'36%', y:'46%', label:'The Book',
+            title:'What He Was Afraid Of',
+            text:'The elven text is not the problem. The elven text is a book with a cover and pages that can be closed and put back on a shelf.\n\nThe problem is that I read it. That I asked questions about what I read. That I have seven questions about the third chapter and five of them are good ones.\n\nHe isn\'t afraid of the book. He\'s afraid of the door it opened.\n\nThe book can be taken away. The door, once open, does not become a wall again.' },
+          { id:'a-child-like-her', x:'64%', y:'52%', label:'A Child Like Her',
+            title:'What She Does With That',
+            text:'He didn\'t say: a dangerous child. A troublesome child. A child who makes problems.\n\nHe said: *a child like her.*\n\nI have been a child like her my whole life and no one has said it aloud before. Something specific to me, to whatever I am, that makes it different — that makes the same book in my hands more dangerous than the same book in anyone else\'s hands.\n\nI put it on the shelf where it belongs. I do not look at the drawer he left open. I don\'t know what to do with this yet so I put it in the same place I put the word dangerous.\n\nThe shelf is very full.' },
+        ]
+      },
+      {
+        id: 'avery-crying',
+        location: 'The House · Mom\'s Room',
+        desc: 'I find Mom in her room and I sit on the floor beside her chair and I don\'t plan to say anything.\n\n*"Why am I always like this, Mom? I don\'t want to be like this. Why."* She puts down what she was holding. Waits. *"I don\'t know. I just — sometimes I feel like I\'m the problem. Why do I always cause trouble, Mom?"* She reaches down and touches my hair. *"You don\'t cause trouble. You are exactly who you are meant to be."*\n\nShe doesn\'t say everything is fine. She says I am exactly who I am meant to be. I sit on the floor and turn those two things over next to each other for a long time.',
+        bg: 'radial-gradient(ellipse at 50% 45%, #120608 0%, #060408 60%, #030204 100%)',
+        img: 'no-avery-crying.jpeg',
+        spots: [
+          { id:'what-she-almost-says', x:'40%', y:'48%', label:'What She Almost Says',
+            title:'The Sentence She Stops',
+            text:'The sentence forms and I don\'t say it: *I wish I were normal.*\n\nI stop it because I\'m not sure I mean it. I stop it because if I say it out loud and I do mean it, then something changes — a small door closes in me that I have not decided to close yet.\n\nNormal is: not the river. Not the pull. Not the amber crystal in my pocket right now, still warm. Not the question in the third chapter of the elven text that I already know the answer to and haven\'t written down yet because I\'m still checking it against three other sources.\n\nI don\'t say it. I\'m not sure I\'m glad. But I don\'t say it.' },
+          { id:'ryllae-answer', x:'60%', y:'44%', label:'Mom\'s Answer',
+            title:'The Difference',
+            text:'She didn\'t say: everything will be fine. She didn\'t say: you\'re not causing trouble. She didn\'t fix it or close it or hand it back smaller than it is.\n\nShe said: *You are exactly who you are meant to be.*\n\nI turn that over. Exactly means there\'s a version that was meant, a specific one. It means I am it. It means my father saying *a child like her* in the register that means danger is not the whole of what I am — it\'s one person\'s reading of a thing that is, in itself, exact.\n\nThis doesn\'t fix anything. But it is something to hold while the other things are sharp.' },
+        ]
+      },
+      {
+        id: 'the-school-bag',
+        location: 'The House · Avery\'s Room',
+        desc: 'I go back to my room. Someone put the pink bag on the bed.\n\nIt was under the bed. It has been under the bed for four years — the small one with the tower stitched on the front, the one from the school trip when I was eight. Under the bed because it is a child\'s bag and I am not eight.\n\nDad searched this room. He opened every drawer, moved every paper, took the elven text from the shelf. At the end of all that, he reached under the bed and found a pink bag from when I was eight.\n\nI pick it up. I put it back under the bed. I don\'t know what he was looking for. I don\'t know if it matters that this is what he found instead.',
+        bg: 'radial-gradient(ellipse at 50% 42%, #100608 0%, #060408 60%, #030204 100%)',
+        img: 'no-school-bag.jpeg',
+        spots: [
+          { id:'the-pink-bag', x:'44%', y:'50%', label:'The Pink Bag',
+            title:'What He Found',
+            text:'He came into this room expecting one thing. He was afraid of one thing. And at the end of the search, in the place under the bed where a dangerous person might hide something dangerous, he found a school bag with a tower on it from when his daughter was eight years old.\n\nI know this because he put it on the bed. He didn\'t put it back under. He put it somewhere he could see it, or somewhere he couldn\'t stop looking at it, and then he left.\n\nRyllae says he didn\'t say anything after. He set it down and walked out.\n\nI don\'t know if the pink bag made him less afraid or if it made him more afraid in a different way. I don\'t know which I\'m hoping for.' },
+        ]
+      },
+      {
+        id: 'morning-walk',
+        location: 'The Village · Path to School',
+        desc: 'Callen falls into step beside me at the gate.\n\n*"Swear to the River Goddess you won\'t say anything to anyone."* He stops walking. *"I swear to the River Goddess."* I stop too. *"That\'s exactly how you swear, you have to say it right."* He takes a breath: *"I swear by the River Goddess that I will not say anything to anyone about what has happened."* *"Or else?"* He thinks about it. *"Or else she will curse me."* *"And."* A pause. *"...And I will be forced to run naked across the village square during the Blue River Festival."*\n\nI walk faster. It is difficult not to be fine.',
+        bg: 'radial-gradient(ellipse at 50% 35%, #0c0e12 0%, #060810 60%, #030406 100%)',
+        img: 'no-morning-walk-school.jpeg',
+        spots: [
+          { id:'the-goddess-oath', x:'42%', y:'46%', label:'The Oath',
+            title:'What She Needed From It',
+            text:'I invented the terms. I needed to hear them said out loud.\n\nNot the promise — the words. The specific, particular, deliberately excessive words. Callen saying *I will be forced to run naked across the village square* in the voice of someone making a formal legal agreement.\n\nThe absurdity is the relief. It is very hard to be afraid of the same things you were afraid of last night when someone is agreeing to ritual public nudity as a consequence of breaking your confidence.\n\nI will remember this walk. Not the night before.\n\nI\'m choosing to remember this walk.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter VII',
+    title: 'Festival Day',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: 'Professor Milos started the sentence and forgot where it was going. Kathrine finished it for him.',
+    warmth: 0.72,
+    moteColor: 'rgba(160,200,240,0.45)',
+    moteCount: 9,
+    glowColor: 'rgba(120,160,220,0.10)',
+    bg: 'radial-gradient(ellipse at 50% 30%, #08101c 0%, #060810 60%, #030408 100%)',
+    scenes: [
+      {
+        id: 'chief-kain',
+        location: 'Chief Kain\'s House · Morning',
+        desc: 'My father went to Chief Kain\'s house.\n\nI know this because Callen and I saw it happen. Nathaniel — pale face, dark circles, the look he gets when he hasn\'t slept — pointing at the chief. Shouting in front of the whole street: *"I warned you!! We are in great danger!! Call our alliance at once!! Wake up defenses and prepare for battle!!"*\n\nChief Kain threw him out. That\'s the word for it. *"Prepare for battle? On this day? Really? You dare come to my house — insult me — then order me like this?? GO HOME. YOU ARE EMBARRASSING YOURSELF IN FRONT OF YOUR CHILDREN."*\n\nCallen and I were the children. Villagers stopped to watch.\n\nKathrine appeared from somewhere in the crowd. She looked at me the way she looks at things that are useful. *"Hey, Freak. What have you done to him? He came in the middle of the night like a crazy person. Did you poison him or anything? Pretty sick, doing that to your own dad."*\n\nI ran. She called after me: *"Yeah. Just run away. You freak."*\n\nCallen stayed.',
+        bg: 'radial-gradient(ellipse at 50% 30%, #080e18 0%, #050810 60%, #030408 100%)',
+        img: 'no-chief-kain.jpeg',
+        spots: [
+          { id:'chief-kain-spot', x:'36%', y:'46%', label:'Chief Kain',
+            title:'The Village Watched',
+            text:'I have been trying to work out what my father knows that the chief doesn\'t.\n\nHe said: we are in great danger. He said: there is no time to play around. He said: call the alliance, wake defenses, prepare for battle — on the morning of the festival, in front of Chief Kain\'s house, in front of the villagers who live on that street.\n\nChief Kain said: go home and get some sleep. He spread his hands in the air and laughed and said *tonight surely going to be a long night for all of us*.\n\nOne of them is wrong. I have not been able to stop thinking about which one.' },
+          { id:'callen-stayed', x:'64%', y:'52%', label:'Callen Stayed',
+            title:'What He Knew',
+            text:'Kathrine said something to Callen after I ran. Callen patted her shoulder — the guilty gesture, the one he uses when something is his fault and he can\'t explain it.\n\nShe asked what happened. He said: *it\'s complicated, Kate.* She said she\'d find out soon enough. He said: *not this time.*\n\nI only know this because he told me later. I had already turned the corner.\n\nI keep thinking about the fact that Callen knew what it was about and chose not to tell her. Callen tells Kathrine everything. He has told Kathrine everything since we were eight.\n\nNot this time.' },
+        ]
+      },
+      {
+        id: 'professor-milos',
+        location: 'Blue River School · Classroom',
+        desc: 'Professor Milos asks who can tell him what day it is. The class shouts: *THE FESTIVAL DAY.* He laughs with his tired reading-too-long eyes and says yes, and also Wednesday, and tonight also the River Goddess Festival, and today\'s subject is the history of the goddess.\n\nKathrine stood up from her seat. Pointed at me. *"Again, professor? Really? Every goddamn year? We are seniors. We have heard this story so many times."*\n\nMilos asked her to explain it then, since she knew it so well. She wouldn\'t. Instead — still pointing at me — *"Why don\'t we just ask her? She came from the river, in the middle of the night, so she must know better about the river goddess than any of us. Or maybe… just maybe… she\'s the daughter of the goddess. Who knows? People already treat her like that."*\n\nShe looked around for the laugh. The class didn\'t give her one.\n\nShe folded her arms. *"Oh, yeah. I forgot. She\'s also a mute."*\n\nProfessor Milos looked confused — genuinely, as if this was the wrong conclusion to an argument. *"Whaaaat? Avery can\'t be a goddess. Or even her child. She wishes. But she can\'t be — the goddess is an elven. One of many elf gods and goddesses."* He looked at me with his pretend-sad face. *"So I\'m sorry, Avery. You can\'t be a goddess."*\n\nThen he pointed at himself. Elbows up. Eyes wide. *"But that\'s okay. I\'m also not a goddess. And I also can\'t be a goddess."* A pause. *"And neither can any of you."*\n\nThe class fell apart. I held my mouth closed with both hands.',
+        bg: 'radial-gradient(ellipse at 50% 32%, #0a1018 0%, #060810 60%, #030408 100%)',
+        img: 'no-professor-milos.jpeg',
+        spots: [
+          { id:'professor-milos-spot', x:'34%', y:'44%', label:'Professor Milos',
+            title:'The Only Room',
+            text:'His class is the one room where I forget to track myself.\n\nIn every other room I know where my hands are. I know how I\'m sitting and whether it looks correct. I know who is looking at me and from where. I know how long I\'ve been quiet.\n\nIn his class I\'m taking notes. I\'m three questions behind because I keep adding to the first one. He says something and I write down a reference and look up and he\'s on a completely different point and I\'ve missed the bridge.\n\nI don\'t miss it in the way that bothers me. I miss it in the way that means I was somewhere else, somewhere that was more important than whatever expression I should have been managing.\n\nI hadn\'t named this until just now.' },
+          { id:'the-goddess-belief', x:'64%', y:'50%', label:'The Goddess Story',
+            title:'What She Actually Thinks',
+            text:'Kathrine called me the daughter of the goddess, which was meant as a taunt, which worked on approximately the level she intended, which means: partially.\n\nBecause: I put my hand in the Blue River and something answers. Not the current. Not temperature. Something specific, something that comes toward my palm from below and stays there while I hold still.\n\nMilos said I can\'t be the goddess\'s daughter because the goddess is an elf. He said this with his pretend-sad face and I had to press my hands over my mouth to not laugh, which is a problem because it meant I agreed with him and was also not a goddess\'s daughter, which — separately, privately — I had been a little unsure about.\n\nI have never told anyone that the river does something when I\'m near it.\n\nI\'ve also never decided whether I believe in the goddess. I\'m not sure those are different questions.' },
+        ]
+      },
+      {
+        id: 'festival-announced',
+        location: 'Blue River School · Classroom',
+        desc: 'Milos talks through the songs, the procession, the offerings. Half the class is already planning. Jane passes me a paper across the table. I look at it: a list. Choral rehearsal at sundown. Three-part positions. Entry timing. The exact pitch note to hit on the opening verse, with a small illustration of the correct mouth shape.\n\n*"Is she always like this?"* Callen, leaning over. *"Since she was seven,"* I say.\n\nJane\'s list is in my hand. I have been dreading this morning since last night. Then I\'m reading the list. The dread doesn\'t leave — but it compresses, makes room for something else to be true at the same time.',
+        bg: 'radial-gradient(ellipse at 50% 35%, #0a1018 0%, #060810 60%, #030408 100%)',
+        img: 'no-festival-announced.jpeg',
+        spots: [
+          { id:'janes-lists', x:'46%', y:'48%', label:'Jane\'s Lists',
+            title:'Anxious and Organized Are Not the Same',
+            text:'I have wanted to understand this since we were nine.\n\nI make lists too. Mine are: things I might have said wrong, ranked. Things I should have said, in the order I remembered them. Things I need to check three times before I can stop checking them.\n\nJane\'s lists are: things to do, in the order they need doing, with the information required to do each one.\n\nSame tool. Different use.\n\nHer list has the correct mouth shape illustrated. This means she looked it up, drew it, and decided the information might be useful to someone else. This is the joy of being Jane — the system is not a defense against the world. It\'s how she engages with it.\n\nI hold the list. I am still dreading the evening. It helps anyway.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter VIII',
+    title: 'The Heist',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"BF! That stands for two things today!" — The distraction worked. The sword did not.',
+    warmth: 0.82,
+    moteColor: 'rgba(220,190,130,0.55)',
+    moteCount: 11,
+    glowColor: 'rgba(200,170,90,0.12)',
+    bg: 'radial-gradient(ellipse at 50% 45%, #141008 0%, #080806 60%, #030403 100%)',
+    scenes: [
+      {
+        id: 'after-school',
+        location: 'Blue River Village · Street Corner',
+        desc: 'Yesterday they heard voices in the wild forest. Mysterious ones — not animals, not wind. They went looking for the source and almost found it before it got too dark. Today they\'re going back.\n\nBram reminds everyone that Bronzefinger scolded them yesterday for being near that stretch of forest. Restricted area. Wild animals. Dangerous. They got lucky he didn\'t report them to their parents.\n\n*"And now we have to pass his house again,"* Bram said. His eyes were wide.\n\nKathrine patted his shoulder. *"Then why don\'t we just take weapons from him? At least one. He\'s our blacksmith. It\'s his responsibility."* She looked at the group. *"We steal it. Who said we would even ask him?"*\n\nCallen volunteered for the distraction. Silas asked who would take the weapon. Kathrine pointed at me.\n\nSilas pushed back — she\'s too new, let me do it. Kathrine held her ground: *"Come on, guys. She\'s the nice girl. No one would suspect her. If she really wants to come with us, then she has to prove it. Prove to us that you\'re one of us — otherwise, just go back to your books."*\n\nCallen whispered to me: *"Aren\'t you curious what those voices are? It could be an elf, right?"*\n\nI said yes.',
+        bg: 'radial-gradient(ellipse at 50% 42%, #141008 0%, #080806 60%, #030403 100%)',
+        img: 'no-after-school.jpeg',
+        spots: [
+          { id:'the-challenge', x:'38%', y:'46%', label:'The Challenge',
+            title:'The Invitation Inside It',
+            text:'Kathrine has never pointed at me and said: *you, do this thing.* Never included me in the space where things are decided.\n\nSilas tried to protect me from it. He said I was too new, that they couldn\'t afford mistakes. He was trying to be kind. Kathrine was not trying to be kind — she was saying: the nice girl, no one would suspect her. She was making me a tool. The invitation was inside the insult.\n\nCallen whispered about elves. Which is not an argument. Which is Callen, knowing exactly which lever to pull.\n\nI said yes. I said it before I finished working out whether this is something I actually wanted or something I wanted because I\'ve been standing outside of it for two years.\n\nThose are different questions. I let them be the same question for now.' },
+        ]
+      },
+      {
+        id: 'the-distraction',
+        location: 'Bronzefinger\'s Forge',
+        desc: 'Callen at the front door: *"Hi, Mr. Bronzefinger! Or maybe it\'s better if I just call you Mr. BF — that stands for Best Friend, I mean, not the other thing, hahaha, kinda creepy tho."*\n\nBronzefinger was still holding his hammer. The others were in the bushes. I was at the table of items, moving quietly.\n\nFirst: a small knife. I held it up toward the bushes. Silas crossed his arms: no. Kathrine frowned: no. Bram was shivering.\n\nSecond: a pan. I held it up. Silas looked confused. Kathrine pressed her palm to her forehead.\n\nThird: the sword. I took it with both hands. Trembling because it was heavy — much heavier than a sword-shaped object has any right to be. I managed to hold it up.\n\nBronzefinger looked behind him. *"HEY!!! HOW DARE YOU!!"*\n\nI panicked. I threw the sword at the table. Everything on the table scattered — prang, trang, trang. Bronzefinger\'s hands went to his face.\n\nI turned to run. I hit the table leg. I went down face-first, full length, into the stone floor.\n\nFrom the bushes: Kathrine\'s laugh. Loud, uncontrollable, absolutely no help.',
+        bg: 'radial-gradient(ellipse at 50% 45%, #160e06 0%, #080608 60%, #030304 100%)',
+        img: 'no-the-distraction.jpeg',
+        spots: [
+          { id:'bf-joke', x:'36%', y:'44%', label:'BF',
+            title:'The Knife, Then the Pan',
+            text:'I want to note, for my own record, that I tried reasonable options first.\n\nThe knife: small, lightweight, easily concealed. The group said no. I believe their concern was that a knife from a blacksmith\'s table is not a weapon in any meaningful sense for navigating a forest.\n\nThe pan: durable, multipurpose, would function as both tool and defense in several scenarios I could name. The group\'s response was Kathrine pressing her palm to her forehead, which I interpreted as no.\n\nThe sword was their implicit preference. I want that acknowledged.\n\nI was correct that it would be too heavy. I was incorrect about my ability to compensate for that on the fly.' },
+          { id:'the-weight-of-it', x:'64%', y:'54%', label:'The Fall',
+            title:'What Kathrine Found Funny',
+            text:'I tripped on the table leg.\n\nNot a mat, not a step, not an unexpected obstacle of any real dignity. The table leg I was standing next to while holding a sword I was trembling under the weight of.\n\nI went down face-first. Full length. The table went with me.\n\nFrom the bushes, from Kathrine specifically: *AH HA AH HAHAHAHA.* The laugh she reserves for things she will remember for years and repeat at the worst possible moments.\n\nI smoothed my hair behind my ears when I stood up. I did not look at anyone.\n\nThen we ran.' },
+        ]
+      },
+      {
+        id: 'jane-saves-them',
+        location: 'Bronzefinger\'s Forge · Exit',
+        desc: 'We were already running.\n\nAll five of us — out the door, past the front, into the street — Bronzefinger behind us with his hammer shouting *YOU KIDS, COME BACK HERE, ARGH.*\n\nJane was outside. She had been outside the whole time. She stepped in front of Bronzefinger and said: *"Mr. Bronze!! My dad says he really needs the tools he requested right now! He said right now, Mr. Bronze!!"*\n\nBronzefinger stopped. We ran.\n\nFrom somewhere behind us — Jane winked at Callen. I didn\'t see it. Callen told me later. He was still laughing.\n\nWe stopped a street over to catch our breath. Kathrine: *"Nice. That\'s our Jane."* Then she glanced at me. *"Too bad we didn\'t get any weapon."*\n\nCallen said: *"Guys."* Cunning smile. He opened his hand. Bronzefinger\'s hammer.\n\n*"Can\'t believe he dropped it just for me,"* Callen said.\n\nSilas made the face he makes when something stupid went right. *"He would be furious right now."*\n\nI laughed. Awkwardly. But actually.',
+        bg: 'radial-gradient(ellipse at 50% 42%, #140e06 0%, #080606 60%, #030304 100%)',
+        img: 'no-jane-saves.jpeg',
+        spots: [
+          { id:'janes-timing', x:'36%', y:'44%', label:'Jane\'s Timing',
+            title:'She Was Outside the Whole Time',
+            text:'Jane was not inside. She was on the street watching from the moment we arrived.\n\nShe saw all of it: the knife, the pan, the sword, the table, the fall, the running. She watched Bronzefinger come to the door with his hammer. She waited until he was in the street. Then she stepped in front of him with her dad\'s tools request, full conviction, exactly as planned.\n\nExcept she\'d planned it alone, on the street, in about thirty seconds, while we were inside not getting a weapon.\n\nMilos says she came from the river right? She must know better about the goddess. I think if the goddess exists and she needed someone to handle a situation with complete calm and no fuss, she would send Jane.\n\nJane winked at Callen as we ran. He\'s still talking about it.' },
+          { id:'callens-hammer', x:'64%', y:'50%', label:'The Dropped Hammer',
+            title:'Bronzefinger Dropped It',
+            text:'During the chaos — table falling, items scattering, Bronzefinger pressing his hands to his face — his hammer hit the floor.\n\nCallen was close enough. He picked it up.\n\nHe didn\'t announce it until we were a street away and Kathrine was already noting that we hadn\'t gotten a weapon. Then: *"Guys."* The cunning smile. The hammer.\n\n*"Can\'t believe he dropped it just for me."*\n\nKathrine gave the hammer to Bram, who had nothing to do with any of this, while Callen and Silas ran ahead laughing. This is the group\'s allocation system.\n\nThe hammer was the answer to the challenge. The challenge was Kathrine\'s. She had already moved on to the next thing.' },
+        ]
+      },
+      {
+        id: 'the-walk',
+        location: 'Forest Path · Toward the Cave',
+        desc: 'The boys ran ahead. Callen gave the hammer to Bram, Bram complained, Silas laughed — and then it was just Kathrine and me, walking. First time.\n\n*"So."* She started it. *"I\'ll be honest. I\'m a bit surprised you would take my challenge. I think I misjudged you a little. Maybe you\'re not as much of a coward as I thought."*\n\nI said I surprised myself too.\n\n*"You know what the funniest part was?"* She pointed at me. *"When you fell face-down to the ground. Your face."* She started laughing. I laughed too — shyly, but actually. She mimicked Bronzefinger holding his cheeks with both hands and I covered my mouth to stop it from turning into something embarrassing.\n\nThe silence after that was almost comfortable.\n\n*"So how long have you been making crystals?"*\n\nI went quiet. She said Callen told her, it wasn\'t really his fault, don\'t blame him. Said she wouldn\'t tell anyone. Then: *"Why don\'t you sell them? Your dad goes to Nordell. The nobles would pay a fortune."*\n\nI said I didn\'t think that was fair.\n\n*"There\'s nothing fair in this world."* A pause. Then: *"Tell me, or I\'ll report you and your crystals to my father. Think about what reason I\'d have to hide it from him."*\n\nI pulled leaves from the bush beside me. Held out my palm.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #0a1208 0%, #060806 60%, #030404 100%)',
+        img: 'no-the-walk.jpeg',
+        spots: [
+          { id:'why-she-asked', x:'36%', y:'46%', label:'Why She Asked',
+            title:'Maybe You\'re Not as Much of a Coward',
+            text:'She said: *I misjudged you a little. Maybe you\'re not as much of a coward as I thought.*\n\nNot: you were brave. Not: I was wrong. *Maybe not as much of a coward.*\n\nThis is a compliment from Kathrine. I recognized it because Callen has been interpreting Kathrine-compliments for me since we were eight and I have developed some fluency.\n\nShe also laughed at the fall. She laughed genuinely — the Kathrine laugh, the loud one she doesn\'t manage. She pointed at me and couldn\'t stop.\n\nWhen two people have survived the same ridiculous thing and one of them laughs and the other one laughs back, something changes. I don\'t have a word for what it is. I noted it and filed it.\n\nI am keeping the filing cabinet open on this one.' },
+          { id:'the-green-crystal', x:'64%', y:'50%', label:'The Green Crystal',
+            title:'What She Didn\'t Know She Could Do',
+            text:'I have made crystals from river water. From counter water, cupped-hand water, rain.\n\nI have never made one from leaves.\n\nI reached for them because she was threatening to report me and I had no water and the leaves were right there. I reached the way you reach for something you\'re not sure is there.\n\nIt was there. Green, quieter than the river — not a pull that comes toward me, something I have to ask. Like something that grew into its own patience and will help if you ask correctly.\n\nThe crystal formed in my palm. Slow, warm. I held it out.\n\nShe took it. She said: *"What were you saying? I didn\'t understand any of that."*\n\nI said: *"Maybe that\'s for the better."*\n\nShe put it in her pocket without looking at it again. I know she looked at it later.' },
+        ]
+      },
+      {
+        id: 'waterfall',
+        location: 'Forest Path · The Waterfall',
+        desc: 'We caught up with the boys at a small waterfall. Callen and Bram were on wooden logs over a mud puddle, playing swords with branches. Callen: *"Come on, attack me! I won\'t hit you first."* Bram, struggling to keep his footing: *"It\'s so slippery here."*\n\nSilas leaned over and whispered something to Bram. I couldn\'t hear it from where I was. Bram glanced at us — at me — and something changed in his face. He attacked.\n\nHe was fast. Callen dodged, surprised. Then Bram\'s feet slipped.\n\nHe went into the mud puddle. Full submersion. He came up with his face set in the expression of a person who has made a decision he immediately regrets.\n\nEveryone laughed. Bram turned and looked at me with a pleading face: please don\'t.\n\nI covered my mouth. I gave him a sweet smile. He looked down, ears red.\n\nKathrine was watching me with an annoying smile. I didn\'t acknowledge her.\n\nSilas helped Bram out with a large branch. *"That settles it — you\'re the one returning the hammer to Bronzefinger."*\n\nCallen: *"Hey, are you sure this is where the voices came from, Silas?"*\n\nSilas pointed at the gap in the rock behind the waterfall. *"Yes. I think there is something behind this waterfall."*\n\nBram said he needed to wash off. Callen said: *"Lead the way then — I\'ll protect you with this twig."* He held up his branch like a sword.\n\nThey walked in. Bram was still cleaning himself in the waterfall as we passed.',
+        bg: 'radial-gradient(ellipse at 50% 35%, #0a1408 0%, #060a06 60%, #030404 100%)',
+        img: 'no-waterfall.jpeg',
+        spots: [
+          { id:'bram-mud', x:'50%', y:'52%', label:'Bram in the Mud',
+            title:'What She Did With Her Face',
+            text:'Silas told him I was looking at him. That\'s what he whispered. Bram looked at me with his pleading eyes from the mud, hoping I hadn\'t seen, or that I\'d pretend I hadn\'t.\n\nI gave him a sweet smile. I am not entirely sure why. I think it was the correct response. I think it was also the response most likely to make the situation worse for him, which was not my intention, but Kathrine\'s knowing smile suggested she disagreed with that last part.\n\nI filed the entire thing under: *think about later.* The filing cabinet is getting full.\n\nBram still had to find the hammer. He didn\'t find it. Silas told him to forget it. Then Silas pointed at the waterfall and everything else stopped mattering.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter IX',
+    title: "Into the Cave",
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: 'An ancient puzzle the elves could not solve in the Great War. Five children on a festival afternoon. The test was never about the sacrifice.',
+    warmth: 0.55,
+    moteColor: 'rgba(160,110,220,0.65)',
+    moteCount: 12,
+    glowColor: 'rgba(140,90,200,0.12)',
+    bg: 'radial-gradient(ellipse at 50% 30%, #0e0820 0%, #060410 50%, #020208 100%)',
+    scenes: [
+      {
+        id: 'the-approach',
+        location: 'Forest · The Waterfall',
+        desc: 'Silas said: *"I think there is something behind this waterfall."*\n\nHe said it with his pointed-at-the-thing face — not asking, already decided. The gap in the rock behind the curtain of water was dark. Kathrine held the torch. Bram was still dripping mud onto the path.\n\nCallen: *"I didn\'t hear anything."*\n\nSilas: *"Believe me — yesterday there were voices here. Maybe we were a little too late."*\n\nCallen considered this. *"Alright. Lead the way then. I promise I will protect you with this twig."* He lifted the branch.\n\nKathrine looked at the gap. At the darkness behind the water. *"This place really would be terrible at night."* A pause. *"Luckily we came here today."\n\nFrom behind us, Bram: *"Um guys, I lost it. I lost Mr. Bronzefinger\'s hammer. Oh my."*\n\n*"Forget it,"* Silas said.\n\nHe was already walking toward the gap.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #0a1208 0%, #060806 60%, #030404 100%)',
+        img: 'no-festival-night.jpeg',
+        spots: [
+          { id:'voices-yesterday', x:'38%', y:'48%', label:'The Voices',
+            title:'What Silas Heard',
+            text:'He came here yesterday. He heard something — not animals, not wind. Something that sounded like it came from behind the waterfall. He tried to investigate but it was getting dark and they had to go back.\n\nToday: five of us, still afternoon, Silas already walking.\n\nI have been near this waterfall before. I have put my hand in and something answers — not the current, not the temperature. Something specific, that comes toward my palm.\n\nI did not say this. It was not the right moment. There were also several other moments today that were not the right moment, and I let all of them pass, and now we are going into whatever is behind a waterfall because Silas said *believe me.*\n\nI believe him. That\'s the problem I\'ll think about later.' },
+          { id:'the-book-cave', x:'66%', y:'44%', label:'The Book',
+            title:'What Avery Already Knew',
+            text:'Chapter eleven. Between a section on water-finding and a section on seasonal migration patterns: Mythanar\'s Cave. The guardian spirit. An ancient elven proving ground.\n\nThe puzzle was designed before the Great War. The guardian spirit was sealed inside an amulet when the keeper lost the war. The test has never been solved — the elves who tried it during the Great War all failed.\n\nI have a theory about why they failed. The text doesn\'t say, but the shape of the puzzle explains itself if you read the description carefully.\n\nI had the book. I did not say any of this. I wanted to see what they would find on their own.\n\nThis was the correct decision, as it turned out. What they found was a mannequin in a pirate hat.' },
+        ]
+      },
+      {
+        id: 'waterfall-entry',
+        location: 'South Ridge · The Waterfall',
+        desc: 'The path ends at sound before it ends at sight. Water over rock, constant and loud enough to cover the festival behind us. The waterfall is taller than the book said. The entrance is behind the curtain of it — a gap, just wide enough, where the rock goes dark. Kathrine lights the torch without being asked. Callen looks at the entrance. He looks at me.\n\n"After you," he said. "You have the book."\n\nThat was true. That was also not the reason.',
+        bg: 'radial-gradient(ellipse at 50% 30%, #080e14 0%, #040810 55%, #020408 100%)',
+        img: 'no-waterfall-entry.jpeg',
+        spots: [
+          { id:'what-the-book-said', x:'40%', y:'44%', label:'What the Book Said',
+            title:'The Waterfall as a Door',
+            text:'The book says the waterfall is a threshold marker. Not decoration — function. In elven construction, water was used as a seal: the cave mouth needed something living in front of it, something that moved and changed and could not be forged or copied.\n\nThe water doesn\'t protect the cave from people. It marks the cave for people who know to look for it.\n\nWe found it in two hours using a library book.\n\nEither we are very good at this or the threshold marker has been doing less work than intended for some time. Possibly both.' },
+          { id:'kathrine-with-torch', x:'64%', y:'52%', label:'Kathrine\'s Torch',
+            title:'Who Lit It',
+            text:'Kathrine lit the torch before anyone asked. Before anyone looked at her.\n\nThe rest of us were looking at the waterfall or at each other. She had already determined that someone needed a torch and that she was going to be the one to carry it, and she had done that without making it a statement.\n\nThis is one of the things I have been slowly adjusting my assessment of.\n\nKathrine occupies space loudly. That\'s what I noticed first. What I\'m noticing now is that the loud space-occupying is on top of something quieter — someone who does what needs doing before the conversation catches up to it.\n\nThose are different things. I\'ve been conflating them.' },
+        ]
+      },
+      {
+        id: 'elven-buildings',
+        location: "Mythanar's Cave · The Entry Chamber",
+        desc: 'Not a cave.\n\nA cave with walls that have been dressed — cut smooth, fitted, carved with a precision that rock doesn\'t do by accident. A second floor above us: wooden beams intact, a partial ceiling, a room up there with light-colored walls still holding. Stairs cut into the far side of the rock, still standing after however long this has been here.\n\nKathrine holds the torch higher. The light reaches the upper level.\n\n"It\'s a building," Bram said.\n\nYes. Inside a mountain. An elven building, inside a mountain, half a mile from the village where I was born.',
+        bg: 'radial-gradient(ellipse at 45% 35%, #080e18 0%, #040a12 55%, #02040e 100%)',
+        img: 'no-elven-buildings.jpeg',
+        spots: [
+          { id:'the-carvings', x:'36%', y:'46%', label:'The Carvings',
+            title:'From Professor Milos\'s Class',
+            text:'Pictographic sequence on the east wall, running floor to upper level: a group of figures approaching water, a figure entering water, a light ascending.\n\nI know this sequence. Professor Milos showed us a drawing of it in Ancient Civilizations, second term. He called it the "crossing motif" — one of the most common recurring images in pre-war elven construction. Not religious, he said. Documentary. The elves recorded what they did.\n\nThey built this place. Then they recorded that they built it, on the walls of it, for whoever came later.\n\nWhoever came later is me, apparently. With a torch and four people who don\'t read elven.\n\nProfessor Milos would have strong feelings about this.' },
+          { id:'not-a-cave', x:'66%', y:'38%', label:'The Second Floor',
+            title:'How Old Is This',
+            text:'Bram touches one of the wooden beams on the staircase. It holds. He presses harder. It holds.\n\n"This shouldn\'t be intact," he said.\n\nHe\'s right. Wood at this age, in this moisture level, should be gone. The fact that it isn\'t means either the wood was treated with something or the cave conditions are more stable than they look or something else is happening that I can\'t explain from the entry chamber.\n\nI have three hypotheses. I shelve all three because Callen is already halfway up the stairs and asking what the rooms are.\n\nThe hypotheses can wait. He cannot.' },
+          { id:'white-hand', x:'50%', y:'62%', label:'The Box',
+            title:'What She Almost Said',
+            text:'As I passed the rows of boxes near the entrance, one of them closed.\n\nNot wind. Not settling. A white hand — pale, thin-fingered — pulling the lid down from inside, and then still.\n\nI stopped. I was going to say something. I turned toward the others to say something.\n\nThen I saw the carvings on the far wall — the sequence from Milos\'s class — and the words went out of me. I walked toward the carvings instead.\n\nI told myself I\'d come back to the box. I did not come back to the box.\n\nI have thought about this several times since.' },
+        ]
+      },
+      {
+        id: 'the-exploration',
+        location: "Mythanar's Cave · Upper Rooms",
+        desc: 'We split without discussing it. Avery and Kathrine to the study room — shelves of books in elven, a writing desk with an unfinished letter still on it. Bram along the walls admiring the elven architecture, touching the wood. Silas opening wooden boxes with great enthusiasm and finding nothing in them.\n\nCallen went through a door at the far end of the passage. He came back out wearing a pirate hat and holding a rusty pirate sword.\n\n*"Hey guys, look what I found."*\n\nKathrine looked at him. At the hat. At the sword. Something happened in her face that I have never seen happen in Kathrine\'s face before.\n\n*"Oh!"* She pointed at Callen. *"I know what this place is!"*\n\nSilas stared at her.\n\n*"This is a pirate cave!"* She was excited. Actually excited. *"You know what that means, right?"*\n\nCallen: *"There\'s an armory back there. Unfortunately, everything is pretty rusty."*\n\n*"TREASURE!"* Kathrine shouted.',
+        bg: 'radial-gradient(ellipse at 55% 40%, #080c16 0%, #040a12 55%, #02040e 100%)',
+        img: 'no-cave-exploration.jpeg',
+        spots: [
+          { id:'pirate-cave', x:'62%', y:'54%', label:'Pirate Cave',
+            title:'Kathrine\'s Theory',
+            text:'Kathrine was excited. Genuinely, visibly excited, in a way that she is not usually either of those things.\n\nThe armory through the far door: mannequins in pirate captain uniforms, broad hats, open-front coats. All facing the same direction. Callen already wearing the hat.\n\nSilas: *"Huh?"* (Weird face at Kathrine.)\n\nKathrine: *"You know what that means, right? TREASURE."*\n\nShe was wrong about it being a pirate cave. She would later defend her position at length — *"pirates could have used this cave, obviously the elves built it, but the pirates could have been here after"* — and she was technically not completely wrong about that. There was a word for what the pirate theory was: incorrect but in the right direction.\n\nI did not say this at the time. I was still reading the unfinished letter.' },
+          { id:'avery-reads', x:'36%', y:'42%', label:'The Study',
+            title:'What the Unfinished Letter Says',
+            text:'The letter on the desk is in elven. My elven is functional at best — I can read signage and basic documentation. This is neither.\n\nKathrine, reading over my shoulder: "Can you get any of it?"\n\n"The first line. It says: *to the one who comes after*."\n\nKathrine was quiet.\n\n"It\'s written to us," I said. "Or to whoever found this. It\'s a letter to a future person."\n\nI could not read the rest of it. The handwriting shifts in the second paragraph — more urgent, less careful. I could recognize the shapes of words without knowing what they meant.\n\nThe last line is different from the rest. Larger. Clearer. Like it was written last but meant to be seen first.\n\nI copied it down. I didn\'t know what it said yet.\n\nI still don\'t.' },
+        ]
+      },
+      {
+        id: 'lever-trap',
+        location: "Mythanar's Cave · Lower Chamber",
+        desc: 'Kathrine found the puzzle room first.\n\nShe was standing in front of the lever in confusion when Silas came down from his empty boxes, bitter. She said: *"It\'s quite interesting, don\'t you think?"* He shrugged.\n\nThen Callen jumped down the stairs in his pirate hat with the rusty sword, and Kathrine shouted about treasure, and everyone crowded in to look at the puzzle.\n\nSix stone plates floating above a dark pond. Five surrounding one in the middle. Above the center plate: a cage on chains. A lever at each plate.\n\nKathrine: *"This puzzle could just be a key to the treasure. We should bring Jane — she\'d come for this, for sure. Let\'s go back to the village for now."*\n\nSilas: *"Why don\'t we just try it now?"* Sly smile.\n\n*"Hey — don\'t just—"*\n\nThe lever clicked.\n\nThe dome came down — red, solid, a sound like every door in the world closing at the same time.\n\nSix plates. Five of us. Cage. Dome. No exit.\n\nI looked at the geometry. I had two theories.',
+        bg: 'radial-gradient(ellipse at 50% 55%, #060818 0%, #040610 55%, #02040e 100%)',
+        img: 'no-lever-trap.jpeg',
+        spots: [
+          { id:'both-theories', x:'35%', y:'50%', label:'Both Theories',
+            title:'Theory One and Theory Two',
+            text:'Six plates. Five people. The sixth is the cage in the middle.\n\nTheory one: each outer plate activates a lever. Five people, five plates. Something — or someone — goes in the center cage. Everyone pulls. The dome breaks. Reward.\n\nTheory two: the cage is the key, not the levers. What goes in the cage is what the puzzle is testing you on. The question isn\'t *how* to pull the levers. The question is *what are you willing to sacrifice.*\n\nThe elves failed this puzzle in the Great War. The Great War was a war. The elves who tried it were soldiers.\n\nSoldiers are very good at sacrificing things.\n\nI think that might be the point.' },
+          { id:'silas-the-lever', x:'66%', y:'44%', label:'Silas',
+            title:'In His Defense',
+            text:'In Silas\'s defense: the lever did not look like it would seal a magical barrier over an ancient puzzle room.\n\nIt looked like a lever. There are levers in mills and on boats and in the mechanism that opens the south gate after hours. This is the kind of lever that does something ordinary.\n\nSilas touched it the way you touch the lever that opens the south gate.\n\nI understand this. I am still looking at the red dome that is now between us and the exit.\n\n"So," Silas said.\n\n"Yes," I said.\n\n"I just want to say that in my defense—"\n\n"We can discuss it after we figure out the dome."\n\nHe agreed that this was reasonable.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter X',
+    title: 'The Puzzle',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"He\'s beautiful… Haha." — Five people trapped. One pirate mannequin. The solution was either genius or the stupidest idea anyone had ever had.',
+    warmth: 0.45,
+    moteColor: 'rgba(90,156,181,0.35)',
+    moteCount: 6,
+    glowColor: 'rgba(74,122,138,0.08)',
+    bg: 'radial-gradient(ellipse at 50% 50%, #060c12 0%, #040810 60%, #020408 100%)',
+    scenes: [
+      {
+        id: 'the-research',
+        location: 'Mythanar\'s Cave · Second Floor Study',
+        desc: 'The dome was red. The dome was stable, for now. Avery and Kathrine went back to the study room and pulled every book they could reach. The others waited below near the dry elf ears.',
+        bg: 'radial-gradient(ellipse at 40% 35%, #08101a 0%, #04080e 55%, #020408 100%)',
+        img: 'no-cave-research.jpeg',
+        spots: [
+          { id:'kathrine-reads-faster', x:'58%', y:'40%', label:'Kathrine Reads Faster',
+            title:'The Thing I Noticed',
+            text:'I would like it to be known that Kathrine Alvertos reads faster than me.\n\nThis is not a deficit I enjoy acknowledging. I have been in the top third of Professor Milos\'s class for two years. Kathrine spends most of his classes finding new and interesting ways to disagree with him. She does not appear to study. She reads faster than me.\n\nShe also wouldn\'t explain which book she was on or what she had found. She just said: "Keep looking. Different section."\n\nI kept looking.\n\nAt some point I became aware that we had been working in the same silence for almost an hour, and that this was not something I had expected to be possible with Kathrine, and that I was not bothered by it. That was a strange thing to notice. I filed it.' },
+          { id:'the-elf-ears', x:'30%', y:'62%', label:'The Elf Ears',
+            title:'What Silas Found',
+            text:'From below: the sound of a crate being opened.\n\nSilas\'s voice, very careful: "Hey, Bram. What is this."\n\nBram\'s voice, also very careful: "I don\'t know."\n\nSilas: "Is that a — are those — Bram, did you touch that."\n\nBram, with the tone of a man who has made a terrible decision: "...maybe."\n\nSilas, in an actual whisper because Avery was upstairs: "I cannot believe you touched it."\n\nA box of dry elf ears. Old. Very old. Stored with a care that made the whole situation worse.\n\nI called down: "What\'s happening?"\n\nSilas: "Nothing, Avery. Don\'t worry about it."' },
+        ]
+      },
+      {
+        id: 'brams-theory',
+        location: 'Mythanar\'s Cave · Puzzle Chamber',
+        desc: 'Bram said what everyone had been thinking since the dome snapped shut. He said it quietly, which made it land differently than if he had shouted.',
+        bg: 'radial-gradient(ellipse at 50% 60%, #060a10 0%, #040810 55%, #020408 100%)',
+        img: 'no-brams-theory.jpeg',
+        spots: [
+          { id:'what-bram-said', x:'45%', y:'48%', label:'What Bram Said',
+            title:'One of Us Has to Go In',
+            text:'He stood in front of the cage for a long time before he spoke.\n\n"I think one of us has to go inside. That\'s how it works. Like the old stories — one life to free the rest."\n\nNo one said anything.\n\n"I\'ll do it. I don\'t mind."\n\nHe said it the same way he says everything — without drama, without hesitation, as a simple statement about what he intended to do. Bram\'s bravery is the quiet kind that is much harder to argue with.\n\nKathrine: "I forbid it. No one dies on my watch."\n\nSilas: "I\'d better offer myself. I got us into this."\n\nKathrine: "I forbid that too."\n\nSilas: "You can\'t just forbid it."\n\nKathrine: "I just did."' },
+          { id:'kathrine-forbids', x:'68%', y:'52%', label:'Kathrine\'s Forbid',
+            title:'She Said It Before She Explained It',
+            text:'The interesting thing was the order.\n\nShe said "I forbid it" before she said why. Not "that\'s not how it works" or "we don\'t know if that\'s true." The authority came first. The argument arrived to support a decision that was already made.\n\nI have spent two years watching Kathrine establish herself in a room. She does it through argument, through competition, through being right in front of witnesses. All of that is performance with a real thing underneath it.\n\nThis was not performance. This was just: *no.* The word from a part of her that had decided.\n\nI think about Chief Kain when I think about this. The way his presence fills a room without requiring him to raise his voice. The way he says things that simply settle.\n\nShe learned it from him. She doesn\'t know she\'s doing it yet.' },
+        ]
+      },
+      {
+        id: 'the-mannequin',
+        location: 'Mythanar\'s Cave · Armory Room',
+        desc: 'Callen appeared at the top of the stairs carrying a full pirate captain mannequin with sparkling eyes, as if this were obviously the next logical step.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #080c14 0%, #04080e 55%, #020408 100%)',
+        img: 'no-mannequin.jpeg',
+        spots: [
+          { id:'callens-proposal', x:'42%', y:'42%', label:'Callen\'s Proposal',
+            title:'How About This',
+            text:'"How about this? We can use him, right? (With sparkling eyes)"\n\nSilas stared.\n\nBram stared.\n\nKathrine put her hand over her mouth. I had never seen Kathrine fail to contain a laugh before. She was failing.\n\n"Bold move," she said. "I give you that."\n\nCallen ran downstairs with the mannequin. "We just need to dress him up a bit. Might be a robe, some hair, then voila! We have a pirate! He definitely wouldn\'t mind taking a little swim, I think. He\'s a pirate after all."\n\nI looked at this person who has been my brother for seventeen years and I thought: of course. Of course this is who he is. Of course this is the answer.\n\nI was not even surprised. That might be the most remarkable thing.' },
+          { id:'building-him', x:'64%', y:'56%', label:'Building Him',
+            title:'Each of Us Contributed Something',
+            text:'The final version:\n\nCallen\'s contribution: the pirate hat, which he placed with great ceremony.\nAvery\'s contribution: a handful of long straw from the floor, arranged as hair.\nBram\'s contribution: the dry elf ears, nailed on with a care that implied he had been thinking about this for a while. (Silas: "I cannot believe you touched them AGAIN.")\nKathrine\'s contribution: a sad crying face drawn with the dagger she had found earlier.\nSilas\'s contribution: black fabric from old pirate flags, wrapped like robes.\n\nCallen stepped back and looked at his work: "He\'s beautiful."\n\nI looked at the elf ears. "Where did you find that ear?"\n\nSilas, already staring at the opposite wall: "I believe it\'s nothing, Avery. Don\'t you worry."\n\nKathrine: "At least his face is perfect. Pathetic." She was smiling when she said it.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter XI',
+    title: "The Guardian's Answer",
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"It is up to us to take care of each other." — The barrier asked who we were. We answered.',
+    warmth: 0.80,
+    moteColor: 'rgba(122,176,154,0.40)',
+    moteCount: 12,
+    glowColor: 'rgba(122,176,154,0.09)',
+    bg: 'radial-gradient(ellipse at 50% 45%, #060e0c 0%, #040a08 55%, #020504 100%)',
+    scenes: [
+      {
+        id: 'the-lever-sequence',
+        location: 'Mythanar\'s Cave · Puzzle Chamber',
+        desc: 'The mannequin was in the cage. The barrier was red and close. Silas was counting. And then Kathrine shouted stop.',
+        bg: 'radial-gradient(ellipse at 50% 50%, #08100e 0%, #040a08 55%, #020504 100%)',
+        img: 'no-lever-sequence.jpeg',
+        spots: [
+          { id:'the-standoff', x:'40%', y:'46%', label:'The Standoff',
+            title:'What Kathrine Said',
+            text:'"Think about it," she said. "Imagine that\'s Jane, looking back at us. Could you really sacrifice her?"\n\nSilas: "Stop using those tactics, Kate!"\n\nKathrine: "I know your feelings for Jane. You\'ve fallen in love with her. We all know that." Pause. "Could we really sacrifice her to pay for our mistake?"\n\nSilas, with tears he wasn\'t going to acknowledge: "You sneaky bastard."\n\nHe didn\'t pull the lever.\n\nThen Kathrine moved — not to her lever. To the cage. Toward the mannequin that was sinking into the puzzle mechanism. She ran and she screamed: "SAVE HIM! NOW!"\n\nAnd all of us ran.\n\nI don\'t know exactly why I ran. The mannequin was not a person. The mannequin was straw hair and elf ears and a pirate hat. But we had built him, which is apparently sufficient.' },
+          { id:'silas-holds-tears', x:'68%', y:'54%', label:'Silas',
+            title:'He Was Not Going to Acknowledge It',
+            text:'Silas has a face he uses when he needs people to stop looking at him. He used it when Kathrine said Jane\'s name.\n\nI looked away to give him the space of not being watched. That\'s a thing I learned from Bram — the kindness of the redirected gaze.\n\nSilas saved us from the lever. He did it because he did not want to sacrifice Jane, even imagined Jane, even a mannequin standing in for the concept of Jane. He is not a person who would call that love. He would call it something practical.\n\nI looked at the waterfall we had walked behind to get here. I let the moment be his.\n\nLater, when we were outside: Silas looked at Kathrine for a long time. Then: "My apologies. For everything. We all owe you our lives, our hero."\n\nHe said it plainly. He meant it.' },
+        ]
+      },
+      {
+        id: 'the-answer',
+        location: 'Mythanar\'s Cave · The Pedestal',
+        desc: 'The barrier broke into drops of light. A pedestal rose from the water at the far end of the chamber. It held nothing.',
+        bg: 'radial-gradient(ellipse at 50% 35%, #060e0a 0%, #040a08 50%, #020504 100%)',
+        img: 'no-cave-answer.jpeg',
+        spots: [
+          { id:'kathrines-speech', x:'45%', y:'42%', label:'What Kathrine Said',
+            title:'We Are the Guardian Spirits',
+            text:'Callen: "But how did you know?"\n\nKathrine, looking at the empty pedestal: "I don\'t. I just remembered what my father said."\n\nThen she told us about the thief — a man her father had paid to have freed from the kingdom\'s prison, a man she had not understood was worth saving. Her father\'s hands on her head. *No one in this village is expendable. We are strong because we value the individual lives of our people, whoever it is.*\n\nBack to the cave: "When I sacrifice our people\'s lives, I can never be a chief. This test is actually about that as well, I guess."\n\nShe looked at the glowing elf carvings on the wall.\n\n"It is up to us to take care of each other. We are the guardian spirits who have never lost. Having each other is enough. We do not need an amulet."\n\nCallen: "So basically you\'re saying we\'re the chosen ones."\n\nKathrine: "Yes. So is every villager." A pause. "I hope you don\'t start getting fat and grow a beard from now on."' },
+          { id:'what-the-amulet-was', x:'68%', y:'56%', label:'The Empty Pedestal',
+            title:'What I Thought About on the Way Out',
+            text:'No amulet.\n\nKathrine\'s interpretation: the spirit didn\'t fail, the elves did. They sacrificed each other. That\'s why they all died here.\n\nMy interpretation: something was in this place, relatively recently. The warm mark I touched on the carvings earlier. Not ancient warmth — recent warmth. Something else had its hands on these walls within the last decade or two.\n\nI don\'t say this out loud. We\'ve had a long night. Callen is already asking about treasure.\n\n"Too bad we don\'t get any treasure from that tho."\n\n"I don\'t think so," I said. "For me, this adventure — it\'s worth more than the treasure."\n\nHe smiled. I meant it. I also meant: the warm mark. There is still a mystery here. I have just decided not to name it yet.' },
+        ]
+      },
+      {
+        id: 'cave-exit',
+        location: 'Outside the Waterfall · Night Forest',
+        desc: 'The air outside was cold and smelled like growing things and water and the complete absence of a red energy barrier. Everyone stopped walking for a moment.',
+        bg: 'radial-gradient(ellipse at 50% 25%, #060c08 0%, #040808 50%, #020404 100%)',
+        img: 'no-cave-exit.jpeg',
+        spots: [
+          { id:'oh-freedom', x:'38%', y:'38%', label:'Oh Freedom',
+            title:'I Did Not Know I Would Say That Out Loud',
+            text:'"Oh Freedom!! O God, the scent of the forest at night — oh, it smells so good—"\n\nI had my arms out.\n\nSilas: "It turns out she was not as quiet as I thought."\n\nKathrine: "Don\'t be careless. We\'re still in danger."\n\nSilas: "Glad to know you\'re still you, Kate."\n\nKathrine: (glance)\n\nI kept my arms out a moment longer. I didn\'t care about the glance. We had been inside a collapsing elven puzzle chamber for what felt like most of the day and the forest smelled like actual living forest and I was very glad to be breathing it.\n\nThis is, as Silas later told me, the moment he decided I was "not as boring as he expected." I received that as the compliment it was intended to be.' },
+          { id:'before-the-village', x:'66%', y:'52%', label:'Before the Village',
+            title:'Everything Still Intact',
+            text:'We walked back. Callen and I behind the others.\n\n"Something still bothers me a little," I said.\n\n"I\'m going to swear to you that I won\'t accompany you back there, ever again. It\'s too dangerous, Avery."\n\n"Uh huh. Oh you will. Your vows are meaningless anyway."\n\n"What does that mean?"\n\nI left him confused and walked faster.\n\nAt the tree line: the village. Festival lights. The sound of the choir from two streets over. The smell of food from the river square.\n\nI stopped.\n\nI held the crystal in my pocket — it was still warm — and I looked at the village I had always lived in. Every window I knew. Every path from memory.\n\nI didn\'t know it would be the last time it looked like this. I just knew I wanted to look at it a moment longer before we went back inside.' },
+          { id:'what-callen-saw', x:'48%', y:'30%', label:'What Callen Almost Said',
+            title:'At the Cave Entrance',
+            text:'I piece it together later — not that night, but after.\n\nAt the waterfall entrance, while we were leaving, Callen looked back. There was something there. A figure at the entrance — old, still, watching. The kind of still that isn\'t absence. The kind that is *presence* being very careful.\n\nHe looked directly at it. When he looked directly: nothing. The path, the trees.\n\nHe almost said something. He decided not to.\n\nI don\'t know why he decided not to. Maybe he was tired and let himself believe that. Maybe the waterfall light had an explanation.\n\nMaybe: if you say something out loud, it becomes a thing that happened.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter XII',
+    title: 'The Blue River Festival',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: 'The river lit from below. The lanterns lit from above. Jane\'s voice carrying over both.',
+    warmth: 1.0,
+    moteColor: 'rgba(210,170,90,0.75)',
+    moteCount: 14,
+    glowColor: 'rgba(200,150,60,0.16)',
+    bg: 'radial-gradient(ellipse at 50% 40%, #1a0e06 0%, #0a0806 60%, #040404 100%)',
+    scenes: [
+      {
+        id: 'the-square-lit',
+        location: 'Blue River Village · Festival Night',
+        desc: 'The square is not the square. Every post has a lantern. Every windowsill. The river below does what it does at Festival — lit from underneath and above at once, the bioluminescence rising to meet the lanterns until neither knows which came first.\n\nJane\'s choir is on the platform. She organized it, chose the parts, ran four rehearsals, stood at the back of each one not-running it. Now she\'s in the front row, her voice over everything, eyes forward. She does not look at me when I try to catch them.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #1a0e06 0%, #0a0806 60%, #040404 100%)',
+        img: 'no-festival-square.jpeg',
+        spots: [
+          { id:'the-song', x:'36%', y:'46%', label:'The Song',
+            title:'Prayer That Became a Song',
+            text:'The words are old. They were written as a prayer — a request to the goddess, a naming of what the village needs, a placing of trust.\n\nAt some point in the last eighty years the prayer became a song. Milos says this happens: things that start as asking become things that are simply said. The asking is still inside them, but quieter.\n\nSome people in the square mouth the words. Some people sing loud. Some people stand still and let the sound move past them without participating, which is also a kind of participation.\n\nJane sings loud. She knows exactly which she is. I don\'t know which I am yet.' },
+          { id:'what-light-does', x:'64%', y:'50%', label:'The Light',
+            title:'What the River Does at Festival',
+            text:'The river glows every night. This is ordinary to me — it has always been there, it is the reason the village is the village.\n\nBut at Festival the lanterns are everywhere, and the two lights combine, and for one night the river and the village are the same brightness.\n\nThe village has looked like this every Festival for eighty years. I know that. My great-grandmother stood here and it looked like this. The same lanterns on the same posts. The same river.\n\nI know it intellectually and I am still standing here not wanting to move.\n\nSome things don\'t get ordinary no matter how many times you know the reason for them.' },
+        ]
+      },
+      {
+        id: 'letting-go',
+        location: 'Blue River Village · The Square',
+        desc: 'Silas has been watching Jane since the second song started. He doesn\'t know anyone can see him do it. He has a face for this — unguarded, very still, the one he never uses when he knows he\'s being looked at. I have known this face existed for about a year.',
+        bg: 'radial-gradient(ellipse at 50% 45%, #180e06 0%, #0a0808 60%, #040404 100%)',
+        img: 'no-letting-go.jpeg',
+        spots: [
+          { id:'what-she-decides', x:'45%', y:'48%', label:'What She Decides',
+            title:'The Way a Decision You\'ve Already Made Stops Hurting',
+            text:'Silas has a face he makes when he doesn\'t know anyone\'s watching. He made it at Jane through the last three songs. I know that face. I\'ve been waiting to be the reason for it for about a year.\n\nStanding in the festival light watching his expression, I stopped waiting.\n\nNot because I decided to. Because something settled. The way a decision you\'ve already made stops hurting once you look at it directly.\n\nJane gave him something I couldn\'t. Not better or worse — just different. She gives him the feeling of being seen without trying. I don\'t know how to give that. I think you have to be born knowing how.\n\nI looked at the river instead of the stage.\n\nThe river was warm and loud and exactly what it always is. That helped.' },
+          { id:'what-jane-gives', x:'66%', y:'38%', label:'What Jane Gives',
+            title:'Not Better. Different.',
+            text:'I am very precise about things I notice, which means I have to be precise about this too.\n\nSilas is happier near Jane than near most people. He is relaxed in a way he usually isn\'t. The teasing he does with her is gentler than the teasing he does with me — less edge, more easy.\n\nI have been trying to figure out if I am jealous of Jane specifically or jealous of the ease. I think it\'s the ease.\n\nJane doesn\'t compete with anyone. She just arrives and the space she takes up is hers without question. I have been working for my space in this group since the day Callen introduced me at the oak tree.\n\nJane never had to do that.\n\nI don\'t resent her for it. I\'m just going to look at the river for a while.' },
+        ]
+      },
+      {
+        id: 'the-procession',
+        location: 'Blue River Village · The River\'s Edge',
+        desc: 'The procession moves to the water at midnight. Everyone carries something — flowers mostly, folded papers, small woven shapes. The offerings float south. The current takes them, and the lanterns they carry make their way down a river that is already brighter than they are.\n\nI\'m at the back. I take out the amber crystal. I don\'t float it — it isn\'t an offering. I hold it over the water.\n\nThe recognition comes up through my hand. The warmth. The specific warmth that has been there since morning by the river, since the first time, since before I had any name for what I was doing. The river knows this crystal. It says so without words.\n\nI put it back in my pocket. I stand at the edge a moment longer.',
+        bg: 'radial-gradient(ellipse at 50% 38%, #180e08 0%, #0a0808 60%, #040404 100%)',
+        img: 'no-the-procession.jpeg',
+        spots: [
+          { id:'the-offering', x:'38%', y:'46%', label:'The Offering',
+            title:'What She Almost Did',
+            text:'I almost floated it.\n\nFor a second I was holding it over the water and the pull went in both directions — the river pulling down, my hand pulling back — and I was deciding.\n\nThe amber crystal is from the river. It was made from river water, from river light, in the river, pulled into form by me and the river together. Maybe it belongs here. Maybe floating it is giving it back.\n\nBut.\n\nI made it. The river helped me but I made it. It\'s warm in my pocket in a way that belongs to me, not to the water.\n\nI put it back. I don\'t know if that was the right choice. I think it was mine to make.' },
+          { id:'recognition', x:'62%', y:'50%', label:'Recognition',
+            title:'What the River Has Always Done',
+            text:'The warmth comes up through the crystal into my hand every time I hold it near the river. Every time, since the first time, since the morning I first reached into the water and something answered.\n\nThis is not new.\n\nI have been waiting for it to stop feeling like something. Like the thing that first surprised me will eventually become information — categorized, filed, accessible without the weight of it.\n\nIt hasn\'t. The river recognizes this crystal every time and every time it is the same weight.\n\nMaybe that is how it works with things that are true. Maybe they don\'t get lighter.' },
+        ]
+      },
+      {
+        id: 'the-group-after',
+        location: 'Blue River Village · River Grass',
+        desc: 'Silas has been in the same spot for an hour. Bram — cleaned up, mostly — throws small stones into the current. Jane is still humming, half a note off from the version the choir sang, the version only she knows the rest of.\n\nI watch the village.\n\nKathrine sits down beside me. No announcement. One person\'s width of space between us. She has the green crystal out, turning it over in one hand.\n\nThe village looks like the village has looked for eighty years tonight. Everything in its place. Callen is asleep or doing a very good impression of it. The river takes the offerings south.\n\nI don\'t want to go inside yet.',
+        bg: 'radial-gradient(ellipse at 50% 45%, #160c06 0%, #090806 60%, #040404 100%)',
+        img: 'no-group-after.jpeg',
+        spots: [
+          { id:'what-she-holds', x:'38%', y:'48%', label:'What She Holds',
+            title:'Beside, Not Apart',
+            text:'She sat down beside me.\n\nNo announcement. No challenge. No framing. She walked over and sat down and the green crystal was in her hand and that\'s all.\n\nI have never sat near Kathrine without tracking the distance. Not consciously — I just always know how far the nearest exit is when she\'s in a room. That is a thing I learned over two years.\n\nI\'m not tracking it now. I\'m watching the village and she\'s watching something and the green crystal is in her hand and I don\'t have a word for what this is yet.\n\nMaybe I don\'t need one yet.' },
+          { id:'before-the-night', x:'62%', y:'44%', label:'Before Dawn',
+            title:'The Last Time It Looks Like This',
+            text:'I don\'t know that this is the last time it looks like this.\n\nI don\'t know that in a few hours everything will change — the square, the lanterns, the river, the village I know every path in by sound and smell and the specific way the air sits in each alley.\n\nI just know that it\'s warm. That Callen is asleep in the grass. That Jane is humming something that belongs to her. That Bram is throwing stones with the focus of a person who has decided this is the most important thing he can be doing right now.\n\nI don\'t go inside.\n\nI don\'t want to lose one more minute of this being exactly what it is.' },
+        ]
+      },
+      {
+        id: 'two-villagers',
+        location: 'Blue River Village · The Festival Square',
+        desc: 'I left the group to find Mom. Jane had said she was with her grandmother — crying, before the show started. I walked through the crowd in the direction of Jane\'s street.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #160e06 0%, #080806 60%, #040404 100%)',
+        img: 'no-two-villagers.jpeg',
+        spots: [
+          { id:'river-goddess-theory', x:'45%', y:'54%', label:'The Rumor',
+            title:'She Didn\'t Know He Knew Her Name',
+            text:'Two men, drunk, not watching where their voices were going.\n\n"She\'s the girl who came from the river, right? Left there by her original parents. So sad."\n\n"Maybe she\'s the incarnation of the river goddess. Or maybe her daughter. Nobody knows, right?"\n\n"The river goddess is an elf. Does she look like an elf to you?"\n\n"No — geez, chill. So her name is Avery? Nice name though."\n\n"You don\'t even know her name? Where have you been? She doesn\'t talk much, but she\'s a good kid. Always smiling and trying to help. The villagers made those rumors because of that. But don\'t just believe it — it makes her uncomfortable."\n\nI walked past them.\n\nThe one who didn\'t know my name had kind things to say once he was corrected. The one who defended me knew I existed specifically enough to know I was uncomfortable with the goddess story.\n\nI hadn\'t known he knew my name. I didn\'t know how to feel about being a person people discuss when I\'m not in the room. I filed it. I kept walking.' },
+        ]
+      },
+      
+      {
+        id: 'ryllae-at-home',
+        location: 'The House · Living Room',
+        desc: 'Mom was alone in the dark. Jane had been right. I opened the door and she looked up.',
+        bg: 'radial-gradient(ellipse at 50% 35%, #120a08 0%, #080608 55%, #040406 100%)',
+        img: 'no-ryllae-crying.jpeg',
+        spots: [
+          { id:'what-she-knows', x:'42%', y:'46%', label:'What She Knows',
+            title:'She Was Crying Because She Knew',
+            text:'"O Avery, come here dear."\n\nShe held me for a long time. I held her back. We are not people who explain that we are frightened — we just hold on.\n\nWhen she let go she was smiling. "How was your day? You really should enjoy this night out there."\n\nI hugged her again.\n\n"I understand, Mom. I finally understand. I\'ll try to be more brave." I was holding on. "O, I\'m so thankful that I\'m here, Mom. I love this village so much."\n\n"Oh, I\'m so thankful that you\'re here too, Avery."\n\nShe said it with tears.\n\nI didn\'t know what the tears were for. I know now: she knew what Nathaniel had told her. She knew we were leaving. She was holding me in the village she had always lived in for the last time.\n\nI said: "Today is the beginning of something new."\n\nShe smiled and let me believe it.' },
+          { id:'the-purple-sky', x:'66%', y:'38%', label:'The Purple Sky',
+            title:'What It Looked Like Before',
+            text:'From outside, the villagers were shouting.\n\n"She\'s coming! She\'s coming! The goddess is here! She illuminates the sky! Look, it\'s so beautiful — praise her! Praise her!"\n\nMom and I went outside together. The sky was purple — genuinely purple, deep and particular, the kind that has no explanation in any book Milos assigned. The river below it was gold.\n\nI stood next to my mother in the doorway and I looked at the most beautiful thing I had ever seen the sky do.\n\nI heard the screaming a few seconds later.\n\nNot the festival kind. Not the kind that means something good is happening.\n\nMom\'s hand found mine in the dark. She already knew.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter XIII',
+    title: "Nathaniel's Truth",
+    pov: 'nathaniel',
+    povLabel: 'Nathaniel',
+    povClass: 'pov-nathaniel',
+    tagline: 'While the festival burned bright — what Nathaniel knew.',
+    warmth: 0.0,
+    moteColor: 'rgba(160,85,85,0.30)',
+    moteCount: 4,
+    glowColor: 'rgba(122,53,53,0.08)',
+    bg: 'radial-gradient(ellipse at 50% 50%, #100604 0%, #060406 60%, #020204 100%)',
+    scenes: [
+      {
+        id: 'packing-alone',
+        location: 'The House · Festival Night',
+        desc: 'The festival sounds came through the walls — music, laughter, the river choir. Nathaniel packed in silence. He had done this before. He knew which things to take and which to leave. The only difference was the shield.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #100608 0%, #060408 55%, #030206 100%)',
+        img: 'no-nathaniel-packing.jpeg',
+        spots: [
+          { id:'what-he-packs', x:'44%', y:'44%', label:'What He Packs',
+            title:'The Things He Knows to Take',
+            text:'He packed the way a person packs when they have done it before and intend to survive what comes next.\n\nEssentials: small, light, nothing that would slow them down. He knew the route. He had known the route for years — the path south through the lower forest, the ridge that would put them above the tree line before dawn, the approach to Vleyrra that his contact had described in a letter he had since burned.\n\nHe did not pack the books. He did not pack anything that could not be carried by a person moving fast.\n\nThe house had been a home for fifteen years. He had let himself believe that was permanent. He knew it hadn\'t been. Both things were true.\n\nHe reached the bedroom shelf. He paused. Then he left the books and took only the shield.' },
+          { id:'the-artifact', x:'68%', y:'54%', label:'The Shield',
+            title:'His Artifact',
+            text:'The shield on the wall had not moved in fifteen years. He had put it there the morning after he defected — face to the wall, a deliberate choice. Not hidden. Not gone. Present.\n\nHe took it down now.\n\nArtifacts are sealed with a specific violence: a mage is killed, their power drawn into both the weapon and the person holding it. After that, only that person can use it. He had held the weapon. He had received the power. He had watched his friend stop moving.\n\nEvery time he used the shield\'s light, he used something that had been taken.\n\nHe had not touched it in fifteen years. Tonight he would need it.\n\nHe put it on his back and went to find Ryllae.' },
+        ]
+      },
+      {
+        id: 'the-confession',
+        location: 'Outside the House · Festival Night',
+        desc: 'He told her everything. He had not planned to tell her everything. But she asked him to start from the beginning, and once he started he could not find a reasonable place to stop.',
+        bg: 'radial-gradient(ellipse at 30% 30%, #0c0608 0%, #060408 55%, #030206 100%)',
+        img: 'no-nathaniel-confession.jpeg',
+        spots: [
+          { id:'the-black-leaf', x:'42%', y:'44%', label:'The Black Leaf',
+            title:'What He Was',
+            text:'"It was a mission. Zachariel and I are members of a peacekeeping organization, which is now better known as The Black Leaf. The Black Leaf has the belief that all magical things are the source of evil, and our goal is to cleanse the world from it."\n\nHe told her the history of it the way you tell someone something you have rehearsed and never used: carefully, in order, with the weight of a man who has had this conversation in his head for fifteen years.\n\nThe organization had begun as something defensible. It had become something he could not defend.\n\n"The real threat to this world is not the mages or magic, but the black leaf. That shield that hangs in our room — that is my artifact. My reality. My sin."\n\nRyllae stepped back. He did not stop.' },
+          { id:'why-he-stayed', x:'66%', y:'58%', label:'Why He Stayed',
+            title:'What He Said When She Asked If It Was Fake',
+            text:'"Is our marriage just a fake? Is your love for me just a fake? Because I can\'t believe you could keep this much secret from me for more than fifteen years. If you really, really love me—"\n\n"What?"\n\n"Do you really love me? Do you? Because I really don\'t know you."\n\nHe said: "You are the reason why I could keep doing all of this. Why I could keep continue to endure this suffering. Why I\'m here in this village and not killed myself out there. Because I want to be with you while trying to atone for my sins."\n\nShe ran.\n\nHe stood in front of the house. The festival music came over the rooftops. He was going to go after her. He was going to explain more. He turned and saw the figure in the trees watching them.\n\nThe figure vanished.\n\nHe had run out of time.' },
+        ]
+      },
+      {
+        id: 'the-watcher',
+        location: 'Outside the House · Festival Night',
+        desc: 'The villager who had been watching disappeared into the trees before Nathaniel could move. He stood alone in front of the house and understood exactly what had happened.',
+        bg: 'radial-gradient(ellipse at 60% 40%, #080606 0%, #050406 55%, #020204 100%)',
+        img: 'no-the-watcher.jpeg',
+        spots: [
+          { id:'what-the-watcher-means', x:'45%', y:'46%', label:'The Watcher',
+            title:'An Informant. Already Here.',
+            text:'"Oh, my God. I\'m so stupid."\n\nHe said it out loud. No one heard.\n\nThe Black Leaf had known where he was for longer than he\'d assumed. They had placed someone here. Not to act — to watch and report. Which meant they already knew about Avery before Zachariel left.\n\nWhich meant the attack had been planned before last night.\n\nWhich meant Zachariel\'s offer — HQ, the ritual, the choice — had been a courtesy. A performance of family before the operation began.\n\nZachariel had loved them, in the way Zachariel loved things: genuinely, alongside what he believed had to happen.\n\nNathaniel stood in front of the house and listened to the festival music from two streets over and thought: I have to find Ryllae. I have to find the children. We have to leave right now.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter XIV',
+    title: 'The Night',
+    pov: 'assault',
+    povLabel: 'The Night',
+    povClass: 'pov-assault',
+    tagline: 'They arrive without warning. The square was full. Then it was not.',
+    warmth: 0.05,
+    moteColor: 'rgba(160,60,60,0.45)',
+    moteCount: 4,
+    glowColor: 'rgba(138,32,32,0.08)',
+    bg: 'radial-gradient(ellipse at 50% 30%, #100408 0%, #060208 60%, #020103 100%)',
+    scenes: [
+      {
+        id: 'the-attack-begins',
+        location: 'Blue River Village · The Night',
+        desc: 'The guard at the perimeter is laughing at something a child said. Then he stops. Then there is a sound in the trees. Then the festival is over.',
+        bg: 'radial-gradient(ellipse at 50% 28%, #100408 0%, #060208 65%, #020103 100%)',
+        img: 'no-thunderscars.jpeg',
+        spots: [
+          { id:'the-black-leaf', x:'32%', y:'46%', label:'The Black Leaf',
+            title:'What They Are',
+            text:'The Black Leaf is an organization. Two headquarters: Night Etdler, now disbanded. Kaeron, still operating.\n\nThey believe magic is the source of evil. They have believed this for long enough that the belief has become self-sustaining — they need no reason to hunt except the hunting itself.\n\nThey kill mages and take what the mages were. The power goes into weapons, into the person holding the weapon. Artifacts. Each one unique. Each one taken.\n\nNathaniel has one. It is shaped like a shield. He has not used it in fifteen years.\n\nHe is using it now.' },
+          { id:'how-fast', x:'67%', y:'52%', label:'How Fast',
+            title:'Not a Battle',
+            text:'A battle has two sides. A battle has back and forth. A battle you can survive by being better.\n\nThis is not a battle. This is an erasure. The difference between a battle and an erasure is whether the people being erased knew it was coming.\n\nBlue River Village did not know it was coming. They had thirty years of peace to reassure them. They had walls that used to be taller, walls that the moss covered years ago, walls that no one maintained because the peace was long and the moss was pretty and there was always next season for that.\n\nNext season is tonight.' },
+        ]
+      },
+      {
+        id: 'the-great-hall',
+        location: 'Blue River Village · The Great Hall',
+        desc: 'The villagers flood into the hall. A Black Leaf member drops through the roof with fire. Nathaniel\'s shield emits a beam of light and throws the attacker across the room. Callen: "Dad!?" Nathaniel does not explain. He organizes the defense. Then he kneels.',
+        bg: 'radial-gradient(ellipse at 50% 32%, #0e0408 0%, #060208 65%, #020103 100%)',
+        img: 'no-great-hall.jpeg',
+        spots: [
+          { id:'nathaniel-explains', x:'36%', y:'50%', label:'What He Said',
+            title:'"You Are The Origin"',
+            text:'"It\'s Magic, my child. But they weren\'t the original owners — they stole it. The real owner is the pure blooded mage. You, Avery. You are The Origin. You\'re the one they feared. Mage with the purest blood, who have the power to destroy them. Our savior. Our only hope."\n\nI was confused. The hall was full of screaming. A man I had just watched use a shield to throw someone through a wall was kneeling in front of me.\n\nHe said: "That\'s why we have to leave this village. They won\'t stop until they kill Avery. As long as we are here, the lives of the villagers are threatened."\n\n"But Dad," Callen said. "We can\'t just leave them."\n\nDad looked at Callen with the expression of a man who has already accepted a cost his son has not.\n\n"Their goal is Avery," he said. "But they will kill anyone who gets in their way. We cannot fight them. After we leave, they will stop."' },
+          { id:'callens-face', x:'66%', y:'44%', label:'Callen\'s Face',
+            title:'The Look He Gave His Father',
+            text:'Callen looked at our father the way you look at someone when you realize you have been wrong about something fundamental.\n\nNot about a fact. About a person.\n\nHe did not say anything. His face did it for him: the calculation running, the pieces arranging, the conclusion arriving and being refused and arriving again. Our father was prepared to let the village burn. Our father was prepared to take us south and let what happened happen to everyone else.\n\nI watched my brother absorb this and decide something.\n\nHe did not argue. He nodded. He went where Dad directed.\n\nBut I saw his face, and I know Callen, and he had already decided that he was not going to accept that cost quietly. Not that night. Not ever.' },
+        ]
+      },
+      {
+        id: 'bram',
+        location: 'Blue River Village · The Square',
+        desc: 'Bram stepped in front of an arrow. He was smiling.',
+        bg: 'radial-gradient(ellipse at 50% 28%, #0e0408 0%, #050208 65%, #010103 100%)',
+        img: 'no-bram.jpeg',
+        spots: []
+      },
+      {
+        id: 'the-village-burns',
+        location: 'Blue River Village · The Night',
+        desc: 'Running. Between fire and bodies. Chief Kain kneeling. Kathrine beside him, the green crystal in her hand, black leaves glowing faintly around her. Then Zachariel\'s voice from somewhere behind them, giving the order.',
+        bg: 'radial-gradient(ellipse at 50% 28%, #0e0408 0%, #050208 65%, #010103 100%)',
+        img: 'no-village-burns.jpeg',
+        spots: [
+          { id:'silas-and-jane', x:'36%', y:'50%', label:'Silas',
+            title:'The Day His Eyes Changed',
+            text:'We were running between people. Then we passed Silas.\n\nHe was seated on the ground. Bloody. Jane was in his lap — unconscious, a severe wound on her head. His face was full of blood and his eyes were full of something I don\'t have a word for.\n\nNot grief. Not rage. Both of them compressed into a point. The expression of someone who has put everything into a single direction and will not move from it.\n\nCallen stopped shouting.\n\nWe kept running. I looked back once. Silas was still sitting. Still holding her. He did not look up.\n\nI know what that face becomes. I will see it again. The books were right about it.' },
+          { id:'brothers-fight', x:'66%', y:'44%', label:'The Brothers',
+            title:'Shield and Hammer',
+            text:'Zachariel in armor. A giant hammer that made the air crackle. He looked at Callen: "Uncle Zach?"\n\nNathaniel to Callen: "Go. Keep them away from the fight. Now."\n\nZachariel to his members: "Alive! Unscathed! If there is a scratch on them, I\'ll kill you myself!"\n\nThen the brothers.\n\nI have thought about that fight many times. Two men who grew up the same way, who swore the same oath, who chose opposite things from the same moment. Nathaniel\'s light against Zachariel\'s electricity. (SIIINGGG — CRACK!!)\n\nNathaniel was thrown into a tree. He got up.\n\n"After all, we\'re not done yet," he said.\n\nZachariel attacked.' },
+        ]
+      },
+      {
+        id: 'running',
+        location: 'Blue River Village · The Night',
+        desc: 'I am running. We are all running. Dad\'s shield is dim — he used too much of it. Mom stumbles on something in the dark.',
+        bg: 'radial-gradient(ellipse at 50% 30%, #0c0408 0%, #050208 65%, #010103 100%)',
+        img: 'no-running.jpeg',
+        spots: [
+          { id:'ryllae-falls', x:'40%', y:'48%', label:'Mom',
+            title:'"Go, Leave Me"',
+            text:'"Go. Leave me. I\'m slowing you down. Go!"\n\nShe was on the ground. The Black Leaf was behind us — close, fast.\n\n"Never," I said.\n\nCallen said it at the same time.\n\nWe pulled her up. We kept running. The village square was ahead — I could see the lanterns that were still lit, the ones no one had gotten to yet, and around the square a ring of Black Leaf members waiting.\n\nMom\'s hand found mine. She held it.\n\nWe stopped running. There was nowhere to run to.' },
+        ]
+      },
+    ]
+  },
+
+  {
+    num: 'Chapter XV',
+    title: 'The Origin',
+    pov: 'avery',
+    povLabel: 'Avery',
+    povClass: 'pov-avery',
+    tagline: '"I\'ll meet you there. I promise." — She ran. She didn\'t look back. That is the only part she regrets.',
+    warmth: 0.0,
+    moteColor: 'rgba(106,154,181,0.35)',
+    moteCount: 6,
+    glowColor: 'rgba(74,106,122,0.07)',
+    bg: 'radial-gradient(ellipse at 50% 40%, #060a10 0%, #030608 60%, #020408 100%)',
+    scenes: [
+      {
+        id: 'the-square',
+        location: 'Blue River Village · The Square',
+        desc: 'A Black Leaf member threw me into the center of the square. I tried to stand. Nathaniel was thrown in front of us — battered, leaning on the shield. He knelt in front of me. His eyes were the expression of a man who has run out of options and has decided what the last one is.',
+        bg: 'radial-gradient(ellipse at 50% 40%, #080a12 0%, #040610 60%, #020408 100%)',
+        img: 'no-the-square.jpeg',
+        spots: [
+          { id:'our-only-hope', x:'46%', y:'52%', label:'"Our Only Hope"',
+            title:'He Said It Like He Meant It',
+            text:'He knelt in front of me. His hands on my shoulders. Around us: Black Leaf members, the destroyed hall, the village in pieces.\n\n"You are The Origin. You\'re the one they feared. Mage with the purest blood, who have the power to destroy them. Our savior. Our only hope."\n\nI was confused. I am always confused at the worst moments.\n\nI looked at my hands. The same hands I had put into the Blue River every week since I was small. The same hands I had used to make an amber crystal on a Tuesday morning for a bet about bread.\n\nOur only hope. He said it and he meant it.\n\nI didn\'t feel like anyone\'s hope. I felt the cobblestones under my knees.' },
+        ]
+      },
+      {
+        id: 'unleashed',
+        location: 'Blue River Village · The Square',
+        desc: 'They rushed me all at once. Something left me like a breath I had been holding since the Blue River. The crystal wall formed. It worked. I didn\'t tell my hands to do it.',
+        bg: 'radial-gradient(ellipse at 50% 38%, #06080e 0%, #030508 60%, #020406 100%)',
+        img: 'no-crystal-wall.jpeg',
+        spots: [
+          { id:'what-it-feels-like', x:'46%', y:'46%', label:'What It Felt Like',
+            title:'Not Power. Remembering.',
+            text:'Not power. More like remembering something I had always known and hadn\'t had words for.\n\nThe river feeling, but enormous. The warmth the river always had below the surface — the pull, the recognition, the light waiting to be organized — all of it at once, and too much to hold.\n\nIt went out of me like a breath I had been holding since the first morning at the river. My hands opened. I didn\'t tell them to.\n\nThe crystal wall formed in front of me. Then a lightning crystal — I reached for it without thinking, without knowing I could, and it was in my hand and I threw it and it worked.\n\nZachariel, from the ground: "IMPOSSIBLE!! THE ORIGIN! Prepare yourself!"\n\nI didn\'t feel like The Origin. I felt exactly like myself, doing something very fast, very scared, with everything I had.' },
+        ]
+      },
+      {
+        id: 'sylva-and-fae',
+        location: 'Blue River Village · The Square',
+        desc: 'A girl my age came at me with a fire sword. She was not afraid. I stopped her sword. Then her sister ran forward to protect her. Then I made a mistake.',
+        bg: 'radial-gradient(ellipse at 50% 36%, #060808 0%, #040608 60%, #020406 100%)',
+        img: 'no-sylva-and-fae.jpeg',
+        spots: [
+          { id:'fae', x:'48%', y:'52%', label:'Fae',
+            title:'I Didn\'t Know She Had a Sister',
+            text:'Sylva came with a fire sword. I deflected it. The sword broke. She fell limp.\n\nThen: a girl smaller than her, short hair, running forward — putting an ice wall between Sylva and my fire crystal. The fire crystal hit the wall. The wall broke. The girl fell across Sylva\'s lap.\n\nSylva\'s expression: nothing, at first. Then tears.\n\n"Hey Sis? Wake up." She was hugging her. "No. No. Fae. No. Not you too. Not my little sister."\n\nI stopped.\n\nI didn\'t know her name. I didn\'t know she had a sister. I hadn\'t thought about whether she had a sister.\n\nThe comparison is something I cannot look at directly. Two sisters, one of them willing to die for the other. This is not a thing that belongs to one side of a war.' },
+        ]
+      },
+      {
+        id: 'white-out',
+        location: 'Blue River Village · The Square',
+        desc: 'The Black Leaf members rushed again. Callen ran toward me from the family side, screaming my name. I spread my arms. My hands went to my chest. My eyes were open. Then everything was white.',
+        bg: 'radial-gradient(ellipse at 50% 50%, #080a10 0%, #040608 60%, #020408 100%)',
+        img: 'no-white-out.jpeg',
+        spots: []
+      },
+      {
+        id: 'after',
+        location: 'Blue River Village · Dawn',
+        desc: 'I woke up in the middle of the square. The village was filled with colorful crystals that had grown from the ground overnight. Some of them were enormous. The smoke was white. I walked through it.',
+        bg: 'radial-gradient(ellipse at 50% 30%, #060c10 0%, #040810 60%, #020408 100%)',
+        img: 'no-parents-in-crystal.jpeg',
+        spots: [
+          { id:'the-crystal', x:'46%', y:'48%', label:'The Crystal',
+            title:'I Made Them',
+            text:'"Mom? Dad? Callen?"\n\nThe smoke cleared. Behind it: Ryllae and Nathaniel, faces visible through clear crystal — trapped inside, mid-movement, their mouths open in expressions I could not read from outside. They were reaching toward me.\n\nAnd behind them: the villagers. All of them. Dozens of crystals, each one holding someone I knew by name.\n\nI made them. I know I made them. The same way I know I made the amber crystal at the river — the warmth is mine, the structure is mine, the light inside it responds when I get close. I made them and I cannot unmake them and the village I love is standing still inside what I built in a panic to protect them.\n\n"no... oh no..."\n\nCallen stood beside me. He said: "ugh, what\'s happened?" He was crying. He did not move away.' },
+        ]
+      },
+      {
+        id: 'i-promise',
+        location: 'Blue River Village · Dawn',
+        desc: 'Zachariel and five survivors approached. He looked at the crystal. He knelt. He grieved. Callen stood in front of the crystal and said one word.',
+        bg: 'radial-gradient(ellipse at 50% 35%, #040a0e 0%, #020608 60%, #010306 100%)',
+        img: 'no-i-promise.jpeg',
+        spots: [],
+        final: true
+      },
+    ]
+  },
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let currentChapter = 0;
+let currentScene = 0;
+let spotPanelOpen = false;
+let pendingChapterCard = -1;
+let selectedChapterIndex = 0;
+let isNavigating = false;
+
+// ── PARTICLES ──────────────────────────────────────────────────────────────────
+function spawnMotes(count, color) {
+  document.querySelectorAll('.mote').forEach(m => m.remove());
+  const container = document.getElementById('scene-container');
+  for (let i = 0; i < count; i++) {
+    const m = document.createElement('div');
+    m.className = 'mote';
+    const size = 2 + Math.random() * 3;
+    const x = 5 + Math.random() * 90;
+    const delay = Math.random() * 8;
+    const dur = 8 + Math.random() * 12;
+    const drift = (Math.random() - 0.5) * 40;
+    m.style.cssText = `width:${size}px;height:${size}px;left:${x}%;bottom:${10+Math.random()*60}%;--drift:${drift}px;background:${color};animation-duration:${dur}s;animation-delay:${delay}s;`;
+    container.appendChild(m);
+  }
+}
+
+// ── CHAPTER SELECT ─────────────────────────────────────────────────────────────
+function buildChapterSelect() {
+  const el = document.getElementById('chapter-select');
+  el.innerHTML = `
+    <h1>Night Origins</h1>
+    <div class="series-label">The Blue River Village — Book One</div>
+    <div class="carousel-container">
+      <div class="carousel-nav left" onclick="scrollCarousel(-1)">❮</div>
+      <div class="chapter-grid" id="chapter-grid">${CHAPTERS.map((ch,i) => `
+        <div class="chapter-card" id="card-${i}" onclick="openChapterCard(${i})">
+          <div class="bg-num">${String(i + 1).padStart(2, '0')}</div>
+          <div class="chapter-num">${ch.num}</div>
+          <div class="chapter-title">${ch.title}</div>
+          <div class="chapter-pov-label">— ${ch.povLabel} —</div>
+          <div class="chapter-tagline">${ch.tagline}</div>
+        </div>`).join('')}
+      </div>
+      <div class="carousel-nav right" onclick="scrollCarousel(1)">❯</div>
+    </div>
+    <div class="carousel-counter">
+      <span class="current" id="current-idx">01</span>
+      <div class="divider"></div>
+      <span>${String(CHAPTERS.length).padStart(2, '0')}</span>
+    </div>
+  `;
+  
+  const grid = document.getElementById('chapter-grid');
+  
+  // Wheel debouncing for one-by-one step
+  grid.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    if (isNavigating) return;
+    
+    if (Math.abs(e.deltaY) > 10 || Math.abs(e.deltaX) > 10) {
+      const dir = (e.deltaY > 0 || e.deltaX > 0) ? 1 : -1;
+      scrollCarousel(dir);
+    }
+  }, { passive: false });
+
+  // Intersection Observer with narrow focus
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const index = parseInt(entry.target.id.split('-')[1]);
+        updateActiveCardVisuals(index);
+      }
+    });
+  }, { 
+    root: grid, 
+    threshold: 0,
+    rootMargin: '0px -48% 0px -48%' 
+  });
+  
+  document.querySelectorAll('.chapter-card').forEach(card => observer.observe(card));
+  
+  // Initial position
+  setTimeout(() => {
+    const activeCard = document.getElementById(`card-${selectedChapterIndex}`);
+    if (activeCard) activeCard.scrollIntoView({ behavior: 'auto', inline: 'center' });
+    updateActiveCardVisuals(selectedChapterIndex);
+  }, 100);
+}
+
+function updateActiveCardVisuals(index) {
+  // Only update index if we are NOT in a smooth scroll navigation
+  if (!isNavigating) selectedChapterIndex = index;
+  
+  const cards = document.querySelectorAll('.chapter-card');
+  cards.forEach((card, i) => {
+    card.classList.remove('active', 'prev-1', 'next-1');
+    if (i === index) card.classList.add('active');
+    else if (i === index - 1) card.classList.add('prev-1');
+    else if (i === index + 1) card.classList.add('next-1');
+  });
+  
+  const counter = document.getElementById('current-idx');
+  if (counter) counter.textContent = String(index + 1).padStart(2, '0');
+}
+
+function scrollCarousel(dir) {
+  if (isNavigating) return;
+  
+  const cards = document.querySelectorAll('.chapter-card');
+  const targetIndex = Math.max(0, Math.min(cards.length - 1, selectedChapterIndex + dir));
+  
+  if (targetIndex === selectedChapterIndex && dir !== 0) return;
+
+  isNavigating = true;
+  selectedChapterIndex = targetIndex;
+  
+  const targetCard = document.getElementById(`card-${targetIndex}`);
+  if (targetCard) {
+    targetCard.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+  }
+  
+  setTimeout(() => { isNavigating = false; }, 600);
+}
+
+function returnToChapters() {
+  document.getElementById('scene-container').classList.remove('active');
+  document.getElementById('chapter-card').classList.remove('active');
+  document.getElementById('final-screen').classList.remove('active');
+  document.getElementById('chapter-select').style.display = '';
+  document.querySelectorAll('.mote').forEach(m => m.remove());
+  setTimeout(() => {
+    const cards = document.querySelectorAll('.chapter-card');
+    if (cards[currentChapter]) cards[currentChapter].scrollIntoView({ behavior: 'auto', inline: 'center' });
+  }, 10);
+}
+
+// ── CHAPTER CARD ───────────────────────────────────────────────────────────────
+function openChapterCard(idx, force = false) {
+  const card = document.getElementById(`card-${idx}`);
+  if (!force && card && !card.classList.contains('active')) {
+    scrollCarousel(idx - selectedChapterIndex);
+    return;
+  }
+  
+  // Sync carousel state
+  selectedChapterIndex = idx;
+  if (card) {
+    card.scrollIntoView({ behavior: 'auto', inline: 'center' });
+    updateActiveCardVisuals(idx);
+  }
+
+  pendingChapterCard = idx;
+  const ch = CHAPTERS[idx];
+  document.getElementById('cc-num').textContent = ch.num;
+  document.getElementById('cc-title').textContent = ch.title;
+  document.getElementById('cc-pov').textContent = '— ' + ch.povLabel + ' —';
+  document.getElementById('cc-quote').textContent = ch.tagline;
+  document.getElementById('chapter-select').style.display = 'none';
+  document.getElementById('chapter-card').classList.add('active');
+}
+
+function beginChapterFromCard() {
+  document.getElementById('chapter-card').classList.remove('active');
+  startChapter(pendingChapterCard);
+}
+
+function startChapter(idx) {
+  currentChapter = idx;
+  currentScene = 0;
+  document.getElementById('chapter-select').style.display = 'none';
+  document.getElementById('chapter-card').classList.remove('active');
+  document.getElementById('final-screen').classList.remove('active');
+  document.getElementById('scene-container').classList.add('active');
+  applyChapterTheme(idx);
+  renderScene();
+}
+
+function applyChapterTheme(idx) {
+  const ch = CHAPTERS[idx];
+  document.documentElement.style.setProperty('--glow-color', ch.glowColor);
+  spawnMotes(ch.moteCount, ch.moteColor);
+}
+
+// ── RENDER SCENE ───────────────────────────────────────────────────────────────
+function renderScene() {
+  const ch = CHAPTERS[currentChapter];
+  const s = ch.scenes[currentScene];
+  const overlay = document.getElementById('transition-overlay');
+
+  overlay.classList.add('fade-in');
+  setTimeout(() => {
+    _applyScene(ch, s);
+    overlay.classList.remove('fade-in');
+  }, 440);
+}
+
+function _applyScene(ch, s) {
+  // Background
+  const bg = document.getElementById('scene-bg');
+  bg.style.background = s.bg || ch.bg;
+  if (s.img) {
+    const testImg = new Image();
+    testImg.onload = () => { bg.style.backgroundImage = `url(../../game-bg/${s.img})`; bg.style.backgroundSize='cover'; bg.style.backgroundPosition='center'; };
+    testImg.onerror = () => { bg.style.backgroundImage = ''; };
+    testImg.src = `../../game-bg/${s.img}`;
+  } else {
+    bg.style.backgroundImage = '';
+  }
+
+  // Location
+  document.getElementById('location-header').textContent = s.location;
+
+  // POV
+  const povEl = document.getElementById('pov-indicator');
+  povEl.className = 'visible ' + ch.povClass;
+  povEl.textContent = ch.povLabel;
+
+  // Text
+  document.getElementById('scene-desc').textContent = s.desc;
+
+  // Nav buttons
+  document.getElementById('btn-back').disabled = (currentScene === 0 && currentChapter === 0);
+  const isLastScene = currentScene === ch.scenes.length - 1;
+  const isLastChapter = currentChapter === CHAPTERS.length - 1;
+  const btnFwd = document.getElementById('btn-forward');
+  if (isLastScene && isLastChapter) {
+    btnFwd.textContent = 'End →';
+  } else if (isLastScene) {
+    btnFwd.textContent = 'Next Chapter →';
+  } else {
+    btnFwd.textContent = 'Continue →';
+  }
+
+  // Progress dots (scenes in current chapter)
+  const dotsEl = document.getElementById('progress-dots');
+  dotsEl.innerHTML = ch.scenes.map((_, i) => {
+    let cls = 'progress-dot';
+    if (i === currentScene) cls += ' active';
+    else if (i < currentScene) cls += ' visited';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  // Spot markers
+  document.querySelectorAll('.spot-marker').forEach(m => m.remove());
+  const container = document.getElementById('scene-container');
+  (s.spots || []).forEach(spot => {
+    const el = document.createElement('div');
+    el.className = 'spot-marker';
+    el.style.left = spot.x;
+    el.style.top = spot.y;
+    el.innerHTML = `<div class="spot-dot ${isSpotRead(spot.id) ? 'read' : ''}"></div><div class="spot-label">${spot.label}</div>`;
+    el.onclick = () => openSpot(spot.id, spot.title, spot.text);
+    container.appendChild(el);
+  });
+
+  // Final screen check
+  if (s.final) {
+    setTimeout(() => {
+      document.getElementById('final-screen').classList.add('active');
+    }, 600);
+  }
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────────
+function goForward() {
+  if (spotPanelOpen) return;
+  const ch = CHAPTERS[currentChapter];
+  if (currentScene < ch.scenes.length - 1) {
+    currentScene++;
+    renderScene();
+  } else if (currentChapter < CHAPTERS.length - 1) {
+    // transition to next chapter title card
+    const nextIdx = currentChapter + 1;
+    const overlay = document.getElementById('transition-overlay');
+    overlay.classList.add('fade-in');
+    
+    setTimeout(() => {
+      document.getElementById('scene-container').classList.remove('active');
+      openChapterCard(nextIdx, true); // Use force=true to bypass carousel check
+      overlay.classList.remove('fade-in');
+    }, 450);
+  } else {
+    // End of book
+    document.getElementById('final-screen').classList.add('active');
+  }
+}
+
+function goBack() {
+  if (spotPanelOpen) return;
+  if (currentScene > 0) {
+    currentScene--;
+    renderScene();
+  } else if (currentChapter > 0) {
+    currentChapter--;
+    currentScene = CHAPTERS[currentChapter].scenes.length - 1;
+    applyChapterTheme(currentChapter);
+    renderScene();
+    document.getElementById('scene-container').classList.add('active');
+  }
+}
+
+// ── SPOTS ──────────────────────────────────────────────────────────────────────
+function openSpot(id, title, text) {
+  markSpotRead(id);
+  spotPanelOpen = true;
+  document.getElementById('spot-title').textContent = title;
+  document.getElementById('spot-text').textContent = text;
+  document.getElementById('spot-panel').classList.add('open');
+  // Mark dot as read
+  document.querySelectorAll('.spot-marker').forEach(m => {
+    if (m.onclick.toString().includes(id)) {
+      const dot = m.querySelector('.spot-dot');
+      if (dot) dot.classList.add('read');
+    }
+  });
+  renderSpotDots();
+}
+
+function renderSpotDots() {
+  const ch = CHAPTERS[currentChapter];
+  const s = ch.scenes[currentScene];
+  document.querySelectorAll('.spot-marker').forEach((el, i) => {
+    const spot = (s.spots || [])[i];
+    if (spot) {
+      const dot = el.querySelector('.spot-dot');
+      if (dot && isSpotRead(spot.id)) dot.classList.add('read');
+    }
+  });
+}
+
+function closeSpot() {
+  spotPanelOpen = false;
+  document.getElementById('spot-panel').classList.remove('open');
+}
+
+// ── KEYBOARD ───────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { if (spotPanelOpen) closeSpot(); }
+  
+  const isFrontPage = document.getElementById('chapter-select').style.display !== 'none';
+  const isChapterCard = document.getElementById('chapter-card').classList.contains('active');
+  
+  if (isFrontPage) {
+    if (e.key === 'ArrowRight') scrollCarousel(1);
+    if (e.key === 'ArrowLeft') scrollCarousel(-1);
+    if (e.key === 'Enter') openChapterCard(selectedChapterIndex);
+  } else if (isChapterCard) {
+    if (e.key === 'Enter') beginChapterFromCard();
+    if (e.key === 'Escape') returnToChapters();
+  } else {
+    if (e.key === 'ArrowRight' || e.key === 'Enter') { if (!spotPanelOpen) goForward(); }
+    if (e.key === 'ArrowLeft') { if (!spotPanelOpen) goBack(); }
+  }
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+buildChapterSelect();
+</script>
+</body>
+</html>
