@@ -456,6 +456,7 @@ window.addEventListener('mouseup', () => isDragging = false);
 
 function zoom(factor) {
   currentScale *= factor;
+  currentScale = Math.max(0.2, Math.min(5, currentScale));
   updateTransform();
 }
 

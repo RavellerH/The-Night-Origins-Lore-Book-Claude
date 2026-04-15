@@ -1,0 +1,5102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Labyrinth — Floor 1 Prototype</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #06020e;
+    --stone: #1a1a2e;
+    --wall: #2a1a3e;
+    --floor: #140e20;
+    --purple: #8a4ab0;
+    --purple-glow: #a060d0;
+    --lava: #d06030;
+    --crystal: #4a9ad0;
+    --light: #f0e080;
+    --hp-green: #30a050;
+    --hp-red: #c03030;
+    --mp-blue: #3060c0;
+    --gold: #c8a030;
+    --text: #d0c0e0;
+    --text-dim: #8070a0;
+    --border: rgba(138,74,176,0.3);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #game-container {
+    position: relative;
+    width: 1366px;
+    height: 768px;
+    border: 2px solid var(--border);
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  canvas { display: block; }
+
+  /* HUD overlay */
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 64px;
+    background: linear-gradient(180deg, rgba(6,2,14,0.95) 0%, rgba(6,2,14,0.7) 80%, transparent 100%);
+    display: none;
+    align-items: center;
+    padding: 6px 20px;
+    gap: 20px;
+    z-index: 10;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+  }
+  #hud.visible { display: flex; }
+
+  .hud-char {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 190px;
+    max-width: 250px;
+    flex: 1;
+  }
+  #hud-party-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex: 1;
+  }
+  .hud-char .name {
+    width: 70px;
+    font-size: 13px;
+    color: var(--purple-glow);
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+  .hud-char .level {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .hud-bars { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .hud-bar {
+    height: 12px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+    min-width: 160px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .hud-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s;
+  }
+  .hud-bar-fill.hp { background: linear-gradient(90deg, #207030, var(--hp-green)); }
+  .hud-bar-fill.hp.low { background: linear-gradient(90deg, #702020, var(--hp-red)); }
+  .hud-bar-fill.mp { background: linear-gradient(90deg, #204080, var(--mp-blue)); }
+  .hud-bar-fill.taint { background: linear-gradient(90deg, #401060, #8020c0); }
+
+  .hud-bar-label {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    font-size: 10px;
+    line-height: 10px;
+    text-align: center;
+    color: rgba(255,255,255,0.9);
+    font-family: 'Crimson Pro', serif;
+    text-shadow: 0 0 2px rgba(0,0,0,0.8);
+  }
+
+  .hud-resources {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--gold);
+    background: rgba(138,74,176,0.05);
+    padding: 6px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(138,74,176,0.1);
+  }
+
+  /* Floor label */
+  #floor-label {
+    position: absolute;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    color: var(--purple-glow);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+    text-shadow: 0 0 10px rgba(160,96,208,0.4);
+  }
+  #floor-label.visible { opacity: 1; }
+
+  /* Dialogue / story overlay */
+  #dialogue-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    min-height: 140px;
+    background: linear-gradient(0deg, rgba(6,2,14,0.98) 0%, rgba(6,2,14,0.9) 85%, transparent 100%);
+    display: none;
+    padding: 30px 40px 20px;
+    z-index: 20;
+    cursor: pointer;
+    border-top: 1px solid rgba(138,74,176,0.2);
+  }
+  #dialogue-overlay.visible { display: block; }
+  #dialogue-text {
+    font-size: 17px;
+    line-height: 1.6;
+    font-style: italic;
+    color: #e0d0f0;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  #dialogue-speaker {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--purple-glow);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+    font-style: normal;
+    text-align: center;
+  }
+  #dialogue-hint {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 15px;
+    font-family: 'Cinzel', serif;
+    text-align: center;
+    letter-spacing: 1px;
+    opacity: 0.6;
+  }
+
+  /* Battle UI overlay */
+  #battle-ui {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 250px;
+    background: linear-gradient(0deg, rgba(6,2,14,0.98) 0%, rgba(6,2,14,0.85) 90%, transparent 100%);
+    display: none;
+    z-index: 20;
+    border-top: 1px solid rgba(138,74,176,0.15);
+  }
+  #battle-ui.visible { display: block; }
+
+  #veil-pressure-gauge {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  #veil-label { color: #a080c0; letter-spacing: 1px; }
+  #veil-bar {
+    width: 100px;
+    height: 10px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 5px;
+    overflow: hidden;
+    border: 1px solid rgba(138,74,176,0.3);
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+  }
+  #veil-fill {
+    height: 100%;
+    width: 10%;
+    background: linear-gradient(90deg, #6a3090, #c040c0);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s;
+    border-radius: 5px;
+    position: relative;
+  }
+  #veil-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 4px;
+    background: #fff;
+    filter: blur(2px);
+    opacity: 0.5;
+  }
+  #veil-pct { 
+    position: absolute;
+    right: -35px;
+    top: 12px;
+    color: #c080d0; 
+    font-size: 11px; 
+    font-weight: bold;
+  }
+
+  #turn-queue {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+  }
+  .tq-entry {
+    padding: 3px 10px;
+    border-radius: 4px;
+    background: rgba(138,74,176,0.1);
+    border: 1px solid rgba(138,74,176,0.15);
+    color: var(--text-dim);
+    transition: all 0.3s;
+  }
+  .tq-entry.active {
+    background: rgba(138,74,176,0.3);
+    border-color: var(--purple-glow);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(160,96,208,0.3);
+    transform: scale(1.1);
+  }
+
+  #battle-log {
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 15px;
+    color: #fff;
+    text-align: center;
+    font-style: italic;
+    max-width: 600px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  #action-menu {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    z-index: 25;
+  }
+  .action-btn {
+    background: rgba(138,74,176,0.1);
+    border: 1px solid rgba(138,74,176,0.25);
+    color: var(--text-dim);
+    padding: 8px 20px;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 2px;
+    text-align: left;
+    min-width: 180px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .action-btn:hover, .action-btn.selected {
+    background: rgba(138,74,176,0.3);
+    border-color: var(--purple-glow);
+    color: #fff;
+    padding-left: 25px;
+  }
+  .action-btn.selected::before {
+    content: '▶';
+    position: absolute;
+    left: 8px;
+    font-size: 10px;
+    color: var(--purple-glow);
+  }
+  .action-btn .shortcut {
+    color: var(--text-dim);
+    margin-right: 8px;
+    font-size: 10px;
+  }
+
+  #skill-menu {
+    position: absolute;
+    bottom: 16px;
+    left: 190px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 25;
+  }
+  #skill-menu.visible { display: flex; }
+
+  #item-menu {
+    position: absolute;
+    bottom: 16px;
+    left: 190px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 25;
+  }
+  #item-menu.visible { display: flex; }
+
+  #ally-menu {
+    position: absolute;
+    bottom: 16px;
+    left: 190px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 25;
+  }
+  #ally-menu.visible { display: flex; }
+  .ally-target-label {
+    color: var(--purple-glow);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    opacity: 0.8;
+  }
+
+  /* Battle HP bars on canvas characters */
+  .battle-info {
+    position: absolute;
+    z-index: 15;
+    pointer-events: none;
+  }
+
+  /* Title screen */
+  #title-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    background: radial-gradient(ellipse at center, rgba(6,2,14,0.55) 0%, rgba(6,2,14,0.85) 70%), url('assets/bg_title.png') center/cover no-repeat;
+  }
+  #title-screen h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 48px;
+    color: var(--purple-glow);
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px rgba(138,74,176,0.4);
+    margin-bottom: 8px;
+  }
+  #title-screen .subtitle {
+    font-size: 14px;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-bottom: 40px;
+  }
+  .title-btn {
+    background: rgba(138,74,176,0.1);
+    border: 1px solid rgba(138,74,176,0.3);
+    color: var(--text);
+    padding: 10px 32px;
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 4px 0;
+    min-width: 200px;
+    transition: all 0.2s;
+  }
+  .title-btn:hover {
+    background: rgba(138,74,176,0.3);
+    border-color: var(--purple-glow);
+    color: #fff;
+  }
+
+  /* How to play panel */
+  #how-to-play {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 55;
+    background: rgba(6,2,14,0.95);
+    padding: 40px;
+  }
+  #how-to-play.visible { display: flex; }
+  #how-to-play h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 24px;
+    color: var(--purple-glow);
+    margin-bottom: 20px;
+    letter-spacing: 4px;
+  }
+  #how-to-play .instructions {
+    max-width: 500px;
+    font-size: 15px;
+    line-height: 1.8;
+    color: var(--text);
+  }
+  #how-to-play .instructions strong {
+    color: var(--purple-glow);
+    font-family: 'Cinzel', serif;
+  }
+  #how-to-play .back-btn {
+    margin-top: 30px;
+  }
+
+  /* Transition overlay */
+  #transition {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    z-index: 40;
+    pointer-events: none;
+    transition: opacity 0.6s;
+  }
+  #transition.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Victory / Defeat screen */
+  #result-screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 45;
+    background: rgba(6,2,14,0.9);
+  }
+  #result-screen.visible { display: flex; }
+  #result-screen h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 32px;
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+  }
+  #result-screen h2.victory { color: var(--hp-green); }
+  #result-screen h2.defeat { color: var(--hp-red); }
+  #result-screen .rewards {
+    font-size: 16px;
+    color: var(--gold);
+    margin-bottom: 24px;
+  }
+  #result-screen .story-text {
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 400px;
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  /* ============================================================
+     CUTSCENE OVERLAY
+  ============================================================ */
+  #cutscene-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    padding: 40px;
+  }
+  #cutscene-overlay.visible { display: flex; }
+
+  #cutscene-img {
+    width: 100%;
+    height: 300px;
+    border-top: 1px solid rgba(138,74,176,0.3);
+    border-bottom: 1px solid rgba(138,74,176,0.3);
+    margin-bottom: 30px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(0,0,0,1);
+    flex-shrink: 0;
+  }
+  #cutscene-img::before, #cutscene-img::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; height: 40px;
+    z-index: 2;
+  }
+  #cutscene-img::before { top: 0; background: linear-gradient(180deg, #000, transparent); }
+  #cutscene-img::after { bottom: 0; background: linear-gradient(0deg, #000, transparent); }
+
+  #cutscene-caption {
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-style: italic;
+    font-size: 18px;
+    color: #d0c0e0;
+    text-align: center;
+    max-width: 600px;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+
+  #cutscene-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .cutscene-choice {
+    background: rgba(138,74,176,0.05);
+    border: 1px solid rgba(138,74,176,0.2);
+    color: #a090b0;
+    padding: 12px 20px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s;
+    border-radius: 4px;
+  }
+  .cutscene-choice:hover, .cutscene-choice.selected {
+    background: rgba(138,74,176,0.2);
+    border-color: var(--purple-glow);
+    color: #fff;
+    transform: translateX(10px);
+  }
+  .cutscene-choice .ck {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--purple-glow);
+    margin-right: 12px;
+    font-weight: bold;
+  }
+  .cutscene-choice:hover,
+  .cutscene-choice.selected {
+    background: rgba(138,74,176,0.28);
+    border-color: var(--purple-glow);
+    color: #fff;
+  }
+  .cutscene-choice .ck {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    color: var(--purple-glow);
+    margin-right: 10px;
+    letter-spacing: 1px;
+  }
+
+  #cutscene-effect {
+    margin-top: 14px;
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--purple-glow);
+    letter-spacing: 1px;
+    text-align: center;
+    min-height: 18px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  #cutscene-effect.visible { opacity: 1; }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="game-canvas" width="1366" height="768"></canvas>
+
+  <!-- HUD -->
+  <div id="hud">
+    <!-- Generated dynamically -->
+    <div id="hud-party-container"></div>
+    <div class="hud-resources">
+      <span>Gold: <span id="hud-gold">0</span></span>
+      <span>Items: <span id="hud-items">5</span></span>
+    </div>
+  </div>
+
+  <!-- Floor label -->
+  <div id="floor-label">Floor 1 — Demon Corridors</div>
+
+  <!-- Dialogue overlay -->
+  <div id="dialogue-overlay">
+    <div id="dialogue-speaker"></div>
+    <div id="dialogue-text"></div>
+    <div id="dialogue-hint">Press Enter or click to continue</div>
+  </div>
+
+  <!-- Battle UI -->
+  <div id="battle-ui">
+    <div id="veil-pressure-gauge">
+      <span id="veil-label">Veil Pressure</span>
+      <div id="veil-bar"><div id="veil-fill"></div></div>
+      <span id="veil-pct">10%</span>
+    </div>
+    <div id="turn-queue"></div>
+    <div id="battle-log"></div>
+    <div id="action-menu">
+      <button class="action-btn selected" data-action="attack"><span class="shortcut">1</span>⚔ Attack</button>
+      <button class="action-btn" data-action="skill"><span class="shortcut">2</span>✦ Skill</button>
+      <button class="action-btn" data-action="item"><span class="shortcut">3</span>✧ Item</button>
+      <button class="action-btn" data-action="defend"><span class="shortcut">4</span>◆ Defend</button>
+      <button class="action-btn" data-action="flee"><span class="shortcut">5</span>↩ Flee</button>
+    </div>
+    <div id="skill-menu"></div>
+    <div id="item-menu"></div>
+    <div id="ally-menu"></div>
+  </div>
+
+  <!-- Title screen -->
+  <div id="title-screen">
+    <h1>Labyrinth</h1>
+    <div class="subtitle">A Deepborn crack beneath the City of the Blinding Light</div>
+    <button class="title-btn" id="btn-continue" style="display: none;">Continue Journey</button>
+    <button class="title-btn" id="btn-start">Enter the Labyrinth</button>
+    <button class="title-btn" id="btn-howto">How to Play</button>
+    <a href="../index.html" class="title-btn" style="text-decoration:none;text-align:center;margin-top:12px;font-size:12px;opacity:0.55;">← Game Hub</a>
+  </div>
+
+  <!-- How to play -->
+  <div id="how-to-play">
+    <h2>How to Play</h2>
+    <div class="instructions">
+      <strong>WASD / Arrow Keys</strong> — Move Avery (Nate follows)<br>
+      <strong>Walk into enemies</strong> to start turn-based combat<br>
+      <strong>1-5 keys</strong> — Choose actions in battle<br>
+      <strong>Enter / Space</strong> — Advance dialogue<br>
+      <strong>E / Enter</strong> — Interact with chests and stairs<br><br>
+      <em>Explore Floor 1 of the Labyrinth. Fight Deepborn creatures. Find the chest. Reach the stairs to escape.</em>
+    </div>
+    <button class="title-btn back-btn" id="btn-back">Back</button>
+  </div>
+
+  <!-- Cutscene overlay -->
+  <div id="cutscene-overlay">
+    <div id="cutscene-img"></div>
+    <div id="cutscene-caption"></div>
+    <div id="cutscene-choices"></div>
+    <div id="cutscene-effect"></div>
+  </div>
+
+  <!-- Transition -->
+  <div id="transition"></div>
+
+  <!-- Result screen -->
+  <div id="result-screen">
+    <h2 id="result-title"></h2>
+    <div class="rewards" id="result-rewards"></div>
+    <div class="story-text" id="result-story"></div>
+    <button class="title-btn" id="btn-result-action">Continue</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  LABYRINTH — Floor 1 Prototype
+// ============================================================
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const W = 1366, H = 768;
+
+// Tile size and map dimensions
+const TILE = 48;
+const MAP_W = 10, MAP_H = 10;
+const MAP_OX = (W - MAP_W * TILE) / 2;  // center map horizontally
+const MAP_OY = (H - MAP_H * TILE) / 2 + 10;
+
+// ============================================================
+//  GAME STATE MACHINE
+// ============================================================
+let state = 'title'; // title | explore | dialogue | cutscene | formation | battle | victory | defeat | complete
+let transitionCallback = null;
+let floorNumber = 1;
+let xp = { avery: 0, nate: 0 };
+let level = { avery: 1, nate: 1 };
+
+function transition(duration, callback) {
+  const el = document.getElementById('transition');
+  el.classList.add('active');
+  setTimeout(() => {
+    callback();
+    setTimeout(() => el.classList.remove('active'), duration * 600);
+  }, duration * 400);
+}
+
+// ============================================================
+//  CHARACTER DATA (Prototype — fixed stats)
+// ============================================================
+const PARTY = [
+  {
+    id: 'avery', name: 'Avery', title: 'Crystal Origin',
+    hp: 80, maxHp: 80, mp: 40, maxMp: 40,
+    atk: 8, def: 6, spd: 7, mag: 15,
+    skills: [
+      { name: 'Crystal Shard', cost: 8, type: 'damage', power: 1.2, target: 'enemy', desc: 'Single-target magic damage' },
+      { name: 'Crystal Barrier', cost: 10, type: 'buff', stat: 'def', amount: 0.5, duration: 3, target: 'ally', desc: 'Ally DEF +50% for 3 turns' },
+      { name: 'Crystal Purify', cost: 12, type: 'purify', power: 0, target: 'ally', restore: 15, desc: 'Remove status effects, restore 15 HP', unlocked: false },
+    ],
+    defending: false, buffs: [], position: 'front', taint: 0,
+    color: '#4a9ad0', hairColor: '#1a1a3e', eyeColor: '#a0d0f0',
+  },
+  {
+    id: 'nate', name: 'Nate', title: 'Light Mage',
+    hp: 70, maxHp: 70, mp: 50, maxMp: 50,
+    atk: 6, def: 5, spd: 8, mag: 12,
+    skills: [
+      { name: 'Light Bolt', cost: 8, type: 'damage', power: 1.3, target: 'enemy', desc: 'Single-target light damage' },
+      { name: 'Blinding Flash', cost: 10, type: 'debuff', stat: 'accuracy', amount: -0.3, duration: 2, target: 'enemy', desc: 'Lowers enemy accuracy for 2 turns' },
+      { name: 'Radiant Shield', cost: 12, type: 'shield', amount: 0.2, duration: 3, target: 'ally', desc: 'Barrier absorbs 20% damage for 3 turns' },
+    ],
+    defending: false, buffs: [], position: 'back', taint: 0,
+    color: '#f0e080', hairColor: '#5a4020', eyeColor: '#e0d080',
+  },
+];
+
+// ── Alyse Lucent — joins at Floor 3 after purification scene ──────────────────
+// Canon: alive Ch.63, light mage, signature is light butterflies, CANNOT heal.
+// Joins after Crystal Purify scene — unlockCrystalPurify() fires on same callback.
+const ALYSE_TEMPLATE = {
+  id: 'alyse', name: 'Alyse', title: 'Light Support',
+  hp: 65, maxHp: 65, mp: 45, maxMp: 45,
+  atk: 5, def: 4, spd: 10, mag: 14,
+  skills: [
+    { name: 'Light Butterfly', cost: 7, type: 'damage', power: 1.0, target: 'enemy',
+      desc: 'Single-target light damage — butterflies of condensed light' },
+    { name: 'Butterfly Shield', cost: 10, type: 'shield', amount: 0.25, duration: 2, target: 'ally',
+      desc: 'Butterfly barrier absorbs 25% incoming damage for 2 turns' },
+    { name: 'Wing Flash', cost: 14, type: 'damage', power: 1.4, target: 'enemy',
+      desc: 'Stronger light burst — butterflies scatter into a blinding wave' },
+  ],
+  defending: false, buffs: [], position: 'back', taint: 0,
+  color: '#d0d8ff', hairColor: '#e0dcc0', eyeColor: '#f0f0ff',
+};
+
+// ============================================================
+//  INVENTORY
+// ============================================================
+let inventory = {
+  healingDrop: 3,
+  crystalShard: 2,
+};
+let gold = 0;
+
+function totalItems() { return inventory.healingDrop + inventory.crystalShard; }
+
+// ============================================================
+//  ENEMY DATA
+// ============================================================
+const ENEMY_TYPES = {
+  imp: {
+    name: 'Corrupted Imp', hp: 30, atk: 8, def: 4, spd: 6, mag: 5,
+    skills: [{ name: 'Scratch', power: 1.0 }],
+    goldDrop: [3, 6], weakness: 'light', weakMult: 1.5,
+    color: '#8a3040',
+  },
+  creeper: {
+    name: 'Dark Creeper', hp: 40, atk: 10, def: 6, spd: 8, mag: 7,
+    skills: [{ name: 'Shadow Touch', power: 1.2 }, { name: 'Corrupt', power: 0.8, status: 'slow' }],
+    goldDrop: [5, 9], weakness: 'light', weakMult: 1.5,
+    color: '#3a4a2a',
+  },
+  scout: {
+    name: 'Demon Scout', hp: 70, atk: 14, def: 10, spd: 9, mag: 10,
+    skills: [{ name: 'Dark Slash', power: 1.3 }, { name: 'Intimidate', power: 0.6, status: 'defDown' }],
+    goldDrop: [10, 16], weakness: 'crystal', weakMult: 1.4,
+    color: '#6a2040',
+    isMiniBoss: true,
+  },
+
+  // ── FLOOR 2 ──────────────────────────────────────────────────
+  // Lore: The Labyrinth's temporal distortion creates echo-constructs —
+  // impressions of people who passed through, now hostile. Not true Deepborn.
+  // Frank describes them as "shadows that have our faces."
+  // Hard counter: crystal (purification disperses temporal echoes).
+  shadowEcho: {
+    name: 'Shadow Echo', hp: 32, atk: 9, def: 3, spd: 11, mag: 9,
+    skills: [
+      { name: 'Mimic Strike', power: 1.0 },             // copies the shape of the last party attack
+      { name: 'Whisper', power: 0.5, status: 'atkDown' }, // psychic erosion — lowers ATK 25% for 2 turns
+      { name: 'Phase Step', power: 0.8, status: 'slow' }, // passes through you — leaves you slower
+    ],
+    goldDrop: [4, 8], weakness: 'crystal', weakMult: 1.6,
+    color: '#5a607a',
+    lore: 'A temporal echo of someone who passed through here before you. It knows how you move because it is you — or was.',
+  },
+
+  // ── FLOOR 3 ──────────────────────────────────────────────────
+  // Lore: Layer 1 Deepborn — directionless without leadership.
+  // Spreads, corrupts, consumes. A hostile nature, not an intelligence.
+  // Adds Taint directly. Hard counter: crystal magic (purification).
+  mindlessDrone: {
+    name: 'Mindless Drone', hp: 55, atk: 11, def: 8, spd: 4, mag: 9,
+    skills: [
+      { name: 'Corrupt Strike', power: 1.1, status: 'taint' },  // +1 Taint to target
+      { name: 'Veil Pulse', power: 0.7, status: 'veilBoost' },  // +10% veil pressure immediately
+      { name: 'Devour', power: 1.4 },                           // high damage; Qwen: add lifesteal (recover 30% of dmg dealt)
+    ],
+    goldDrop: [6, 10], weakness: 'crystal', weakMult: 1.6,
+    color: '#2e4030',
+    lore: 'Pure Deepborn. No will. No memory. It corrupts because that is all it has ever been — a wound in the world that keeps opening.',
+  },
+
+  // Lore: A forest animal caught near the Vleyrra seal crack and corrupted
+  // by ambient veil energy. Not Deepborn — a victim. Fast, physical, pack-hunter.
+  // Weakness: light (burns the veil corruption off the natural creature).
+  corruptedWolf: {
+    name: 'Corrupted Wolf', hp: 45, atk: 15, def: 4, spd: 13, mag: 2,
+    skills: [
+      { name: 'Savage Bite', power: 1.3, status: 'bleed' },      // +bleed: 5 HP/turn for 2 turns
+      { name: 'Feral Howl', power: 0.4, status: 'defDown' },     // pack intimidation — DEF down for party
+      { name: 'Corruption Lunge', power: 1.2, status: 'taint' }, // veil-charged charge attack
+    ],
+    goldDrop: [7, 12], weakness: 'light', weakMult: 1.5,
+    color: '#504050',
+    lore: 'It was a forest wolf before the seal cracked. Whatever it is now still remembers how to hunt. That is the worst part.',
+  },
+
+  // ── FLOOR 4 ──────────────────────────────────────────────────
+  // Lore: A human mage pulled into the Labyrinth who could not resist the veil.
+  // Their light magic is inverted — shadow-light hybrid. Corrupted, not destroyed.
+  // Crystal purification can still reach the human core. Resists light (warped).
+  taintedMage: {
+    name: 'Tainted Mage', hp: 85, atk: 7, def: 7, spd: 5, mag: 20,
+    skills: [
+      { name: 'Taint Blast', power: 1.3, status: 'taintAll' },   // +1 Taint to ALL party members; AoE
+      { name: 'Void Ray', power: 1.8 },                          // highest single-target magic in Ch.1
+      { name: 'Shadow Barrier', power: 0.5, status: 'defDown' }, // inverted light barrier — corrupting field
+    ],
+    goldDrop: [12, 18], weakness: 'crystal', weakMult: 1.5,
+    color: '#5a2065',
+    isMiniBoss: true,
+    lore: 'They came to study the ruins. The ruins studied them back. There is still a person in there — you can hear it in the way they flinch before they cast.',
+  },
+
+  // Lore: Ancient Deepborn construct — a guardian-type placed at seal weak points.
+  // Not mindless. Has purpose: prevent descent. Tall, armored in crystallised veil energy.
+  // Weakness: crystal (disrupts the veil-crystal it is made of).
+  voidSentinel: {
+    name: 'Void Sentinel', hp: 110, atk: 14, def: 14, spd: 3, mag: 12,
+    skills: [
+      { name: 'Seal Strike', power: 1.5, status: 'stun' },  // heavy blow — stuns target 1 turn
+      { name: 'Veil Wall', power: 0.4, status: 'veilBoost' }, // raises veil pressure by 10%
+      { name: 'Crushing Force', power: 1.2 },               // broad physical slam — Qwen: make AoE
+    ],
+    goldDrop: [14, 22], weakness: 'crystal', weakMult: 1.4,
+    color: '#2a0e50',
+    isMiniBoss: true,
+    lore: 'It has been standing here since before the city above existed. It does not know the gods who stationed it are asleep. It is still doing its job.',
+  },
+};
+
+// ============================================================
+//  FLOOR DATA — Data-driven floor system
+//  0=floor, 1=wall, 2=chest, 3=stairs down, 4=entry point
+// ============================================================
+const FLOORS = {
+  1: {
+    number: 1,
+    name: 'The Demon Corridors',
+    chapter: 'The Descent',
+    
+    tiles: [
+      [1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,1,0,0,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,1,0,1],
+      [1,1,0,0,0,0,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,0,1,1,0,0,0,0,1],
+      [1,0,0,1,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,2,1],
+      [1,4,0,0,0,0,0,1,3,1],
+    ],
+    
+    entryPos: { x: 1, y: 9 },
+    stairsPos: { x: 8, y: 9 },
+    
+    chests: [
+      { pos: { x: 8, y: 8 }, loot: { healingDrop: 2, crystalShard: 1 } },
+    ],
+    
+    enemies: [
+      { type: 'imp',    x: 4, y: 2, patrol: [{x:4,y:2},{x:5,y:2},{x:4,y:3},{x:3,y:3}], patrolIdx: 0, active: true },
+      { type: 'imp',    x: 6, y: 5, patrol: [{x:6,y:5},{x:7,y:5},{x:6,y:6},{x:5,y:6}], patrolIdx: 0, active: true },
+      { type: 'creeper', x: 2, y: 6, patrol: [{x:2,y:6},{x:2,y:5},{x:1,y:6},{x:1,y:5}], patrolIdx: 0, active: true },
+      { type: 'scout',  x: 7, y: 7, patrol: [{x:7,y:7},{x:6,y:7},{x:7,y:6},{x:6,y:6}], patrolIdx: 0, active: true },
+    ],
+    
+    collectibles: [],
+    npcs: [],
+    
+    storyTriggers: {
+      onEnter: 'entry',
+      midFloor: 'midFloor',
+      onExit: null,
+    },
+    enemiesRequired: 4,
+    
+    visuals: {
+      wallColor: '#2a1a3a',
+      floorColor: '#1a1020',
+      ambientParticles: 'purple_embers',
+    },
+    
+    startVeilPressure: 10,
+  },
+  2: {
+    number: 2,
+    name: 'The Echo Chamber',
+    chapter: 'The Descent',
+
+    tiles: [
+      [1,1,1,1,1,1,1,1,1,1],
+      [1,4,0,0,0,1,0,0,0,1],
+      [1,0,1,1,0,1,0,1,0,1],
+      [1,0,0,0,0,0,0,1,0,1],
+      [1,1,1,1,1,1,0,1,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,1,0,1],
+      [1,0,0,0,0,0,0,0,2,1],
+      [1,1,1,1,1,1,1,1,3,1],
+    ],
+
+    entryPos: { x: 1, y: 1 },
+    stairsPos: { x: 8, y: 9 },
+
+    chests: [
+      { pos: { x: 8, y: 8 }, loot: { healingDrop: 1, crystalShard: 1, frankNote: 1 } },
+    ],
+
+    enemies: [
+      { type: 'shadowEcho', x: 4, y: 3, patrol: [{x:4,y:3},{x:5,y:3},{x:6,y:3}], patrolIdx: 0, active: true },
+      { type: 'creeper',    x: 8, y: 5, patrol: [{x:8,y:5},{x:8,y:6},{x:8,y:7}], patrolIdx: 0, active: true },
+      { type: 'shadowEcho', x: 2, y: 7, patrol: [{x:2,y:7},{x:3,y:7},{x:4,y:7}], patrolIdx: 0, active: true },
+      { type: 'imp',        x: 6, y: 8, patrol: [{x:6,y:8},{x:5,y:8},{x:4,y:8}], patrolIdx: 0, active: true },
+    ],
+
+    collectibles: [],
+    npcs: [
+      { id: 'frank', x: 6, y: 7, active: true },
+    ],
+
+    storyTriggers: {
+      onEnter: 'floor2_entry',
+      midFloor: 'floor2_frank', // trigger when approaching frank
+      onExit: null,
+    },
+    enemiesRequired: 4,
+
+    visuals: {
+      wallColor: '#3a1a4a',
+      floorColor: '#1a0a2e',
+      ambientParticles: 'void_dust',
+    },
+
+    startVeilPressure: 18,
+  },
+  3: {
+    number: 3,
+    name: 'The Corrupted Grove',
+    chapter: 'The Descent',
+
+    //  0=floor, 1=wall, 2=chest, 3=stairs, 4=entry
+    //  Corrupted vines split the space into organic corridors.
+    //  Entry top-left (1,1). Alyse at (5,5). Stairs bottom-right (8,9).
+    tiles: [
+      [1,1,1,1,1,1,1,1,1,1],
+      [1,4,0,0,1,0,0,0,0,1],
+      [1,0,1,0,0,0,1,1,0,1],
+      [1,0,1,0,1,0,0,0,0,1],
+      [1,0,0,0,1,0,1,0,1,1],
+      [1,1,1,0,0,0,1,0,0,1],
+      [1,0,0,0,1,0,0,0,0,1],
+      [1,0,1,1,0,0,1,0,0,1],
+      [1,0,0,0,0,0,0,0,2,1],
+      [1,1,1,1,1,0,1,1,3,1],
+    ],
+
+    entryPos: { x: 1, y: 1 },
+    stairsPos: { x: 8, y: 9 },
+
+    chests: [
+      {
+        pos: { x: 8, y: 8 },
+        loot: { purifyingDrop: 2, lightPendant: 1 },
+        desc: 'A cracked chest half-swallowed by black vines. Inside: two Purifying Drops and a tarnished elven pendant still faintly glowing.',
+      },
+    ],
+
+    enemies: [
+      { type: 'mindlessDrone', x: 7, y: 1, patrol: [{x:7,y:1},{x:8,y:1},{x:8,y:2},{x:8,y:3}], patrolIdx: 0, active: true },
+      { type: 'mindlessDrone', x: 6, y: 3, patrol: [{x:6,y:3},{x:7,y:3},{x:5,y:3},{x:8,y:3}], patrolIdx: 0, active: true },
+      { type: 'corruptedWolf', x: 1, y: 3, patrol: [{x:1,y:3},{x:1,y:2},{x:1,y:4},{x:3,y:4}], patrolIdx: 0, active: true },
+      { type: 'corruptedWolf', x: 7, y: 6, patrol: [{x:7,y:6},{x:8,y:6},{x:8,y:7},{x:7,y:7}], patrolIdx: 0, active: true },
+    ],
+
+    collectibles: [],
+    npcs: [
+      { id: 'alyse', x: 5, y: 5, active: true },
+    ],
+
+    storyTriggers: {
+      onEnter: 'floor3_entry',
+      midFloor: 'floor3_midfloor',
+      onExit: null,
+    },
+    enemiesRequired: 4,
+
+    visuals: {
+      wallColor: '#1a2e1a',
+      floorColor: '#0e180a',
+      ambientParticles: 'green_spores',
+    },
+
+    startVeilPressure: 26,
+  },
+};
+
+// Backwards-compatible aliases (will be removed after full migration)
+const FLOOR_MAP = FLOORS[1].tiles;
+const ENTRY_POS = FLOORS[1].entryPos;
+const CHEST_POS = FLOORS[1].chests[0].pos;
+const STAIRS_POS = FLOORS[1].stairsPos;
+const MAP_ENEMIES = FLOORS[1].enemies;
+const TOTAL_ENEMIES = MAP_ENEMIES.length;
+
+// ============================================================
+//  GAME STATE — unified state object
+// ============================================================
+let gameState = {
+  currentFloor: 1,
+  xp: { avery: 0, nate: 0 },
+  level: { avery: 1, nate: 1 },
+  gold: 0,
+  inventory: { healingDrop: 3, crystalShard: 2 },
+  
+  // Per-floor state (reset each floor)
+  floorState: null,
+  
+  // Persistent flags (never reset between floors)
+  storyFlags: {
+    metFrank: false,
+    alysePurified: false,
+    ellenFound: false,
+    franMet: false,
+    comboUnlocked: false,
+  },
+  
+  // Collected research items
+  research: {
+    runeFragments: [],
+    timeFragments: [],
+    memoryFragments: [],
+  },
+  
+  // Focus Items equipped
+  equipment: {
+    nate: null,
+    avery: null,
+    fran: null,
+  },
+};
+
+// ============================================================
+//  FLOOR LOADING
+// ============================================================
+function loadFloor(floorNum) {
+  const floor = FLOORS[floorNum];
+  if (!floor) { console.error('Floor ' + floorNum + ' not found'); return; }
+  
+  gameState.currentFloor = floorNum;
+  floorNumber = floorNum; // keep legacy var in sync for veil/damage formulas
+
+  // Reset floor state
+  gameState.floorState = {
+    chestsOpened: [],
+    enemiesDefeated: 0,
+    collectiblesFound: [],
+    npcsMet: [],
+    storyFlagsTriggered: [],
+    veilPressure: floor.startVeilPressure || 10,
+  };
+  
+  // Reset floor-specific variables
+  chestOpened = false;
+  chestAnimTimer = 0;
+  chestParticles = [];
+  enemiesDefeated = 0;
+  midFloorTriggered = false;
+  
+  // Update floor label
+  document.getElementById('floor-label').textContent = 'Floor ' + floorNum + ' — ' + floor.name;
+  
+  // Update player position
+  player.x = floor.entryPos.x;
+  player.y = floor.entryPos.y;
+  
+  // Deep-copy enemies (so restarts don't mutate FLOORS data)
+  floor.enemies.forEach(e => {
+    e.patrolIdx = 0;
+    e.active = true;
+  });
+  
+  // Reset battle state veil pressure
+  battleState.veilPressure = gameState.floorState.veilPressure;
+  
+  // Fire onEnter story trigger
+  if (floor.storyTriggers && floor.storyTriggers.onEnter) {
+    showDialogue(floor.storyTriggers.onEnter);
+  }
+}
+
+function exitFloor() {
+  // Enemy states are already mutated in-place on FLOORS[gameState.currentFloor].enemies
+  // Clear floor state
+  gameState.floorState = null;
+}
+
+function enterNextFloor(floorNum) {
+  exitFloor();
+  transition(0.8, () => {
+    loadFloor(floorNum);
+    // Restore HUD and floor label (hidden by the floor-complete result screen)
+    document.getElementById('hud').classList.add('visible');
+    document.getElementById('floor-label').classList.add('visible');
+    // loadFloor may trigger a dialogue (sets state = 'dialogue') — don't overwrite it
+    if (state !== 'dialogue') state = 'explore';
+  });
+}
+
+// Initialize Floor 1 on game start
+function initGame() {
+  loadFloor(1);
+  // Sync aliases
+  inventory = gameState.inventory;
+  gold = gameState.gold;
+  updateHUD();
+  buildBattleHUD();
+}
+
+// ============================================================
+//  PARTY MANAGEMENT
+// ============================================================
+function addPartyMember(charData) {
+  // Check if character already in party
+  if (PARTY.find(p => p.id === charData.id)) {
+    console.warn('Character ' + charData.id + ' already in party');
+    return PARTY.find(p => p.id === charData.id);
+  }
+  
+  // Add to PARTY array
+  PARTY.push({
+    id: charData.id,
+    name: charData.name,
+    title: charData.title || '',
+    hp: charData.hp || 60,
+    maxHp: charData.maxHp || 60,
+    mp: charData.mp || 30,
+    maxMp: charData.maxMp || 30,
+    atk: charData.atk || 6,
+    def: charData.def || 5,
+    spd: charData.spd || 7,
+    mag: charData.mag || 10,
+    skills: charData.skills || [],
+    defending: false,
+    buffs: [],
+    position: charData.position || 'back',
+    taint: charData.taint || 0,
+    color: charData.color || '#c0c0c0',
+  });
+  
+  // Add render position for 3rd+ character
+  const idx = PARTY.length - 1;
+  if (partyRenderPos.length <= idx) {
+    // Stack third character below others
+    partyRenderPos.push({ x: 200, y: 580 });
+    // And beyond if needed
+    for (let i = partyRenderPos.length; i < PARTY.length; i++) {
+      partyRenderPos.push({ x: 200, y: 280 + i * 100 });
+    }
+  }
+  
+  // Rebuild HUD and turn queue
+  initHUD();
+  
+  // Sync aliases
+  inventory = gameState.inventory;
+  gold = gameState.gold;
+  
+  return PARTY[PARTY.length - 1];
+}
+
+// Sync aliases (must be after gameState definition)
+inventory = gameState.inventory;
+gold = gameState.gold;
+
+// Floor runtime variables (managed by loadFloor / gameState.floorState)
+let chestOpened = false;
+let chestAnimTimer = 0;
+let chestParticles = [];
+let enemiesDefeated = 0;
+let midFloorTriggered = false;
+
+// ============================================================
+//  PLAYER
+// ============================================================
+let player = {
+  x: ENTRY_POS.x,
+  y: ENTRY_POS.y,
+  dir: 'up', // up, down, left, right
+  moving: false,
+  moveTimer: 0,
+  moveFrom: { x: 0, y: 0 },
+  moveTo: { x: 0, y: 0 },
+};
+
+let nateFollow = {
+  x: ENTRY_POS.x + 1,
+  y: ENTRY_POS.y,
+  targetX: ENTRY_POS.x + 1,
+  targetY: ENTRY_POS.y,
+  trail: [{ x: ENTRY_POS.x + 1, y: ENTRY_POS.y }, { x: ENTRY_POS.x, y: ENTRY_POS.y }],
+  maxTrail: 8,
+};
+
+// ============================================================
+//  DIALOGUE SYSTEM
+// ============================================================
+let dialogueQueue = [];
+let dialogueActive = false;
+
+const STORY_BEATS = {
+  entry: {
+    speaker: 'Avery',
+    text: 'The purple tree pulled us in. One moment we were standing in the ruins — the next, falling into something vast and wrong. The ceiling is stone branches. The sky is lava. And there are things moving in the dark.',
+  },
+  entryNate: {
+    speaker: 'Nate',
+    text: '"Avery — your crystal. It\'s glowing. I\'ve never seen it do that underground."',
+  },
+  midFloor: {
+    speaker: 'Avery',
+    text: 'Something is wrong with time here. The air feels thick, stretched. Every step takes longer than it should. Nate says he can feel it too — like the world is breathing slower.',
+  },
+  chest: {
+    speaker: '',
+    text: 'A wooden chest, ancient and covered in purple moss. Inside: supplies left by someone who was here before.',
+  },
+  stairs: {
+    speaker: 'Nate',
+    text: '"There are stairs going down. Deeper into this place. Are you ready?"',
+    getDynamicText: () => {
+      const remaining = TOTAL_ENEMIES - enemiesDefeated;
+      return '"There are stairs going down... but we can\'t proceed yet." Nate glances back. ' + remaining + ' creature' + (remaining > 1 ? 's' : '') + ' still patrol' + (remaining === 1 ? 's' : '') + ' this floor.';
+    }
+  },
+  complete: {
+    speaker: '',
+    text: 'Floor 1 complete. The Labyrinth goes deeper. Avery and Nate descend further into the Deepborn crack.',
+  },
+  defeat: {
+    speaker: '',
+    text: 'The Deepborn creatures overwhelm you. Darkness closes in — but a pulse of crystal light throws you back to the entrance. Try again.',
+  },
+  flee: {
+    speaker: '',
+    text: 'You retreat into the shadows. The creatures don\'t follow. The corridor ahead remains dangerous, but you live to fight again.',
+  },
+  alyse_found: {
+    speaker: 'Alyse',
+    text: '"I don\'t know how long I\'ve been in here. But you came. You actually came for me."',
+  },
+  fleeScout: {
+    speaker: '',
+    text: 'The Demon Scout roars as you flee. It won\'t chase, but you\'ll have to face it eventually.',
+  },
+  
+  // ── FLOOR 3 BEATS ────────────────────────────────────────────
+  floor3_entry: {
+    speaker: 'Avery',
+    text: '"The walls are growing. These vines weren\'t here — they\'re spreading from something. The air smells like a forest that\'s burning from the inside."',
+  },
+  floor3_midfloor: {
+    speaker: 'Nate',
+    text: '"Avery. The veil pressure — it\'s spiking every time those wolf things move. They\'re not just enemies. They\'re amplifiers. Every one of them we leave alive makes the next fight worse."',
+  },
+  floor3_alyse1: {
+    speaker: 'Alyse',
+    text: '"...Avery." Her voice is barely a sound. She\'s slumped against the vine wall, three streaks of dark taint running up her arm. "I thought I was going to die in here."',
+  },
+  floor3_alyse2: {
+    speaker: 'Avery',
+    text: '"She\'s tainted. The veil corruption is in her — she must have been here too long. My crystal is pulling toward her. Like it wants to do something."',
+  },
+  floor3_alyse3: {
+    speaker: 'Alyse',
+    text: '"The corruption — I can feel it in my fingers now. It started at the wall two days ago and it\'s still moving." She looks at your crystal. "Your light. It\'s different from mine. It\'s clean."',
+  },
+  floor3_alyse_after: {
+    speaker: 'Alyse',
+    text: '"That\'s what it does," she says quietly. "That\'s what crystal magic is for. It doesn\'t just destroy. It restores." She steadies herself against the wall. "Teach me to trust it."',
+  },
+  floor3_alyse_joins: {
+    speaker: 'Nate',
+    text: '"Alyse. You\'re with us now. We go down together."',
+  },
+
+  // ── FLOOR 2 BEATS ────────────────────────────────────────────
+  floor2_entry: {
+    speaker: 'Nate',
+    text: '"The walls... they\'re pulsing. Like they have a heartbeat. And the air smells like ozone and old metal."',
+  },
+  floor2_frank: {
+    speaker: 'Frank',
+    text: '"Avery? Nate? Is that... is that really you? I thought I\'d never see another face again. I\'ve been wandering these halls for three days."',
+  },
+  frank_response: {
+    speaker: 'Avery',
+    text: '"Three days? Frank, we only just arrived. It\'s been twenty minutes since we fell through the tree."',
+  },
+  frank_warning: {
+    speaker: 'Frank',
+    text: '"Impossible... Look at the shadows, Avery. They don\'t move with the light. They have faces. Shadows that have our faces."',
+  },
+  frank_joins: {
+    speaker: 'Nate',
+    text: '"Time is broken here. Frank, stay close. We\'re finding a way out of this place together."',
+  },
+};
+
+function showDialogue(beatId, callback) {
+  const beat = STORY_BEATS[beatId];
+  if (!beat) { if (callback) callback(); return; }
+  
+  // Support dynamic text generation
+  const text = beat.getDynamicText ? beat.getDynamicText() : beat.text;
+  
+  dialogueQueue = [{ ...beat, text, callback }];
+  showNextDialogue();
+}
+
+function showNextDialogue() {
+  if (dialogueQueue.length === 0) return;
+  const d = dialogueQueue.shift();
+  state = 'dialogue';
+  const overlay = document.getElementById('dialogue-overlay');
+  overlay.classList.add('visible');
+  document.getElementById('dialogue-speaker').textContent = d.speaker;
+  document.getElementById('dialogue-text').textContent = d.text;
+  dialogueActive = true;
+  dialogueCallback = d.callback || null;
+}
+
+let dialogueCallback = null;
+
+function advanceDialogue() {
+  if (!dialogueActive) return;
+  dialogueActive = false;
+  const overlay = document.getElementById('dialogue-overlay');
+  overlay.classList.remove('visible');
+  const cb = dialogueCallback;
+  dialogueCallback = null;
+  if (dialogueQueue.length > 0) {
+    setTimeout(() => showNextDialogue(), 200);
+  } else {
+    state = 'explore';
+    if (cb) cb();
+  }
+}
+
+// ============================================================
+//  CUTSCENE SYSTEM
+// ============================================================
+
+// Image scenes use CSS gradients as placeholders until real art is generated.
+// Each cutscene fires at a narrative pivot and offers 3 lore-canon choices
+// that change mechanical outcomes (stats, items, veil, taint) but never
+// alter story events — Avery still finds Frank, still purifies Alyse, etc.
+
+const CUTSCENES = {
+
+  // Floor 1 entry — fires before any dialogue
+  portal_entry: {
+    img: { grad: 'radial-gradient(ellipse at 50% 65%, #6a2080 0%, #2a0840 45%, #06020e 100%)', title: 'The Portal', sub: 'Vleyrra Ruins — The Dark Purple Tree' },
+    caption: 'The tree cracked open and swallowed you whole.\nThis place is not meant for the living.\nWhat do you do first?',
+    choices: [
+      { text: '"Stay still. Assess. Don\'t move until you understand what you\'re in."',
+        note: 'Cautious stance — DEF +15% for Floor 1.',
+        effect: () => { PARTY.forEach(p => p.buffs.push({ stat: 'def', amount: 0.15, turns: 9999, label: 'Cautious Stance' })); }
+      },
+      { text: '"Move fast. The others are in here somewhere. Every second counts."',
+        note: 'Urgent pace — SPD +15% for Floor 1.',
+        effect: () => { PARTY.forEach(p => p.buffs.push({ stat: 'spd', amount: 0.15, turns: 9999, label: 'Urgent Pace' })); }
+      },
+      { text: '"The crystal is reacting to something. Listen to it."',
+        note: 'Origin instinct — Crystal Shard power +0.3 for this floor.',
+        effect: () => {
+          const shard = PARTY[0].skills.find(s => s.name === 'Crystal Shard');
+          if (shard) shard.power += 0.3;
+        }
+      },
+    ],
+  },
+
+  // Floor 2 — finding Frank (fires when player reaches Frank's position)
+  frank_cutscene: {
+    img: { grad: 'linear-gradient(180deg, #06020e 0%, #1a0a2e 55%, #2a1040 100%)', title: 'The Echo of Time', sub: 'Floor 2 — Finding Frank' },
+    caption: 'To you: twenty minutes.\nTo him: three days.\nThe Labyrinth bends time and does not apologise.',
+    choices: [
+      { text: '"Don\'t think about the math. We\'re here now. That\'s what matters."',
+        note: 'Frank\'s steadiness steadies you — Party ATK +10% for Floor 2.',
+        effect: () => { PARTY.forEach(p => p.buffs.push({ stat: 'atk', amount: 0.10, turns: 9999, label: 'Rallied' })); }
+      },
+      { text: '"The shadows you described — tell me exactly how they moved."',
+        note: 'Frank\'s intel — Veil Pressure starts 10% lower this floor.',
+        effect: () => { battleState.veilPressure = Math.max(0, (battleState.veilPressure || 18) - 10); window._frankIntel = true; }
+      },
+      { text: '"Can you still build something? Anything that could help us down here?"',
+        note: 'Frank improvises — +1 Deploy Trap added to inventory.',
+        effect: () => { inventory.deployTrap = (inventory.deployTrap || 0) + 1; }
+      },
+    ],
+  },
+
+  // Floor 3 — the purification pivot (fires between avery_afraid and avery_purifies)
+  alyse_cutscene: {
+    img: { grad: 'radial-gradient(ellipse at 40% 50%, #1a5070 0%, #1a1050 50%, #06020e 100%)', title: 'The Gift of Purification', sub: 'Floor 3 — Finding Alyse' },
+    caption: 'Your power is the wrong color for this place.\nOr so you have always believed.\nHow do you reach for it?',
+    choices: [
+      { text: '"Pour everything in. Leave nothing back."',
+        note: 'Avery takes 12 HP damage — MAG +20% and next Crystal Purify costs 0 MP.',
+        effect: () => {
+          PARTY[0].hp = Math.max(1, PARTY[0].hp - 12);
+          PARTY[0].buffs.push({ stat: 'mag', amount: 0.20, turns: 9999, label: 'Overextended' });
+          window._purifyFreeCharge = true;
+        }
+      },
+      { text: '"Careful. Measured. One thread at a time."',
+        note: 'Clean execution. No cost. Crystal Purify unlocked.',
+        effect: () => { /* unlock is called by the wrapper regardless of choice */ }
+      },
+      { text: '"Nate — stay close. Guide me through it."',
+        note: 'Done together — both party members lose 2 Taint. Nate\'s Radiant Shield auto-applies next battle.',
+        effect: () => {
+          PARTY.forEach(p => { p.taint = Math.max(0, p.taint - 2); });
+          window._sharedPurify = true;
+        }
+      },
+    ],
+  },
+
+  // Floor 4 — Ellen's silence (fires after ellen_nate beat)
+  ellen_cutscene: {
+    img: { grad: 'linear-gradient(180deg, #06020e 0%, #0c0616 75%, #180a20 100%)', title: 'The Breaking Point', sub: 'Floor 4 — Seven Days of Silence' },
+    caption: 'A week in the dark.\nShe counted her pulse to know time was real.\nWhat do you do?',
+    choices: [
+      { text: '"Sit with her. Don\'t speak. Just be here."',
+        note: 'Solidarity — Party DEF +15% for Floor 4.',
+        effect: () => { PARTY.forEach(p => p.buffs.push({ stat: 'def', amount: 0.15, turns: 9999, label: 'Solidarity' })); }
+      },
+      { text: '"Ellen — tell me everything you noticed about this floor."',
+        note: 'Her week of observation reveals a hidden chest location.',
+        effect: () => { window._ellenIntel = true; }
+      },
+      { text: '"You\'re the reason we kept moving. All of us."',
+        note: 'Her endurance reminds you of your own — Party loses 1 Taint each.',
+        effect: () => { PARTY.forEach(p => { p.taint = Math.max(0, p.taint - 1); }); }
+      },
+    ],
+  },
+
+  // Floor 8 — The Convergence (fires when Avery and Fran's paths meet)
+  convergence_cutscene: {
+    img: { grad: 'radial-gradient(ellipse at 50% 50%, #3a1060 0%, #1a0430 55%, #06020e 100%)', title: 'The Convergence', sub: 'Floor 8 — Chapter 63' },
+    caption: 'You feel it before you see her.\nNot dark. Not an enemy.\nA pulse like your own — but not yours.',
+    choices: [
+      { text: '"Who are you?"',
+        note: 'Lynne identifies you both. The meeting begins.',
+        effect: () => { /* standard convergence */ }
+      },
+      { text: '"I felt you. On Floor 4, from below. That pulse was you."',
+        note: 'Avery\'s Origin instinct — Fran is surprised. Prismatic Burst deals +5% more damage.',
+        effect: () => {
+          window._averyIntuitedFran = true;
+          window._prismaticBonus = (window._prismaticBonus || 0.15) + 0.05;
+        }
+      },
+      { text: '"You\'re an Origin."',
+        note: 'Avery names it before Lynne does — Crystal Resonance combo unlocked.',
+        effect: () => { window._crystalResonanceUnlocked = true; }
+      },
+    ],
+  },
+};
+
+let _cutsceneCallback = null;
+let _cutsceneActiveId = null;
+let _cutsceneSelectedIdx = 0;
+let _cutsceneLocked = false; // prevents double-fire during resolve delay
+
+function showCutscene(id, callback) {
+  const cs = CUTSCENES[id];
+  if (!cs) { if (callback) callback(); return; }
+
+  _cutsceneCallback = callback || null;
+  _cutsceneActiveId = id;
+  _cutsceneSelectedIdx = 0;
+  _cutsceneLocked = false;
+
+  // Build image placeholder
+  const imgEl = document.getElementById('cutscene-img');
+  imgEl.style.background = cs.img.grad;
+  imgEl.innerHTML =
+    '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;">' +
+    '<span style="font-family:\'Cinzel\',serif;font-size:11px;letter-spacing:3px;color:rgba(208,192,224,0.45);text-transform:uppercase;">' + cs.img.sub + '</span>' +
+    '<span style="font-family:\'Cinzel\',serif;font-size:17px;letter-spacing:4px;color:rgba(160,96,208,0.65);">' + cs.img.title + '</span>' +
+    '</div>';
+
+  // Caption
+  document.getElementById('cutscene-caption').innerHTML = cs.caption.replace(/\n/g, '<br>');
+
+  // Choices
+  const choicesEl = document.getElementById('cutscene-choices');
+  choicesEl.innerHTML = '';
+  cs.choices.forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'cutscene-choice';
+    btn.innerHTML = '<span class="ck">' + (i + 1) + '</span>' + choice.text;
+    btn.onclick = () => resolveCutsceneChoice(i);
+    choicesEl.appendChild(btn);
+  });
+
+  // Clear effect line
+  const effectEl = document.getElementById('cutscene-effect');
+  effectEl.textContent = '';
+  effectEl.classList.remove('visible');
+
+  document.getElementById('cutscene-overlay').classList.add('visible');
+  state = 'cutscene';
+  _updateCutsceneSelection();
+}
+
+function _updateCutsceneSelection() {
+  document.querySelectorAll('.cutscene-choice').forEach((b, i) =>
+    b.classList.toggle('selected', i === _cutsceneSelectedIdx)
+  );
+}
+
+function resolveCutsceneChoice(idx) {
+  if (_cutsceneLocked) return;
+  const cs = CUTSCENES[_cutsceneActiveId];
+  if (!cs || !cs.choices[idx]) return;
+  _cutsceneLocked = true;
+
+  const choice = cs.choices[idx];
+  choice.effect();
+
+  // Show outcome note briefly
+  const effectEl = document.getElementById('cutscene-effect');
+  effectEl.textContent = choice.note;
+  effectEl.classList.add('visible');
+  updateHUD();
+
+  setTimeout(() => {
+    document.getElementById('cutscene-overlay').classList.remove('visible');
+    effectEl.classList.remove('visible');
+    _cutsceneActiveId = null;
+    _cutsceneLocked = false;
+    state = 'explore';
+    const cb = _cutsceneCallback;
+    _cutsceneCallback = null;
+    if (cb) cb();
+  }, 1400);
+}
+
+function unlockCrystalPurify() {
+  const purify = PARTY[0].skills.find(s => s.name === 'Crystal Purify');
+  if (purify) purify.unlocked = true;
+}
+
+// ============================================================
+//  FORMATION SYSTEM (pre-battle row assignment)
+//  Player drags characters between FRONT and BACK zones.
+//  Front: +15% ATK, +25% damage taken.  Back: -25% damage taken.
+// ============================================================
+
+// Canvas x split: left of this → front zone, right → back zone
+const FORMATION_SPLIT_X = 360;
+// Center x for each column — BACK on left (away from enemies), FRONT on right (toward enemies)
+const FORMATION_FRONT_X = 480;
+const FORMATION_BACK_X  = 220;
+
+let formationState = {
+  pendingEnemies: null,   // enemies created by collision, waiting for formation confirm
+  pendingMapRef: null,    // the MAP_ENEMIES entry that triggered the battle
+  drag: { active: false, charIdx: -1, mx: 0, my: 0 },
+};
+
+// Returns canvas position for a party member in the formation screen.
+// Characters are distributed top-to-bottom within their zone column.
+function getFormationPos(charIdx) {
+  const char = PARTY[charIdx];
+  const zoneChars = PARTY.filter(p => p.position === char.position);
+  const slotIdx = zoneChars.indexOf(char);
+  const count = zoneChars.length;
+  const spacing = 170;
+  const totalH = (count - 1) * spacing;
+  const startY = (H - totalH) / 2;
+  return {
+    x: char.position === 'front' ? FORMATION_FRONT_X : FORMATION_BACK_X,
+    y: startY + slotIdx * spacing,
+  };
+}
+
+function enterFormation(enemies, mapEnemyRef) {
+  formationState.pendingEnemies = enemies;
+  formationState.pendingMapRef  = mapEnemyRef;
+  formationState.drag = { active: false, charIdx: -1, mx: 0, my: 0 };
+  state = 'formation';
+}
+
+function confirmFormation() {
+  const enemies    = formationState.pendingEnemies;
+  const mapEnemyRef = formationState.pendingMapRef;
+
+  const startVeilPressure = Math.min(50, 10 + (floorNumber - 1) * 8);
+  battleState = {
+    enemies,
+    turnQueue: [],
+    turnIdx: 0,
+    activeCharIdx: -1,
+    menuSelection: 0,
+    subMenu: null,
+    awaitingTarget: null,
+    animating: false,
+    battleLog: 'Encountered ' + enemies.map(e => e.name).join(' and ') + '!',
+    fleeing: false,
+    mapEnemyRef,
+    veilPressure: startVeilPressure,
+    lastSkillType: null,
+    lastTargetIdx: null,
+    comboHistory: [],
+  };
+
+  PARTY.forEach(p => { p.defending = false; p.buffs = []; });
+  resetCombatantAnim();
+  damageNumbers = [];
+  projectiles = [];
+  battleParticles = [];
+  animTimeline = [];
+  activeAnimation = null;
+
+  const allCombatants = [
+    ...PARTY.map(p => ({ ...p, isParty: true })),
+    ...enemies.map(e => ({ ...e, isParty: false })),
+  ];
+  allCombatants.sort((a, b) => b.spd - a.spd);
+  battleState.turnQueue = allCombatants.map(c => ({
+    id: c.id || c.name, name: c.name, isParty: c.isParty,
+  }));
+
+  state = 'battle';
+  document.getElementById('battle-ui').classList.add('visible');
+  showActionMenu();
+  updateBattleUI();
+}
+
+function drawFormation() {
+  // Background
+  const grad = ctx.createRadialGradient(W / 2, H / 2, 60, W / 2, H / 2, 520);
+  grad.addColorStop(0, '#120830');
+  grad.addColorStop(1, '#06020e');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Zone backgrounds — left = back (blue), right = front (purple)
+  ctx.fillStyle = 'rgba(80,120,208,0.05)';
+  ctx.fillRect(60, 100, FORMATION_SPLIT_X - 70, H - 200);
+  ctx.fillStyle = 'rgba(138,74,176,0.05)';
+  ctx.fillRect(FORMATION_SPLIT_X + 10, 100, FORMATION_FRONT_X + 200 - FORMATION_SPLIT_X, H - 200);
+
+  // Zone divider
+  ctx.strokeStyle = 'rgba(138,74,176,0.2)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 7]);
+  ctx.beginPath();
+  ctx.moveTo(FORMATION_SPLIT_X, 90);
+  ctx.lineTo(FORMATION_SPLIT_X, H - 90);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Zone headers — BACK on left, FRONT on right
+  ctx.textAlign = 'center';
+  ctx.font = '14px Cinzel, serif';
+  ctx.fillStyle = 'rgba(96,144,208,0.85)';
+  ctx.fillText('BACK ROW', FORMATION_BACK_X, 72);
+  ctx.fillStyle = 'rgba(160,96,208,0.85)';
+  ctx.fillText('FRONT ROW', FORMATION_FRONT_X, 72);
+
+  ctx.font = '10px Crimson Pro, serif';
+  ctx.fillStyle = 'rgba(96,144,208,0.45)';
+  ctx.fillText('-25% DMG taken', FORMATION_BACK_X, 89);
+  ctx.fillStyle = 'rgba(160,96,208,0.45)';
+  ctx.fillText('+15% ATK  ·  +25% DMG taken', FORMATION_FRONT_X, 89);
+
+  // Enemy preview (right side, dimmed)
+  ctx.font = '11px Cinzel, serif';
+  ctx.fillStyle = 'rgba(192,80,80,0.45)';
+  ctx.fillText('ENEMIES', 950, 72);
+  const enemyPreviewY = (H - (formationState.pendingEnemies.length - 1) * 160) / 2;
+  formationState.pendingEnemies.forEach((e, i) => {
+    const ex = 950, ey = enemyPreviewY + i * 160;
+    ctx.fillStyle = e.color + '30';
+    ctx.beginPath();
+    ctx.arc(ex, ey, 30, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = e.color + '70';
+    ctx.beginPath();
+    ctx.arc(ex, ey, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(192,80,80,0.5)';
+    ctx.font = '10px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(e.name, ex, ey + 34);
+    // HP hint
+    drawSmallBar(ex - 28, ey + 40, 56, e.hp, e.maxHp, '#c03030');
+  });
+
+  // Drop-zone highlight when dragging
+  if (formationState.drag.active) {
+    const inFront = formationState.drag.mx >= FORMATION_SPLIT_X;
+    ctx.strokeStyle = inFront ? 'rgba(160,96,208,0.55)' : 'rgba(96,144,208,0.55)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 5]);
+    if (inFront) {
+      // right side = front zone
+      ctx.strokeRect(FORMATION_SPLIT_X + 15, 105, FORMATION_FRONT_X + 190 - FORMATION_SPLIT_X, H - 210);
+    } else {
+      // left side = back zone
+      ctx.strokeRect(65, 105, FORMATION_SPLIT_X - 75, H - 210);
+    }
+    ctx.setLineDash([]);
+    ctx.lineWidth = 1;
+  }
+
+  // Party characters (skip the one being dragged)
+  PARTY.forEach((p, i) => {
+    if (formationState.drag.active && formationState.drag.charIdx === i) return;
+    const pos = getFormationPos(i);
+    _drawFormationChar(p, pos.x, pos.y, 1.0);
+  });
+
+  // Drag ghost
+  if (formationState.drag.active) {
+    const p = PARTY[formationState.drag.charIdx];
+    ctx.globalAlpha = 0.8;
+    _drawFormationChar(p, formationState.drag.mx, formationState.drag.my, 1.1);
+    ctx.globalAlpha = 1;
+  }
+
+  // Confirm hint
+  ctx.fillStyle = 'rgba(160,96,208,0.7)';
+  ctx.font = '13px Cinzel, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ENTER — Begin Battle', W / 2, H - 36);
+  ctx.textAlign = 'left';
+}
+
+// Shared character drawing for formation screen
+function _drawFormationChar(p, cx, cy, scale) {
+  // Glow
+  ctx.fillStyle = p.color + '22';
+  ctx.beginPath();
+  ctx.arc(cx, cy, 36 * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  ctx.fillStyle = p.color;
+  ctx.beginPath();
+  ctx.arc(cx, cy - 6, 18 * scale, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hair
+  ctx.fillStyle = p.hairColor || '#5a4020';
+  ctx.beginPath();
+  ctx.arc(cx, cy - 13, 16 * scale, Math.PI, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = p.eyeColor || '#ffffff';
+  ctx.fillRect(cx - 5 * scale, cy - 9, 3, 3);
+  ctx.fillRect(cx + 2 * scale, cy - 9, 3, 3);
+
+  // Name
+  ctx.fillStyle = p.color;
+  ctx.font = '12px Cinzel, serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(p.name, cx, cy + 22);
+
+  // Row badge
+  const isFront = p.position === 'front';
+  ctx.fillStyle = isFront ? 'rgba(160,96,208,0.75)' : 'rgba(96,144,208,0.75)';
+  ctx.font = '10px Cinzel, serif';
+  ctx.fillText(isFront ? 'FRONT' : 'BACK', cx, cy + 35);
+
+  // HP/MP bars
+  drawSmallBar(cx - 28, cy + 42, 56, p.hp, p.maxHp, '#30a050');
+  drawSmallBar(cx - 28, cy + 49, 56, p.mp, p.maxMp, '#3060c0');
+
+  ctx.fillStyle = 'rgba(255,255,255,0.13)';
+  ctx.font = '9px Cinzel, serif';
+  ctx.fillText('drag to swap row', cx, cy + 62);
+}
+
+// ============================================================
+//  BATTLE SYSTEM
+// ============================================================
+let battleState = {
+  enemies: [],
+  turnQueue: [],
+  turnIdx: 0,
+  activeCharIdx: -1, // 0+=party, 10+=enemies
+  menuSelection: 0,
+  subMenu: null, // 'skill' | 'item' | 'ally-target' | null
+  awaitingTarget: null, // { type: 'enemy'|'ally', skill: ... }
+  pendingAllySkill: null, // skill awaiting ally target selection
+  animating: false,
+  battleLog: '',
+  fleeing: false,
+  mapEnemyRef: null, // reference to the MAP_ENEMIES entry that triggered this
+  veilPressure: 10, // starts at 10% for Floor 1
+  lastSkillType: null, // for combo tracking
+  lastTargetIdx: null, // last targeted enemy index
+  comboHistory: [], // track last 3 actions for combo checks
+};
+
+function startBattle(mapEnemy) {
+  const enemies = [createEnemy(mapEnemy.type)];
+  // 30% chance for a second enemy if not mini-boss
+  if (!ENEMY_TYPES[mapEnemy.type].isMiniBoss && Math.random() < 0.3) {
+    enemies.push(createEnemy('imp'));
+  }
+  // Show formation screen first so player can assign front/back
+  enterFormation(enemies, mapEnemy);
+}
+
+function createEnemy(type) {
+  const t = ENEMY_TYPES[type];
+  // Scale stats per floor: Floor 1 = base, each additional floor +15% (cap at +90% for floor 7+)
+  const floorBonus = Math.min(0.9, (gameState.currentFloor - 1) * 0.15);
+  const scale = (base) => Math.ceil(base * (1 + floorBonus));
+  return {
+    id: type,
+    name: t.name,
+    hp: scale(t.hp),
+    maxHp: scale(t.hp),
+    atk: scale(t.atk),
+    def: scale(t.def),
+    spd: t.spd, // speed not scaled — keep turn order feel consistent
+    mag: scale(t.mag),
+    skills: t.skills,
+    buffs: [],
+    goldDrop: t.goldDrop,
+    weakness: t.weakness,
+    weakMult: t.weakMult,
+    color: t.color,
+    isMiniBoss: t.isMiniBoss || false,
+    x: 0, y: 0,
+  };
+}
+
+// ============================================================
+//  ALYSE JOIN — prototype helper
+//  In production: fired from alyse_names_it dialogue callback on Floor 3.
+//  For prototype testing: press Tab during explore to add Alyse instantly.
+// ============================================================
+function addAlyseToParty() {
+  const existing = PARTY.find(p => p.id === 'alyse');
+  if (existing) return; // already in party
+
+  addPartyMember(ALYSE_TEMPLATE);
+
+  // Also sync level/xp entries for Alyse
+  if (!gameState.xp.alyse) gameState.xp.alyse = 0;
+  if (!gameState.level.alyse) gameState.level.alyse = 1;
+  if (!xp.alyse) xp.alyse = 0;
+  if (!level.alyse) level.alyse = 1;
+
+  // Rebuild anim state for new party member
+  resetCombatantAnim();
+
+  // Brief join dialogue if in explore mode
+  if (state === 'explore') {
+    showDialogue('alyse_found');
+  }
+}
+
+// ============================================================
+//  LEVEL-UP SYSTEM
+// ============================================================
+const STAT_GROWTH = {
+  avery: { hp: 15, mp: 10, atk: 2, mag: 4, def: 2, spd: 1 },
+  nate:  { hp: 12, mp: 8,  atk: 3, mag: 2, def: 3, spd: 2 },
+  frank: { hp: 10, mp: 6,  atk: 3, mag: 1, def: 3, spd: 2 },
+  ellen: { hp: 10, mp: 8,  atk: 1, mag: 2, def: 3, spd: 2 },
+};
+
+function checkLevelUp() {
+  let leveled = false;
+  let levelText = '';
+  PARTY.forEach(p => {
+    const curXP = gameState.xp[p.id] || 0;
+    const curLevel = gameState.level[p.id] || 1;
+    if (curLevel >= 10) return;
+    const xpNeeded = curLevel * 100;
+    if (curXP >= xpNeeded) {
+      gameState.level[p.id] = curLevel + 1;
+      gameState.xp[p.id] = curXP - xpNeeded;
+      xp[p.id] = gameState.xp[p.id];
+      level[p.id] = gameState.level[p.id];
+
+      const g = STAT_GROWTH[p.id] || { hp: 10, mp: 5, atk: 2, mag: 2, def: 2, spd: 1 };
+      p.maxHp += g.hp; p.hp = Math.min(p.hp + g.hp, p.maxHp);
+      p.maxMp += g.mp; p.mp = Math.min(p.mp + g.mp, p.maxMp);
+      p.atk += g.atk; p.mag += g.mag; p.def += g.def; p.spd += g.spd;
+
+      levelText += p.name + ' → Lv.' + gameState.level[p.id] + '! ';
+      leveled = true;
+    }
+  });
+  if (leveled) {
+    updateHUD();
+    // Append to rewards text if result screen is visible
+    const rewards = document.getElementById('result-rewards');
+    if (rewards) rewards.textContent += ' | ★ LEVEL UP! ' + levelText;
+  }
+}
+
+// ============================================================
+//  SYNERGY COMBOS
+// ============================================================
+function checkCombos() {
+  const history = battleState.comboHistory;
+  if (history.length < 2) return;
+  
+  const last = history[history.length - 1];
+  const prev = history[history.length - 2];
+  
+  // Prismatic Burst: Crystal damage → Light damage on same target
+  if (prev.charType === 'crystal' && last.charType === 'light' && 
+      prev.actionType === 'damage' && last.actionType === 'damage' &&
+      prev.targetIdx === last.targetIdx) {
+    const target = battleState.enemies[prev.targetIdx];
+    if (target && target.hp > 0) {
+      const bonusDmg = Math.floor(target.maxHp * 0.15); // 15% max HP
+      target.hp = Math.max(0, target.hp - bonusDmg);
+      battleState.battleLog = '✦ PRISMATIC BURST! ✦ + ' + bonusDmg + ' bonus damage!';
+      const targetKey = 'enemy_' + prev.targetIdx;
+      spawnTextNumber(targetKey, 'PRISMATIC!', '#ffd040');
+      updateBattleUI();
+      updateHUD();
+    }
+  }
+  
+  // Veil Shatter: Two Light/Crystal skills on same enemy within 3 turns
+  if (history.length >= 2) {
+    const recentLightCrystal = history.filter(h => 
+      (h.charType === 'crystal' || h.charType === 'light') && h.actionType === 'damage'
+    ).slice(-2);
+    if (recentLightCrystal.length === 2 && recentLightCrystal[0].targetIdx === recentLightCrystal[1].targetIdx) {
+      const target = battleState.enemies[recentLightCrystal[0].targetIdx];
+      if (target && target.hp > 0) {
+        battleState.veilPressure = Math.max(0, battleState.veilPressure - 15);
+        target.buffs.push({ stat: 'stun', amount: 1, turns: 1 });
+        battleState.battleLog += ' ✦ VEIL SHATTER! Enemy stunned!';
+        const targetKey = 'enemy_' + recentLightCrystal[0].targetIdx;
+        spawnTextNumber(targetKey, 'SHATTER!', '#c080ff');
+        updateBattleUI();
+      }
+    }
+  }
+}
+
+function recordAction(charId, actionType, targetIdx) {
+  const char = PARTY.find(p => p.id === charId);
+  if (!char) return;
+  const charType = char.id === 'avery' ? 'crystal' : 'light';
+  battleState.comboHistory.push({
+    charId, charType, actionType, targetIdx,
+    turn: battleState.turnIdx,
+  });
+  // Keep only last 5 entries
+  if (battleState.comboHistory.length > 5) {
+    battleState.comboHistory = battleState.comboHistory.slice(-5);
+  }
+}
+
+// ============================================================
+//  NEXT TURN
+// ============================================================
+function nextTurn() {
+  if (state !== 'battle') return;
+
+  // Check battle end conditions
+  const allEnemiesDead = battleState.enemies.every(e => e.hp <= 0);
+  const allPartyDead = PARTY.every(p => p.hp <= 0);
+
+  if (allEnemiesDead) {
+    endBattleVictory();
+    return;
+  }
+  if (allPartyDead) {
+    endBattleDefeat();
+    return;
+  }
+
+  // Bleed DoT — process before veil
+  PARTY.forEach(p => {
+    if (p.hp <= 0) return;
+    const bleed = p.buffs.find(b => b.stat === 'bleed');
+    if (bleed) {
+      p.hp = Math.max(0, p.hp - bleed.amount);
+      battleState.battleLog = p.name + ' bleeds for ' + bleed.amount + ' HP!';
+      spawnDamageNumber('party_' + PARTY.indexOf(p), bleed.amount, '#c04040');
+    }
+  });
+
+  // Veil Pressure increases each turn
+  const veilIncrease = 5 + floorNumber * 0.5;
+  battleState.veilPressure = Math.min(100, battleState.veilPressure + veilIncrease);
+  
+  // Check Veil Break threshold (100%)
+  if (battleState.veilPressure >= 100) {
+    // Find strongest living enemy for free attack
+    const strongestEnemy = battleState.enemies.filter(e => e.hp > 0)
+      .sort((a, b) => b.atk - a.atk)[0];
+    if (strongestEnemy) {
+      const enemyIdx = battleState.enemies.indexOf(strongestEnemy);
+      battleState.battleLog = 'VEIL BREAK! ' + strongestEnemy.name + ' surges with dark power!';
+      updateBattleUI();
+      // Free attack — skip to enemy turn immediately
+      setTimeout(() => enemyTurn(enemyIdx), 800);
+      // Reset veil after break
+      battleState.veilPressure = 60;
+      return;
+    }
+  }
+  
+  // Veil crushing damage at 80%+
+  if (battleState.veilPressure >= 80) {
+    const crushDmg = 3 + floorNumber * 2;
+    PARTY.forEach(p => {
+      if (p.hp > 0) {
+        p.hp = Math.max(0, p.hp - crushDmg);
+      }
+    });
+    if (battleState.battleLog) battleState.battleLog += ' The veil crushes you! -' + crushDmg + ' HP.';
+    updateHUD();
+  }
+
+  // Check Synergy Combos from last action
+  checkCombos();
+
+  // Find next alive combatant in queue
+  let attempts = 0;
+  while (attempts < battleState.turnQueue.length) {
+    const entry = battleState.turnQueue[battleState.turnIdx % battleState.turnQueue.length];
+    battleState.turnIdx++;
+    attempts++;
+
+    if (entry.isParty) {
+      const charIdx = PARTY.findIndex(p => p.id === entry.id);
+      if (charIdx >= 0 && PARTY[charIdx].hp > 0) {
+        battleState.activeCharIdx = charIdx;
+        battleState.menuSelection = 0;
+        battleState.subMenu = null;
+        battleState.awaitingTarget = null;
+        battleState.animating = false;
+        showActionMenu();
+        updateBattleUI();
+        return;
+      }
+    } else {
+      const enemyIdx = battleState.enemies.findIndex(e => e.name === entry.name && e.hp > 0);
+      if (enemyIdx >= 0) {
+        battleState.activeCharIdx = 10 + enemyIdx;
+        setTimeout(() => enemyTurn(enemyIdx), 600);
+        return;
+      }
+    }
+  }
+
+  // No one left to act (shouldn't happen but safety)
+  endBattleVictory();
+}
+
+function playerAction(action, data, explicitAllyIdx) {
+  if (battleState.animating || state !== 'battle') return;
+  const char = PARTY[battleState.activeCharIdx];
+  if (!char || char.hp <= 0) { nextTurn(); return; }
+
+  battleState.animating = true;
+  hideSubMenu();
+
+  const attackerKey = 'party_' + battleState.activeCharIdx;
+  let actionType = null; // for combo tracking
+
+  switch (action) {
+    case 'attack': {
+      actionType = 'physical';
+      const target = getFirstAliveEnemy();
+      if (!target) { nextTurn(); return; }
+      const targetIdx = battleState.enemies.indexOf(target);
+      const targetKey = 'enemy_' + targetIdx;
+
+      const isCrit = Math.random() < 0.05;
+      let dmg = calcDamage(char.mag, target.def, 1.0, char, target);
+      if (isCrit) dmg = Math.floor(dmg * 1.5); // Crit = 50% bonus, not 100%
+
+      battleState.battleLog = char.name + ' attacks ' + target.name + '!' + (isCrit ? ' Critical hit!' : '');
+      battleState.lastTargetIdx = targetIdx;
+      recordAction(char.id, 'physical', targetIdx);
+
+      animateMeleeAttack(attackerKey, targetKey, () => {
+        target.hp = Math.max(0, target.hp - dmg);
+        spawnDamageNumber(targetKey, dmg, isCrit ? '#ff8000' : '#ff6060', isCrit, isCrit ? 'CRITICAL!' : '');
+        // Reset defend and clean buffs after action
+        char.defending = false;
+        PARTY.forEach(p => {
+          p.buffs = p.buffs.filter(b => { b.turns--; return b.turns > 0; });
+          p.defending = false;
+        });
+        updateBattleUI();
+        updateHUD();
+      });
+      break;
+    }
+    case 'skill': {
+      const skill = data;
+      actionType = skill.type;
+      if (char.mp < skill.cost) {
+        battleState.battleLog = 'Not enough MP!';
+        battleState.animating = false;
+        updateBattleUI();
+        return;
+      }
+      char.mp -= skill.cost;
+
+      if (skill.type === 'damage') {
+        const target = getFirstAliveEnemy();
+        if (!target) { nextTurn(); return; }
+        const targetIdx = battleState.enemies.indexOf(target);
+        const targetKey = 'enemy_' + targetIdx;
+        battleState.lastTargetIdx = targetIdx;
+        const dmg = calcDamage(char.mag, target.def, skill.power, char, target);
+        const isWeak = target.weakness === (char.id === 'avery' ? 'crystal' : 'light');
+        const finalDmg = isWeak ? Math.floor(dmg * target.weakMult) : dmg;
+        char.defending = false;
+        const projColor = char.id === 'avery' ? '#4a9ad0' : '#f0e080';
+        const projSize = char.id === 'avery' ? 6 : 5;
+        battleState.battleLog = char.name + ' uses ' + skill.name + '!' + (isWeak ? ' Super effective!' : '');
+        recordAction(char.id, 'damage', targetIdx);
+
+        animateProjectile(attackerKey, targetKey, projColor, projSize, () => {
+          target.hp = Math.max(0, target.hp - finalDmg);
+          spawnDamageNumber(targetKey, finalDmg, isWeak ? '#ffd040' : '#ff6060', isWeak, isWeak ? 'WEAKNESS!' : '');
+          updateBattleUI();
+          updateHUD();
+        });
+        
+        // Veil Pressure reduction for Crystal/Light skills
+        const veilReduction = char.id === 'avery' ? 10 : 12;
+        battleState.veilPressure = Math.max(0, battleState.veilPressure - veilReduction);
+      } else if (skill.type === 'buff') {
+        const aliveParty = PARTY.filter(p => p.hp > 0);
+        let target;
+        if (explicitAllyIdx !== undefined && PARTY[explicitAllyIdx] && PARTY[explicitAllyIdx].hp > 0) {
+          target = PARTY[explicitAllyIdx];
+        } else if (skill.target === 'ally') {
+          target = aliveParty.reduce((a, b) => a.hp / a.maxHp < b.hp / b.maxHp ? a : b);
+        } else {
+          target = char;
+        }
+        const targetIdx = PARTY.indexOf(target);
+        const targetKey = 'party_' + targetIdx;
+        target.buffs.push({ stat: skill.stat, amount: skill.amount, turns: skill.duration });
+        char.defending = false;
+        battleState.battleLog = char.name + ' uses ' + skill.name + ' on ' + target.name + '!';
+
+        // Veil reduction for buff skills too
+        battleState.veilPressure = Math.max(0, battleState.veilPressure - 8);
+
+        animateGenericSkill(attackerKey, targetKey, char.color, () => {
+          spawnBuffEffect(targetKey, skill.stat);
+          updateHUD();
+        });
+      } else if (skill.type === 'shield') {
+        const aliveParty = PARTY.filter(p => p.hp > 0);
+        let target;
+        if (explicitAllyIdx !== undefined && PARTY[explicitAllyIdx] && PARTY[explicitAllyIdx].hp > 0) {
+          target = PARTY[explicitAllyIdx];
+        } else if (skill.target === 'ally') {
+          target = aliveParty.reduce((a, b) => a.hp / a.maxHp < b.hp / b.maxHp ? a : b);
+        } else {
+          target = char;
+        }
+        const targetIdx = PARTY.indexOf(target);
+        const targetKey = 'party_' + targetIdx;
+        target.buffs.push({ stat: 'shield', amount: skill.amount, turns: skill.duration });
+        char.defending = false;
+        battleState.battleLog = char.name + ' uses ' + skill.name + ' on ' + target.name + '!';
+        battleState.veilPressure = Math.max(0, battleState.veilPressure - 12);
+        
+        animateGenericSkill(attackerKey, targetKey, '#a0d0ff', () => {
+          spawnBuffEffect(targetKey, 'shield');
+          updateHUD();
+        });
+      } else if (skill.type === 'debuff') {
+        const target = getFirstAliveEnemy();
+        if (!target) { nextTurn(); return; }
+        const targetIdx = battleState.enemies.indexOf(target);
+        const targetKey = 'enemy_' + targetIdx;
+        battleState.lastTargetIdx = targetIdx;
+        target.buffs.push({ stat: skill.stat, amount: skill.amount, turns: skill.duration });
+        char.defending = false;
+        battleState.battleLog = char.name + ' uses ' + skill.name + ' on ' + target.name + '!';
+        battleState.veilPressure = Math.max(0, battleState.veilPressure - 12);
+        
+        animateGenericSkill(attackerKey, targetKey, char.color, () => {
+          updateHUD();
+        });
+      } else if (skill.type === 'purify') {
+        // Crystal Purify: remove status effects + small HP restore
+        let target;
+        if (explicitAllyIdx !== undefined && PARTY[explicitAllyIdx] && PARTY[explicitAllyIdx].hp > 0) {
+          target = PARTY[explicitAllyIdx];
+        } else {
+          const injuredParty = PARTY.filter(p => p.hp > 0 && p.hp < p.maxHp);
+          if (injuredParty.length > 0) {
+            target = injuredParty.reduce((a, b) => a.hp / a.maxHp < b.hp / b.maxHp ? a : b);
+          } else {
+            target = PARTY[battleState.activeCharIdx] || PARTY[0];
+          }
+        }
+        const targetIdx = PARTY.indexOf(target);
+        const targetKey = 'party_' + targetIdx;
+
+        // Remove negative status effects
+        target.buffs = target.buffs.filter(b => b.stat !== 'slow' && b.stat !== 'stun' && b.stat !== 'silence' && b.stat !== 'defDown');
+        // Remove taint
+        target.taint = Math.max(0, target.taint - 3);
+        // Small HP restore
+        const healAmt = skill.restore || 15;
+        target.hp = Math.min(target.maxHp, target.hp + healAmt);
+        char.defending = false;
+        battleState.battleLog = char.name + ' uses ' + skill.name + '! ' + target.name + ' is purified. +' + healAmt + ' HP.';
+        battleState.veilPressure = Math.max(0, battleState.veilPressure - 10);
+        
+        animateGenericSkill(attackerKey, targetKey, '#c0ffd0', () => {
+          spawnBuffEffect(targetKey, 'purify');
+          updateHUD();
+        });
+      }
+      break;
+    }
+    case 'item': {
+      const item = data;
+      if (item === 'healingDrop' && inventory.healingDrop > 0) {
+        inventory.healingDrop--;
+        let mostDamaged = PARTY[0];
+        PARTY.forEach(p => { if (p.hp < mostDamaged.hp) mostDamaged = p; });
+        const targetIdx = PARTY.indexOf(mostDamaged);
+        const targetKey = 'party_' + targetIdx;
+        mostDamaged.hp = Math.min(mostDamaged.maxHp, mostDamaged.hp + 30);
+        battleState.battleLog = 'Used Healing Drop! ' + mostDamaged.name + ' recovers 30 HP!';
+        animateHeal(targetKey, '#40d060', () => {
+          spawnHealNumber(targetKey, 30);
+          updateBattleUI();
+          updateHUD();
+        });
+      } else if (item === 'crystalShard' && inventory.crystalShard > 0) {
+        inventory.crystalShard--;
+        char.mp = Math.min(char.maxMp, char.mp + 20);
+        battleState.battleLog = 'Used Crystal Shard! ' + char.name + ' recovers 20 MP!';
+        spawnTextNumber(attackerKey, '+20 MP', '#4a9ad0');
+        animateHeal(attackerKey, '#4a9ad0', () => {
+          updateBattleUI();
+          updateHUD();
+        });
+      } else if (item === 'purifyingDrop' && (inventory.purifyingDrop || 0) > 0) {
+        inventory.purifyingDrop--;
+        // Remove 4 Taint from most tainted ally
+        let mostTainted = PARTY.filter(p => p.hp > 0).reduce((a, b) => (a.taint || 0) >= (b.taint || 0) ? a : b);
+        mostTainted.taint = Math.max(0, (mostTainted.taint || 0) - 4);
+        // Also remove slow/bleed if present
+        mostTainted.buffs = mostTainted.buffs.filter(b => b.stat !== 'bleed' && b.stat !== 'slow');
+        const ptIdx = PARTY.indexOf(mostTainted);
+        const ptKey = 'party_' + ptIdx;
+        battleState.battleLog = 'Used Purifying Drop! ' + mostTainted.name + ' loses 4 Taint.';
+        animateHeal(ptKey, '#80ffa0', () => {
+          spawnBuffEffect(ptKey, 'purify');
+          updateBattleUI();
+          updateHUD();
+        });
+      }
+      break;
+    }
+    case 'defend': {
+      char.defending = true;
+      battleState.battleLog = char.name + ' takes a defensive stance!';
+      animateDefend(attackerKey, () => {
+        spawnTextNumber(attackerKey, 'DEFEND', '#6090d0');
+        updateBattleUI();
+      });
+      break;
+    }
+    case 'flee': {
+      const chance = 0.7;
+      if (battleState.enemies.some(e => e.isMiniBoss)) {
+        battleState.battleLog = "Can't flee from this battle!";
+        battleState.animating = false;
+        updateBattleUI();
+        setTimeout(() => nextTurn(), 500);
+        return;
+      }
+      if (Math.random() < chance) {
+        battleState.battleLog = 'Escaped successfully!';
+        battleState.fleeing = true;
+        animateFlee(() => {
+          endBattleFlee();
+        });
+      } else {
+        battleState.battleLog = 'Failed to escape!';
+        battleState.animating = false;
+        updateBattleUI();
+        setTimeout(() => nextTurn(), 500);
+      }
+      break;
+    }
+  }
+}
+
+function calcDamage(atkOrMag, def, power, attacker, target) {
+  let dmg = Math.floor(atkOrMag * power - def * 0.4);
+  dmg = Math.max(1, dmg + Math.floor(Math.random() * 3));
+  
+  // Positioning modifiers
+  if (attacker && attacker.position === 'front') dmg = Math.floor(dmg * 1.15); // +15% ATK from front
+  if (target && target.position === 'front') dmg = Math.floor(dmg * 1.25); // +25% damage taken in front
+  if (target && target.position === 'back') dmg = Math.floor(dmg * 0.75); // -25% damage taken in back
+  
+  // Shield buff (absorbs percentage of damage)
+  if (target && target.buffs) {
+    const shield = target.buffs.find(b => b.stat === 'shield');
+    if (shield) dmg = Math.floor(dmg * (1 - shield.amount));
+  }
+  
+  return Math.max(1, dmg);
+}
+
+
+function enemyTurn(enemyIdx) {
+  if (state !== 'battle') return;
+  const enemy = battleState.enemies[enemyIdx];
+  if (!enemy || enemy.hp <= 0) { nextTurn(); return; }
+
+  // Check if enemy is stunned
+  const stunned = enemy.buffs && enemy.buffs.find(b => b.stat === 'stun');
+  if (stunned) {
+    battleState.battleLog = enemy.name + ' is stunned and cannot act!';
+    enemy.buffs = enemy.buffs.filter(b => b.stat !== 'stun');
+    updateBattleUI();
+    setTimeout(() => nextTurn(), 400);
+    return;
+  }
+
+  const aliveParty = PARTY.filter(p => p.hp > 0);
+  if (aliveParty.length === 0) { nextTurn(); return; }
+  const target = aliveParty.reduce((a, b) => a.hp / a.maxHp < b.hp / b.maxHp ? a : b);
+  const targetIdx = PARTY.indexOf(target);
+  const targetKey = 'party_' + targetIdx;
+  const attackerKey = 'enemy_' + enemyIdx;
+
+  // Weighted: 50% main attack (skills[0]), rest split evenly among utility skills
+  const roll = Math.random();
+  const skill = (enemy.skills.length > 1 && roll > 0.5)
+    ? enemy.skills[1 + Math.floor(Math.random() * (enemy.skills.length - 1))]
+    : enemy.skills[0];
+
+  let def = target.def;
+  target.buffs.forEach(b => { if (b.stat === 'def') def = Math.floor(def * (1 + b.amount)); });
+
+  // Veil Pressure: +20% ATK at 50%+
+  let enemyAtk = enemy.atk;
+  if (battleState.veilPressure >= 50) {
+    enemyAtk = Math.floor(enemyAtk * 1.2);
+  }
+
+  let dmg = calcDamage(enemyAtk, def, skill.power, null, target);
+  if (target.defending) dmg = Math.floor(dmg * 0.5);
+
+  let logText = enemy.name + ' uses ' + skill.name + ' on ' + target.name + '!';
+  if (battleState.veilPressure >= 50) logText += ' (Veil empowered!)';
+  battleState.battleLog = logText;
+
+  // Determine VFX based on skill name or properties
+  const isMagic = skill.name.includes('Pulse') || skill.name.includes('Blast') || skill.name.includes('Ray') || skill.name.includes('Whisper') || skill.name.includes('Wall');
+
+  if (isMagic) {
+    animateProjectile(attackerKey, targetKey, enemy.color, 5, () => {
+      target.hp = Math.max(0, target.hp - dmg);
+      spawnDamageNumber(targetKey, dmg, '#ff4040');
+      applyEnemyStatus(skill, target);
+      updateHUD();
+    });
+  } else {
+    // Enemies use melee attack (move to target, strike, return)
+    animateMeleeAttack(attackerKey, targetKey, () => {
+      target.hp = Math.max(0, target.hp - dmg);
+      spawnDamageNumber(targetKey, dmg, '#ff4040');
+      applyEnemyStatus(skill, target);
+      updateHUD();
+    });
+  }
+
+  // Buff/defend cleanup happens after hit, before next turn
+  setTimeout(() => {
+    PARTY.forEach(p => {
+      p.buffs = p.buffs.filter(b => { 
+        if (b.turns === 9999) return true; // Persistent floor buffs
+        b.turns--; 
+        return b.turns > 0; 
+      });
+      p.defending = false;
+    });
+    updateBattleUI();
+  }, 600);
+}
+
+function getFirstAliveEnemy() {
+  return battleState.enemies.find(e => e.hp > 0);
+}
+
+// ============================================================
+//  ENEMY STATUS EFFECT APPLICATION
+// ============================================================
+function applyEnemyStatus(skill, primaryTarget) {
+  const aliveParty = PARTY.filter(p => p.hp > 0);
+  if (!skill.status || aliveParty.length === 0) return;
+
+  switch (skill.status) {
+    case 'taint':
+      primaryTarget.taint = (primaryTarget.taint || 0) + 1;
+      battleState.battleLog += ' ' + primaryTarget.name + ' is tainted! (' + primaryTarget.taint + ')';
+      break;
+    case 'taintAll':
+      aliveParty.forEach(p => { p.taint = (p.taint || 0) + 1; });
+      battleState.battleLog += ' All allies are tainted!';
+      break;
+    case 'bleed':
+      primaryTarget.buffs.push({ stat: 'bleed', amount: 5, turns: 2 });
+      battleState.battleLog += ' ' + primaryTarget.name + ' is bleeding!';
+      break;
+    case 'atkDown':
+      primaryTarget.buffs.push({ stat: 'atk', amount: -0.25, turns: 2 });
+      battleState.battleLog += ' ' + primaryTarget.name + '\'s ATK fell!';
+      break;
+    case 'defDown':
+      // Feral Howl hits whole party; other defDown skills hit single target
+      if (skill.name === 'Feral Howl') {
+        aliveParty.forEach(p => p.buffs.push({ stat: 'def', amount: -0.3, turns: 2 }));
+        battleState.battleLog += ' Party DEF fell!';
+      } else {
+        primaryTarget.buffs.push({ stat: 'def', amount: -0.3, turns: 2 });
+        battleState.battleLog += ' ' + primaryTarget.name + '\'s DEF fell!';
+      }
+      break;
+    case 'veilBoost':
+      battleState.veilPressure = Math.min(100, battleState.veilPressure + 10);
+      battleState.battleLog += ' Veil Pressure +10%!';
+      break;
+    case 'stun':
+      primaryTarget.buffs.push({ stat: 'stun', amount: 1, turns: 1 });
+      battleState.battleLog += ' ' + primaryTarget.name + ' is stunned!';
+      break;
+    case 'slow':
+      primaryTarget.buffs.push({ stat: 'spd', amount: -0.5, turns: 2 });
+      battleState.battleLog += ' ' + primaryTarget.name + '\'s speed fell!';
+      break;
+  }
+  updateHUD();
+  updateBattleUI();
+}
+
+function endBattleVictory() {
+  document.getElementById('battle-ui').classList.remove('visible');
+  const totalGold = battleState.enemies.reduce((sum, e) => sum + Math.floor(Math.random() * (e.goldDrop[1] - e.goldDrop[0]) + e.goldDrop[0]), 0);
+  gold += totalGold;
+  enemiesDefeated++;
+
+  // Deactivate the specific map enemy that triggered this battle
+  if (battleState.mapEnemyRef) {
+    battleState.mapEnemyRef.active = false;
+  }
+
+  // Check if any enemy dropped items
+  let itemDrops = [];
+  battleState.enemies.forEach(e => {
+    if (Math.random() < 0.15) itemDrops.push('Healing Drop');
+    if (Math.random() < 0.10) itemDrops.push('Crystal Shard');
+  });
+  itemDrops.forEach(item => {
+    if (item === 'Healing Drop') inventory.healingDrop++;
+    else if (item === 'Crystal Shard') inventory.crystalShard++;
+  });
+
+  // XP gain: sum of (enemy.level * 10 + goldDrop average)
+  const xpGain = battleState.enemies.reduce((sum, e) => {
+    const avgGold = (e.goldDrop[0] + e.goldDrop[1]) / 2;
+    return sum + (e.level || 1) * 10 + avgGold;
+  }, 0);
+  PARTY.forEach(p => {
+    gameState.xp[p.id] = (gameState.xp[p.id] || 0) + xpGain;
+    xp[p.id] = gameState.xp[p.id]; // keep legacy alias in sync
+    // Taint accumulation: +1 + Math.floor(battleLength / 3), min 1, max 4
+    const battleLength = battleState.turnQueue ? battleState.turnIdx : 3;
+    const taintGain = Math.min(4, Math.max(1, 1 + Math.floor(battleLength / 3)));
+    p.taint = (p.taint || 0) + taintGain;
+  });
+
+  // Build rewards text
+  const totalFloorEnemies = FLOORS[gameState.currentFloor].enemies.length;
+  let rewardsText = 'Gained ' + totalGold + ' gold | +' + xpGain + ' XP';
+  const taintInfo = PARTY.filter(p => p.hp > 0).map(p => p.name + ' taint:' + p.taint).join(', ');
+  if (itemDrops.length > 0) rewardsText += ' | Found: ' + itemDrops.join(', ');
+  rewardsText += ' | Enemies defeated: ' + enemiesDefeated + '/' + totalFloorEnemies;
+
+  // Varied story text based on enemy type
+  const enemyNames = battleState.enemies.filter(e => e.hp > 0).map(e => e.name);
+  let storyText = 'The creatures dissolve into shadow. The corridor is quiet again.';
+  if (battleState.mapEnemyRef && battleState.mapEnemyRef.type === 'scout') {
+    storyText = 'The Demon Scout falls, its dark energy scattering. This part of the Labyrinth is clear... for now.';
+  } else if (enemiesDefeated === 1) {
+    storyText = 'Your first victory. The Labyrinth tests you, but your training holds. Keep moving deeper.';
+  } else if (enemiesDefeated >= FLOORS[gameState.currentFloor].enemies.length) {
+    storyText = 'The last creature falls. The floor is clear. The stairs down await.';
+  }
+
+  // Show result screen
+  const el = document.getElementById('result-screen');
+  el.classList.add('visible');
+  document.getElementById('result-title').textContent = 'Victory';
+  document.getElementById('result-title').className = 'victory';
+  document.getElementById('result-rewards').textContent = rewardsText;
+  document.getElementById('result-story').textContent = storyText;
+  checkLevelUp(); // appends level-up text to result-rewards if triggered
+  document.getElementById('btn-result-action').textContent = 'Continue';
+  document.getElementById('btn-result-action').onclick = () => {
+    el.classList.remove('visible');
+    state = 'explore';
+    updateHUD();
+    saveGame(); // Auto-save after battle
+  };
+}
+
+function endBattleDefeat() {
+  document.getElementById('battle-ui').classList.remove('visible');
+  showDialogue('defeat', () => {
+    // Reset all party members HP/MP and retry
+    PARTY.forEach(p => { p.hp = p.maxHp; p.mp = p.maxMp; p.buffs = []; p.defending = false; });
+    player.x = ENTRY_POS.x; player.y = ENTRY_POS.y;
+    nateFollow.x = ENTRY_POS.x + 1; nateFollow.y = ENTRY_POS.y;
+    nateFollow.trail = [{ x: ENTRY_POS.x + 1, y: ENTRY_POS.y }, { x: ENTRY_POS.x, y: ENTRY_POS.y }];
+    updateHUD();
+    state = 'explore';
+  });
+}
+
+function endBattleFlee() {
+  document.getElementById('battle-ui').classList.remove('visible');
+  battleState.fleeing = false;
+  
+  // Show flee story text based on enemy type
+  const beatId = (battleState.mapEnemyRef && battleState.mapEnemyRef.type === 'scout') ? 'fleeScout' : 'flee';
+  showDialogue(beatId, () => {
+    state = 'explore';
+    updateHUD();
+  });
+}
+
+// ============================================================
+//  MENU SYSTEM
+// ============================================================
+function showActionMenu() {
+  const menu = document.getElementById('action-menu');
+  menu.style.display = 'flex';
+  const btns = menu.querySelectorAll('.action-btn');
+  btns.forEach((b, i) => b.classList.toggle('selected', i === battleState.menuSelection));
+  hideSubMenu();
+}
+
+function hideSubMenu() {
+  document.getElementById('skill-menu').classList.remove('visible');
+  document.getElementById('skill-menu').style.display = 'none';
+  document.getElementById('item-menu').classList.remove('visible');
+  document.getElementById('item-menu').style.display = 'none';
+  document.getElementById('ally-menu').classList.remove('visible');
+  document.getElementById('ally-menu').style.display = 'none';
+  battleState.subMenu = null;
+  battleState.pendingAllySkill = null;
+}
+
+function showSkillMenu() {
+  const char = PARTY[battleState.activeCharIdx];
+  if (!char || char.hp <= 0) { hideSubMenu(); return; }
+  const menu = document.getElementById('skill-menu');
+  menu.innerHTML = '';
+  const visibleSkills = char.skills.filter(s => s.unlocked !== false);
+  visibleSkills.forEach((skill, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn' + (i === 0 ? ' selected' : '');
+    btn.innerHTML = '<span class="shortcut">' + (i+1) + '</span>' + skill.name + ' <span style="color:var(--mp-blue);font-size:10px;">(' + skill.cost + 'MP)</span>';
+    btn.onclick = () => {
+      if (char.mp < skill.cost) return;
+      battleState.menuSelection = i;
+      if (skill.target === 'ally') {
+        showAllyTargetMenu(skill);
+      } else {
+        playerAction('skill', skill);
+      }
+    };
+    btn.dataset.skillName = skill.name;
+    menu.appendChild(btn);
+  });
+  // Back button
+  const back = document.createElement('button');
+  back.className = 'action-btn';
+  back.innerHTML = '<span class="shortcut">ESC</span>Back';
+  back.onclick = () => { hideSubMenu(); showActionMenu(); };
+  menu.appendChild(back);
+  menu.style.display = 'flex';
+  menu.classList.add('visible');
+  battleState.subMenu = 'skill';
+}
+
+function showAllyTargetMenu(skill) {
+  // Hide skill menu, show ally-target submenu
+  document.getElementById('skill-menu').classList.remove('visible');
+  document.getElementById('skill-menu').style.display = 'none';
+
+  const menu = document.getElementById('ally-menu');
+  menu.innerHTML = '';
+
+  const label = document.createElement('div');
+  label.className = 'ally-target-label';
+  label.textContent = skill.name + ' — choose target';
+  menu.appendChild(label);
+
+  const aliveParty = PARTY.filter(p => p.hp > 0);
+  aliveParty.forEach((member, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn' + (i === 0 ? ' selected' : '');
+    const hpPct = Math.round(member.hp / member.maxHp * 100);
+    btn.innerHTML = '<span class="shortcut">' + (i+1) + '</span>' + member.name +
+      ' <span style="color:var(--hp-green);font-size:10px;">' + member.hp + '/' + member.maxHp + ' HP (' + hpPct + '%)</span>';
+    btn.onclick = () => {
+      const memberIdx = PARTY.indexOf(member);
+      playerAction('skill', skill, memberIdx);
+    };
+    menu.appendChild(btn);
+  });
+
+  const back = document.createElement('button');
+  back.className = 'action-btn';
+  back.innerHTML = '<span class="shortcut">ESC</span>Back';
+  back.onclick = () => { hideSubMenu(); showSkillMenu(); };
+  menu.appendChild(back);
+
+  menu.style.display = 'flex';
+  menu.classList.add('visible');
+  battleState.subMenu = 'ally-target';
+  battleState.pendingAllySkill = skill;
+}
+
+function showItemMenu() {
+  const menu = document.getElementById('item-menu');
+  menu.innerHTML = '';
+  if (inventory.healingDrop > 0) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn selected';
+    btn.innerHTML = '<span class="shortcut">1</span>Healing Drop <span style="color:var(--text-dim);font-size:10px;">(×' + inventory.healingDrop + ')</span>';
+    btn.onclick = () => playerAction('item', 'healingDrop');
+    menu.appendChild(btn);
+  }
+  if (inventory.crystalShard > 0) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn';
+    btn.innerHTML = '<span class="shortcut">2</span>Crystal Shard <span style="color:var(--text-dim);font-size:10px;">(×' + inventory.crystalShard + ')</span>';
+    btn.onclick = () => playerAction('item', 'crystalShard');
+    menu.appendChild(btn);
+  }
+  if ((inventory.purifyingDrop || 0) > 0) {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn';
+    btn.innerHTML = '<span class="shortcut">3</span>Purifying Drop <span style="color:var(--text-dim);font-size:10px;">(×' + inventory.purifyingDrop + ')</span>';
+    btn.onclick = () => playerAction('item', 'purifyingDrop');
+    menu.appendChild(btn);
+  }
+  if (menu.children.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'action-btn';
+    empty.textContent = 'No items';
+    menu.appendChild(empty);
+  }
+  // Back button
+  const back = document.createElement('button');
+  back.className = 'action-btn';
+  back.innerHTML = '<span class="shortcut">ESC</span>Back';
+  back.onclick = () => { hideSubMenu(); showActionMenu(); };
+  menu.appendChild(back);
+  menu.style.display = 'flex';
+  menu.classList.add('visible');
+  battleState.subMenu = 'item';
+}
+
+// ============================================================
+//  HUD
+// ============================================================
+function buildBattleHUD() { initHUD(); } // alias — legacy call from initGame()
+
+function initHUD() {
+  const container = document.getElementById('hud-party-container');
+  container.innerHTML = '';
+  PARTY.forEach(p => {
+    const charDiv = document.createElement('div');
+    charDiv.className = 'hud-char';
+    charDiv.id = 'hud-' + p.id;
+    charDiv.innerHTML = `
+      <div class="name">
+        <span>${p.name}</span>
+        <span class="level" id="${p.id}-level-label">Lv.1</span>
+      </div>
+      <div class="hud-bars">
+        <div class="hud-bar"><div class="hud-bar-fill hp" id="${p.id}-hp-bar"></div><div class="hud-bar-label" id="${p.id}-hp-label"></div></div>
+        <div class="hud-bar"><div class="hud-bar-fill mp" id="${p.id}-mp-bar"></div><div class="hud-bar-label" id="${p.id}-mp-label"></div></div>
+        <div class="hud-bar"><div class="hud-bar-fill taint" id="${p.id}-taint-bar"></div><div class="hud-bar-label">VEIL TAINT</div></div>
+      </div>
+    `;
+    container.appendChild(charDiv);
+  });
+}
+
+function updateHUD() {
+  PARTY.forEach((p) => {
+    const hpBar = document.getElementById(p.id + '-hp-bar');
+    const mpBar = document.getElementById(p.id + '-mp-bar');
+    const taintBar = document.getElementById(p.id + '-taint-bar');
+    const hpLabel = document.getElementById(p.id + '-hp-label');
+    const mpLabel = document.getElementById(p.id + '-mp-label');
+    const lvlLabel = document.getElementById(p.id + '-level-label');
+
+    if (hpBar && mpBar && hpLabel && mpLabel) {
+      const hpPct = Math.max(0, (p.hp / p.maxHp) * 100);
+      const mpPct = Math.max(0, (p.mp / p.maxMp) * 100);
+      const taintPct = Math.min(100, (p.taint || 0) * 10); // Assume max taint 10
+
+      hpBar.style.width = hpPct + '%';
+      hpBar.className = 'hud-bar-fill hp' + (hpPct < 30 ? ' low' : '');
+      mpBar.style.width = mpPct + '%';
+      if (taintBar) taintBar.style.width = taintPct + '%';
+
+      hpLabel.textContent = Math.round(p.hp) + '/' + p.maxHp;
+      mpLabel.textContent = Math.round(p.mp) + '/' + p.maxMp;
+      if (lvlLabel) lvlLabel.textContent = 'Lv.' + (level[p.id] || 1);
+    }
+
+    // Taint warning indicator
+    const charEl = document.getElementById('hud-' + p.id);
+    if (charEl) {
+      if (p.taint >= 8) {
+        charEl.style.boxShadow = '0 0 10px rgba(255,64,64,0.6)';
+        charEl.style.borderColor = 'rgba(255,64,64,0.4)';
+      } else if (p.taint >= 5) {
+        charEl.style.boxShadow = '0 0 8px rgba(255,128,64,0.4)';
+        charEl.style.borderColor = 'rgba(255,128,64,0.3)';
+      } else {
+        charEl.style.boxShadow = '';
+        charEl.style.borderColor = '';
+      }
+    }
+  });
+  document.getElementById('hud-gold').textContent = gold;
+  document.getElementById('hud-items').textContent = totalItems();
+}
+
+// ============================================================
+//  BATTLE UI UPDATE
+// ============================================================
+function updateBattleUI() {
+  // Veil Pressure gauge
+  const veilPct = Math.round(battleState.veilPressure || 0);
+  const veilFill = document.getElementById('veil-fill');
+  const veilLabel = document.getElementById('veil-pct');
+
+  if (veilFill && veilLabel) {
+    veilFill.style.width = veilPct + '%';
+    veilLabel.textContent = veilPct + '%';
+
+    // Pulse effect at high pressure
+    if (veilPct >= 80) {
+      veilFill.style.background = 'linear-gradient(90deg, #c04040, #ff4040)';
+      veilFill.style.boxShadow = '0 0 15px rgba(255,64,64,0.5)';
+    } else if (veilPct >= 50) {
+      veilFill.style.background = 'linear-gradient(90deg, #c08040, #ff8040)';
+      veilFill.style.boxShadow = '0 0 10px rgba(255,128,64,0.3)';
+    } else {
+      veilFill.style.background = 'linear-gradient(90deg, #6a3090, #c040c0)';
+      veilFill.style.boxShadow = '';
+    }
+  }
+  // Turn queue
+  const tq = document.getElementById('turn-queue');
+  tq.innerHTML = '';
+  const currentEntry = battleState.turnQueue[(battleState.turnIdx - 1) % battleState.turnQueue.length];
+  battleState.turnQueue.forEach(entry => {
+    const span = document.createElement('span');
+    span.className = 'tq-entry' + ((entry.id === (currentEntry ? currentEntry.id : '')) ? ' active' : '');
+    span.textContent = entry.name;
+    if (!entry.isParty) span.style.color = '#c06060';
+    tq.appendChild(span);
+  });
+
+  // Battle log
+  document.getElementById('battle-log').textContent = battleState.battleLog;
+
+  // Action menu buttons
+  if (battleState.subMenu === null) {
+    const btns = document.querySelectorAll('#action-menu .action-btn');
+    btns.forEach((b, i) => b.classList.toggle('selected', i === battleState.menuSelection));
+  }
+}
+
+// ============================================================
+//  INPUT HANDLING
+// ============================================================
+const keys = {};
+let lastMoveTime = 0;
+const MOVE_DELAY = 180; // ms between moves
+
+// Walk animation — phase accumulates while moving, drives sine-wave leg/arm swing
+let _walkPhase = 0;
+function tickWalk(dt) {
+  if (Date.now() - lastMoveTime < MOVE_DELAY * 2) _walkPhase += dt * 0.006;
+}
+function _isWalkingNow() { return Date.now() - lastMoveTime < MOVE_DELAY * 2; }
+
+document.addEventListener('keydown', (e) => {
+  keys[e.key.toLowerCase()] = true;
+
+  if (state === 'title') {
+    if (e.key === 'Enter') {
+      document.getElementById('btn-start').click();
+    }
+    return;
+  }
+
+  if (state === 'formation') {
+    e.preventDefault();
+    if (e.key === 'Enter' || e.key === ' ') {
+      confirmFormation();
+    }
+    return;
+  }
+
+  if (state === 'cutscene') {
+    e.preventDefault();
+    const cs = CUTSCENES[_cutsceneActiveId];
+    if (!cs) return;
+    const len = cs.choices.length;
+    if (e.key === 'ArrowUp' || e.key === 'w') {
+      _cutsceneSelectedIdx = (_cutsceneSelectedIdx - 1 + len) % len;
+      _updateCutsceneSelection();
+    } else if (e.key === 'ArrowDown' || e.key === 's') {
+      _cutsceneSelectedIdx = (_cutsceneSelectedIdx + 1) % len;
+      _updateCutsceneSelection();
+    } else if (e.key === '1') { resolveCutsceneChoice(0);
+    } else if (e.key === '2') { resolveCutsceneChoice(1);
+    } else if (e.key === '3') { resolveCutsceneChoice(2);
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      resolveCutsceneChoice(_cutsceneSelectedIdx);
+    }
+    return;
+  }
+
+  if (state === 'dialogue') {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      advanceDialogue();
+    }
+    return;
+  }
+
+  if (state === 'battle') {
+    if (battleState.animating) return;
+    e.preventDefault();
+
+    if (battleState.subMenu === null) {
+      if (e.key === 'ArrowUp') {
+        battleState.menuSelection = (battleState.menuSelection + 4) % 5; // wrap up
+      } else if (e.key === 'ArrowDown') {
+        battleState.menuSelection = (battleState.menuSelection + 1) % 5; // wrap down
+      } else if (e.key === '1') {
+        battleState.menuSelection = 0;
+      } else if (e.key === '2') {
+        battleState.menuSelection = 1;
+      } else if (e.key === '3') {
+        battleState.menuSelection = 2;
+      } else if (e.key === '4') {
+        battleState.menuSelection = 3;
+      } else if (e.key === '5') {
+        battleState.menuSelection = 4;
+      }
+      // Update selection highlight after nav keys
+      if (['ArrowUp', 'ArrowDown', '1', '2', '3', '4', '5'].includes(e.key)) {
+        updateBattleUI();
+        const btns = document.querySelectorAll('#action-menu .action-btn');
+        btns.forEach((b, i) => b.classList.toggle('selected', i === battleState.menuSelection));
+        return;
+      }
+      if (e.key === 'Enter' || e.key === ' ') {
+        const actions = ['attack', 'skill', 'item', 'defend', 'flee'];
+        const action = actions[battleState.menuSelection];
+        if (action === 'skill') showSkillMenu();
+        else if (action === 'item') showItemMenu();
+        else playerAction(action);
+      } else if (e.key === 'Escape') {
+        hideSubMenu();
+        showActionMenu();
+      }
+    } else if (battleState.subMenu === 'ally-target') {
+      if (e.key === 'Escape') {
+        hideSubMenu();
+        showSkillMenu();
+      } else {
+        const aliveParty = PARTY.filter(p => p.hp > 0);
+        const skill = battleState.pendingAllySkill;
+        if (skill) {
+          if (e.key === '1' && aliveParty[0]) {
+            playerAction('skill', skill, PARTY.indexOf(aliveParty[0]));
+          } else if (e.key === '2' && aliveParty[1]) {
+            playerAction('skill', skill, PARTY.indexOf(aliveParty[1]));
+          } else if (e.key === '3' && aliveParty[2]) {
+            playerAction('skill', skill, PARTY.indexOf(aliveParty[2]));
+          }
+        }
+      }
+    } else {
+      if (e.key === 'Escape') {
+        hideSubMenu();
+        showActionMenu();
+      } else if (e.key === '1') {
+        const menuBtns = document.querySelectorAll('#' + (battleState.subMenu === 'skill' ? 'skill' : 'item') + '-menu .action-btn');
+        if (menuBtns[0] && !menuBtns[0].textContent.includes('Back')) menuBtns[0].click();
+      } else if (e.key === '2' && battleState.subMenu === 'item') {
+        const menuBtns = document.querySelectorAll('#item-menu .action-btn');
+        if (menuBtns[1] && !menuBtns[1].textContent.includes('Back')) menuBtns[1].click();
+      }
+    }
+    return;
+  }
+
+  if (state === 'explore') {
+    if (e.key === 'Enter' || e.key === 'e') {
+      handleInteraction();
+    }
+    // PROTOTYPE: Tab adds Alyse to party for 3-wide battle testing
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      addAlyseToParty();
+    }
+  }
+
+  if (state === 'complete') {
+    if (e.key === 'Enter') {
+      // Restart
+      resetGame();
+    }
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
+
+function handleInteraction() {
+  const px = player.x, py = player.y;
+
+  // Check chest
+  const _curFloor = FLOORS[gameState.currentFloor];
+  const _curChest = _curFloor && _curFloor.chests && _curFloor.chests[0];
+  if (_curChest && px === _curChest.pos.x && py === _curChest.pos.y && !chestOpened) {
+    chestOpened = true;
+    chestAnimTimer = 1000; // 1 second animation
+    // Spawn particles
+    const cx = MAP_OX + _curChest.pos.x * TILE + TILE/2;
+    const cy = MAP_OY + _curChest.pos.y * TILE + TILE/2;
+    for (let i = 0; i < 12; i++) {
+      chestParticles.push({
+        x: cx, y: cy - 10,
+        vx: (Math.random() - 0.5) * 0.15,
+        vy: -Math.random() * 0.1 - 0.05,
+        life: 0,
+        maxLife: 800 + Math.random() * 400,
+        color: Math.random() < 0.5 ? '#c8a030' : '#8a4ab0',
+        size: 2 + Math.random() * 3,
+      });
+    }
+    const loot = _curChest.loot || {};
+    if (loot.healingDrop) inventory.healingDrop += loot.healingDrop;
+    if (loot.crystalShard) inventory.crystalShard += loot.crystalShard;
+    if (loot.purifyingDrop) inventory.purifyingDrop = (inventory.purifyingDrop || 0) + loot.purifyingDrop;
+    if (loot.lightPendant) inventory.lightPendant = (inventory.lightPendant || 0) + loot.lightPendant;
+    if (_curChest.desc) {
+      dialogueQueue = [{ speaker: '', text: _curChest.desc, callback: () => updateHUD() }];
+      showNextDialogue();
+    } else {
+      showDialogue('chest', () => { updateHUD(); });
+    }
+    return;
+  }
+
+  // Check stairs
+  const _curStairs = _curFloor ? _curFloor.stairsPos : null;
+  if (_curStairs && px === _curStairs.x && py === _curStairs.y) {
+    // Check if all enemies defeated
+    const totalFloorEnemies = FLOORS[gameState.currentFloor].enemies.length;
+    if (enemiesDefeated >= totalFloorEnemies) {
+      transition(0.8, () => {
+        state = 'complete';
+        const floor = FLOORS[gameState.currentFloor];
+        document.getElementById('hud').classList.remove('visible');
+        document.getElementById('floor-label').classList.remove('visible');
+        const el = document.getElementById('result-screen');
+        el.classList.add('visible');
+        document.getElementById('result-title').textContent = 'Floor ' + gameState.currentFloor + ' Complete';
+        document.getElementById('result-title').className = 'victory';
+        document.getElementById('result-rewards').textContent = 'Gold: ' + gold + ' | Enemies defeated: ' + enemiesDefeated;
+        
+        // If last floor of prototype (Floor 3 for now)
+        if (gameState.currentFloor >= 3) {
+          document.getElementById('result-story').textContent = 'The Labyrinth stretches deeper than you imagined. The party — Avery, Nate, Frank, and Alyse — continues their descent into the unknown.';
+          document.getElementById('btn-result-action').textContent = 'Play Again';
+          document.getElementById('btn-result-action').onclick = () => resetGame();
+        } else {
+          document.getElementById('result-story').textContent = 'The stairs lead deeper into the darkness. You feel the veil pressure rising.';
+          document.getElementById('btn-result-action').textContent = 'Descend to Floor ' + (gameState.currentFloor + 1);
+          document.getElementById('btn-result-action').onclick = () => {
+            el.classList.remove('visible');
+            enterNextFloor(gameState.currentFloor + 1);
+          };
+        }
+        saveGame();
+      });
+    } else {
+      showDialogue('stairs');
+    }
+    return;
+  }
+}
+
+// ============================================================
+//  MID-FLOOR TRIGGER
+// ============================================================
+function checkMidFloorTrigger() {
+  // Only trigger during explore state, not during dialogue or battle
+  if (!midFloorTriggered && enemiesDefeated >= 2 && state === 'explore' && !dialogueActive) {
+    midFloorTriggered = true;
+    setTimeout(() => {
+      if (state === 'explore' && !dialogueActive) {
+        const floor = FLOORS[gameState.currentFloor];
+        const midBeat = (floor && floor.storyTriggers && floor.storyTriggers.midFloor) || 'midFloor';
+        showDialogue(midBeat);
+      }
+    }, 500);
+  }
+}
+
+// ============================================================
+//  UPDATE — Exploration
+// ============================================================
+let patrolTimer = 0;
+const PATROL_INTERVAL = 2000; // ms
+
+function updateExplore(dt) {
+  if (state !== 'explore') return;
+
+  const now = Date.now();
+  if (now - lastMoveTime < MOVE_DELAY) return;
+
+  let dx = 0, dy = 0;
+  if (keys['w'] || keys['arrowup']) { dy = -1; player.dir = 'up'; }
+  else if (keys['s'] || keys['arrowdown']) { dy = 1; player.dir = 'down'; }
+  else if (keys['a'] || keys['arrowleft']) { dx = -1; player.dir = 'left'; }
+  else if (keys['d'] || keys['arrowright']) { dx = 1; player.dir = 'right'; }
+
+  if (dx === 0 && dy === 0) return;
+
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+
+  // Bounds check
+  if (nx < 0 || nx >= MAP_W || ny < 0 || ny >= MAP_H) return;
+
+  // Wall check
+  if (FLOORS[gameState.currentFloor].tiles[ny][nx] === 1) return;
+
+  // Move
+  player.x = nx;
+  player.y = ny;
+  lastMoveTime = now;
+
+  // Nate follows — add player position to trail
+  nateFollow.trail.push({ x: player.x, y: player.y });
+  if (nateFollow.trail.length > nateFollow.maxTrail) nateFollow.trail.shift();
+
+  // Check enemy collision
+  FLOORS[gameState.currentFloor].enemies.forEach(me => {
+    if (me.active && me.x === nx && me.y === ny) {
+      // Start battle
+      transition(0.5, () => {
+        startBattle(me);
+      });
+    }
+  });
+
+  // Check mid-floor trigger
+  checkMidFloorTrigger();
+
+  // Check NPC proximity
+  const floor = FLOORS[gameState.currentFloor];
+  if (floor && floor.npcs) {
+    floor.npcs.forEach(npc => {
+      if (npc.active && Math.abs(player.x - npc.x) <= 1 && Math.abs(player.y - npc.y) <= 1 && !dialogueActive) {
+        if (npc.id === 'frank' && !gameState.storyFlags.metFrank) {
+          gameState.storyFlags.metFrank = true;
+          showDialogue('floor2_frank', () => {
+            showDialogue('frank_response', () => {
+              showDialogue('frank_warning', () => {
+                showDialogue('frank_joins', () => {
+                  npc.active = false;
+                  addPartyMember({
+                    id: 'frank', name: 'Frank', title: 'Tinkerer',
+                    hp: 60, maxHp: 60, mp: 30, maxMp: 30,
+                    atk: 7, def: 6, spd: 7, mag: 5,
+                    skills: [
+                      { name: 'Light Gun', cost: 6, type: 'damage', power: 1.4, target: 'enemy', desc: 'Machine-amplified light damage' },
+                      { name: 'Light Fuel', cost: 10, type: 'buff', stat: 'atk', amount: 0.3, duration: 2, target: 'ally', desc: 'ATK +30% for 2 turns' },
+                    ],
+                    position: 'back', color: '#8a9a8a'
+                  });
+                });
+              });
+            });
+          });
+        }
+        if (npc.id === 'alyse' && !gameState.storyFlags.alysePurified) {
+          gameState.storyFlags.alysePurified = true;
+          showDialogue('floor3_alyse1', () => {
+            showDialogue('floor3_alyse2', () => {
+              showDialogue('floor3_alyse3', () => {
+                showCutscene('alyse_cutscene', () => {
+                  // Unlock Crystal Purify
+                  const avery = PARTY.find(p => p.id === 'avery');
+                  if (avery) {
+                    const purify = avery.skills.find(s => s.name === 'Crystal Purify');
+                    if (purify) purify.unlocked = true;
+                  }
+                  showDialogue('floor3_alyse_after', () => {
+                    showDialogue('floor3_alyse_joins', () => {
+                      npc.active = false;
+                      addAlyseToParty();
+                    });
+                  });
+                });
+              });
+            });
+          });
+        }
+      }
+    });
+  }
+
+  // Patrol enemies
+  patrolTimer += dt;
+  if (patrolTimer > PATROL_INTERVAL) {
+    patrolTimer = 0;
+    FLOORS[gameState.currentFloor].enemies.forEach(me => {
+      if (!me.active) return;
+      me.patrolIdx = (me.patrolIdx + 1) % me.patrol.length;
+      me.x = me.patrol[me.patrolIdx].x;
+      me.y = me.patrol[me.patrolIdx].y;
+    });
+  }
+}
+
+// ============================================================
+//  RENDERING
+// ============================================================
+function _darken(hex) {
+  // Darken a hex color by ~20% for wall inner shade
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  const d = (v) => Math.max(0, Math.floor(v * 0.75)).toString(16).padStart(2,'0');
+  return '#' + d(r) + d(g) + d(b);
+}
+
+function drawTile(tileX, tileY, type) {
+  const x = MAP_OX + tileX * TILE;
+  const y = MAP_OY + tileY * TILE;
+  const vis = (FLOORS[gameState.currentFloor] || {}).visuals || {};
+  const wallCol  = vis.wallColor  || '#2a1a3e';
+  const wallInner = vis.wallColor  ? _darken(vis.wallColor) : '#1e1232';
+  const floorCol = vis.floorColor || '#140e20';
+  // Edge glow color: purple on floors 1-2, green on floor 3
+  const edgeGlow = floorNumber === 3 ? 'rgba(40,120,40,0.18)' : 'rgba(138,74,176,0.15)';
+  const floorOverlay = floorNumber === 3 ? 'rgba(30,80,20,0.06)' : 'rgba(138,74,176,0.03)';
+
+  switch (type) {
+    case 0: // Floor
+      ctx.fillStyle = floorCol;
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = floorNumber === 3 ? 'rgba(40,120,40,0.1)' : 'rgba(138,74,176,0.08)';
+      ctx.strokeRect(x, y, TILE, TILE);
+      ctx.fillStyle = floorOverlay;
+      ctx.fillRect(x + 4, y + 4, TILE - 8, TILE - 8);
+      // Floor 3: draw moss patches on some tiles
+      if (floorNumber === 3 && (tileX + tileY * 3) % 5 === 0) {
+        ctx.fillStyle = 'rgba(30,80,20,0.18)';
+        ctx.fillRect(x + 6, y + 8, TILE - 14, 6);
+      }
+      break;
+    case 1: // Wall
+      ctx.fillStyle = wallCol;
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.fillStyle = wallInner;
+      ctx.fillRect(x + 2, y + 2, TILE - 4, TILE - 4);
+      ctx.fillStyle = edgeGlow;
+      ctx.fillRect(x, y, TILE, 2);
+      ctx.fillRect(x, y, 2, TILE);
+      // Floor 3: draw vine texture on walls
+      if (floorNumber === 3) {
+        ctx.strokeStyle = 'rgba(20,60,10,0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x + 6, y + 2);
+        ctx.bezierCurveTo(x + 10, y + 14, x + 18, y + 8, x + 22, y + TILE - 4);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+      }
+      break;
+    case 2: // Chest
+      ctx.fillStyle = '#140e20';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = 'rgba(138,74,176,0.08)';
+      ctx.strokeRect(x, y, TILE, TILE);
+      // Draw chest
+      if (!chestOpened) {
+        ctx.fillStyle = '#8a6030';
+        ctx.fillRect(x + 12, y + 16, 24, 16);
+        ctx.fillStyle = '#c8a030';
+        ctx.fillRect(x + 21, y + 22, 6, 4);
+        // Lid highlight
+        ctx.fillStyle = 'rgba(200,160,48,0.2)';
+        ctx.fillRect(x + 12, y + 16, 24, 4);
+      } else if (chestAnimTimer > 0) {
+        // Chest opening animation - lid lifts up
+        const openProgress = 1 - (chestAnimTimer / 1000);
+        const lidLift = Math.sin(openProgress * Math.PI) * 8;
+        ctx.fillStyle = '#8a6030';
+        ctx.fillRect(x + 12, y + 20, 24, 12); // Base
+        ctx.fillStyle = '#6a4020';
+        ctx.fillRect(x + 12, y + 16 - lidLift, 24, 6); // Lid lifting
+        // Gold glow
+        ctx.fillStyle = 'rgba(200,160,48,0.4)';
+        ctx.fillRect(x + 14, y + 18, 20, 8);
+      } else {
+        // Opened chest
+        ctx.fillStyle = '#4a3020';
+        ctx.fillRect(x + 12, y + 20, 24, 12);
+        ctx.fillStyle = '#2a1810';
+        ctx.fillRect(x + 14, y + 18, 20, 6);
+      }
+      break;
+    case 3: // Stairs
+      ctx.fillStyle = '#140e20';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = 'rgba(138,74,176,0.08)';
+      ctx.strokeRect(x, y, TILE, TILE);
+      // Stairs down
+      ctx.fillStyle = '#3a2a4e';
+      for (let i = 0; i < 3; i++) {
+        ctx.fillRect(x + 8 + i * 2, y + 10 + i * 10, TILE - 16 - i * 4, 8);
+      }
+      // Glow
+      ctx.fillStyle = 'rgba(138,74,176,0.3)';
+      ctx.beginPath();
+      ctx.arc(x + TILE/2, y + TILE/2, 12, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    case 4: // Entry point
+      ctx.fillStyle = '#140e20';
+      ctx.fillRect(x, y, TILE, TILE);
+      ctx.strokeStyle = 'rgba(138,74,176,0.08)';
+      ctx.strokeRect(x, y, TILE, TILE);
+      // Portal glow
+      ctx.fillStyle = 'rgba(138,74,176,0.2)';
+      ctx.beginPath();
+      ctx.arc(x + TILE/2, y + TILE/2, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(160,96,208,0.1)';
+      ctx.beginPath();
+      ctx.arc(x + TILE/2, y + TILE/2, 12, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+  }
+}
+
+// ============================================================
+//  MAP CHARACTER SPRITE — shared by Avery, Nate, Alyse
+// ============================================================
+function drawMapChar(cx, cy, char) {
+  const walking = _isWalkingNow();
+  const t       = _walkPhase;
+  const legX    = walking ? Math.sin(t) * 5 : 0;
+  const armX    = walking ? -Math.sin(t) * 4 : 0;
+  const bob     = walking ? Math.abs(Math.sin(t)) * 1.5 : 0;
+  const bcy     = cy - bob;
+
+  ctx.lineCap = 'round';
+
+  // Ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + 13, 8, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Aura glow
+  ctx.fillStyle = char.color + '20';
+  ctx.beginPath();
+  ctx.arc(cx, bcy - 5, 17, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Legs
+  ctx.strokeStyle = char.color + 'bb';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(cx - 2, bcy + 4);
+  ctx.lineTo(cx - 3 + legX, bcy + 12);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + 2, bcy + 4);
+  ctx.lineTo(cx + 3 - legX, bcy + 12);
+  ctx.stroke();
+
+  // Feet
+  ctx.fillStyle = char.color + 'aa';
+  ctx.beginPath();
+  ctx.ellipse(cx - 3 + legX, bcy + 13, 4, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + 3 - legX, bcy + 13, 4, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Arms
+  ctx.strokeStyle = char.color + 'cc';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx - 5, bcy - 3);
+  ctx.lineTo(cx - 8 + armX, bcy + 3);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + 5, bcy - 3);
+  ctx.lineTo(cx + 8 - armX, bcy + 3);
+  ctx.stroke();
+
+  // Body (torso trapezoid)
+  ctx.fillStyle = char.color;
+  ctx.beginPath();
+  ctx.moveTo(cx - 4, bcy - 8);
+  ctx.lineTo(cx + 4, bcy - 8);
+  ctx.lineTo(cx + 5, bcy + 4);
+  ctx.lineTo(cx - 5, bcy + 4);
+  ctx.closePath();
+  ctx.fill();
+
+  // Neck
+  ctx.fillStyle = '#c8966e';
+  ctx.fillRect(cx - 2, bcy - 11, 4, 4);
+
+  // Head
+  ctx.fillStyle = '#c8966e';
+  ctx.beginPath();
+  ctx.arc(cx, bcy - 15, 7, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hair — per-character style
+  ctx.fillStyle = char.hairColor || '#5a4020';
+  if (char.id === 'avery') {
+    // Long dark hair — top cap + two flowing curtains down each side
+    ctx.beginPath();
+    ctx.arc(cx, bcy - 17, 7.5, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.fill();
+    // Left curtain — hangs past the shoulder
+    ctx.beginPath();
+    ctx.arc(cx - 7, bcy - 9, 5, Math.PI * 0.3, Math.PI * 1.3);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx - 8, bcy - 1, 4.5, Math.PI * 0.2, Math.PI * 1.1);
+    ctx.fill();
+    // Right curtain
+    ctx.beginPath();
+    ctx.arc(cx + 7, bcy - 9, 5, Math.PI * 1.7, Math.PI * 2.7);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 8, bcy - 1, 4.5, Math.PI * 1.9, Math.PI * 2.8);
+    ctx.fill();
+  } else if (char.id === 'nate') {
+    // Medium wavy brown hair
+    ctx.beginPath();
+    ctx.arc(cx, bcy - 17, 7.5, Math.PI * 0.9, Math.PI * 2.1);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 5, bcy - 13, 3.5, Math.PI * 1.5, Math.PI * 2.5);
+    ctx.fill();
+  } else if (char.id === 'alyse') {
+    // Long pale blonde — wider arc + flowing sides
+    ctx.beginPath();
+    ctx.arc(cx, bcy - 17, 7.5, Math.PI * 0.8, Math.PI * 2.2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx - 7, bcy - 10, 4, Math.PI * 0.3, Math.PI * 1.3);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 7, bcy - 10, 4, Math.PI * 1.7, Math.PI * 2.7);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.arc(cx, bcy - 17, 7.5, Math.PI * 0.9, Math.PI * 2.1);
+    ctx.fill();
+  }
+
+  // Eyes
+  ctx.fillStyle = char.eyeColor || '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(cx - 2.5, bcy - 15, 1.5, 1.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(cx + 2.5, bcy - 15, 1.5, 1.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Pupils
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath();
+  ctx.arc(cx - 2.5, bcy - 15, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + 2.5, bcy - 15, 0.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Character-specific details
+  if (char.id === 'avery') {
+    // Crystal pendant glow
+    const glow = 0.4 + Math.sin(performance.now() * 0.003) * 0.3;
+    ctx.fillStyle = `rgba(74,154,208,${glow * 0.7})`;
+    ctx.beginPath();
+    ctx.arc(cx, bcy - 2, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = char.eyeColor + 'dd';
+    ctx.beginPath();
+    ctx.moveTo(cx, bcy - 5); ctx.lineTo(cx + 2.5, bcy - 1.5);
+    ctx.lineTo(cx, bcy + 1); ctx.lineTo(cx - 2.5, bcy - 1.5);
+    ctx.closePath(); ctx.fill();
+  } else if (char.id === 'nate') {
+    // Small light orb at staff hand
+    const pulse = 0.5 + Math.sin(performance.now() * 0.004) * 0.3;
+    ctx.fillStyle = `rgba(240,224,128,${pulse * 0.8})`;
+    ctx.beginPath();
+    ctx.arc(cx + 8 - armX, bcy + 3, 3, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (char.id === 'alyse') {
+    // Butterfly near shoulder
+    const bfT = performance.now() * 0.0025;
+    const bfX = cx + 8 + Math.cos(bfT * 1.3) * 3;
+    const bfY = bcy - 8 + Math.sin(bfT) * 3;
+    ctx.fillStyle = 'rgba(208,216,255,0.65)';
+    ctx.save();
+    ctx.translate(bfX, bfY);
+    ctx.rotate(Math.sin(bfT * 3) * 0.4);
+    ctx.beginPath();
+    ctx.ellipse(-3, 0, 4, 2, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(3, 0, 4, 2, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawPlayer() {
+  const cx = MAP_OX + player.x * TILE + TILE / 2;
+  const cy = MAP_OY + player.y * TILE + TILE / 2 + 2;
+  drawMapChar(cx, cy, PARTY[0]);
+}
+
+function drawNate() {
+  if (nateFollow.trail.length === 0) return;
+  const pos = nateFollow.trail[Math.max(0, nateFollow.trail.length - 3)];
+  const cx = MAP_OX + pos.x * TILE + TILE / 2;
+  const cy = MAP_OY + pos.y * TILE + TILE / 2 + 2;
+  drawMapChar(cx, cy, PARTY[1]);
+}
+
+function drawEnemyOnMap(me) {
+  if (!me.active) return;
+  const type = ENEMY_TYPES[me.type];
+  const cx = MAP_OX + me.x * TILE + TILE / 2;
+  const cy = MAP_OY + me.y * TILE + TILE / 2;
+  const t  = performance.now() * 0.002;
+  const c  = type.color;
+
+  // Mini-boss outer ring
+  if (type.isMiniBoss) {
+    ctx.strokeStyle = '#d06030cc';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+  }
+
+  ctx.lineCap = 'round';
+
+  if (me.type === 'imp') {
+    // Small hunched demon — tiny horns, little wings
+    const bob = Math.sin(t * 2) * 1.5;
+    // Glow
+    ctx.fillStyle = c + '30'; ctx.beginPath(); ctx.arc(cx, cy + bob, 12, 0, Math.PI*2); ctx.fill();
+    // Wings (behind body)
+    ctx.fillStyle = c + '60';
+    ctx.beginPath(); ctx.ellipse(cx - 7, cy - 2 + bob, 5, 3, -0.6, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx + 7, cy - 2 + bob, 5, 3, 0.6, 0, Math.PI*2); ctx.fill();
+    // Body (hunched)
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(cx, cy + 2 + bob, 6, 7, 0, 0, Math.PI*2); ctx.fill();
+    // Head
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.arc(cx, cy - 5 + bob, 5, 0, Math.PI*2); ctx.fill();
+    // Horns
+    ctx.fillStyle = '#ff8040';
+    ctx.beginPath(); ctx.moveTo(cx - 3, cy - 9 + bob); ctx.lineTo(cx - 5, cy - 14 + bob); ctx.lineTo(cx - 1, cy - 10 + bob); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx + 3, cy - 9 + bob); ctx.lineTo(cx + 5, cy - 14 + bob); ctx.lineTo(cx + 1, cy - 10 + bob); ctx.fill();
+    // Eyes
+    ctx.fillStyle = '#ff3030'; ctx.beginPath(); ctx.arc(cx - 2, cy - 5 + bob, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff3030'; ctx.beginPath(); ctx.arc(cx + 2, cy - 5 + bob, 1.5, 0, Math.PI*2); ctx.fill();
+
+  } else if (me.type === 'creeper') {
+    // Tall shadowy figure — slender body, tendrils
+    const sway = Math.sin(t) * 2;
+    ctx.fillStyle = c + '30'; ctx.beginPath(); ctx.arc(cx + sway, cy, 13, 0, Math.PI*2); ctx.fill();
+    // Tendrils
+    ctx.strokeStyle = c + 'aa'; ctx.lineWidth = 1.5;
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(cx + i * 3 + sway, cy + 6);
+      ctx.bezierCurveTo(cx + i * 4 + sway, cy + 10, cx + i * 5 + sway, cy + 12, cx + i * 3 + sway, cy + 15);
+      ctx.stroke();
+    }
+    // Tall body
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(cx + sway, cy, 5, 9, 0, 0, Math.PI*2); ctx.fill();
+    // Head
+    ctx.beginPath(); ctx.arc(cx + sway, cy - 10, 5, 0, Math.PI*2); ctx.fill();
+    // Hollow eyes (white rings)
+    ctx.strokeStyle = '#80ff80'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx - 2 + sway, cy - 11, 1.5, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + 2 + sway, cy - 11, 1.5, 0, Math.PI*2); ctx.stroke();
+
+  } else if (me.type === 'scout') {
+    // Mini-boss: large armored demon
+    const bob = Math.sin(t * 1.5) * 1;
+    ctx.fillStyle = c + '40'; ctx.beginPath(); ctx.arc(cx, cy + bob, 16, 0, Math.PI*2); ctx.fill();
+    // Shoulder pads
+    ctx.fillStyle = '#8a2040';
+    ctx.beginPath(); ctx.arc(cx - 10, cy - 4 + bob, 5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 10, cy - 4 + bob, 5, 0, Math.PI*2); ctx.fill();
+    // Armored body
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(cx, cy + 2 + bob, 8, 9, 0, 0, Math.PI*2); ctx.fill();
+    // Chest plate
+    ctx.fillStyle = '#6a1030';
+    ctx.fillRect(cx - 5, cy - 3 + bob, 10, 8);
+    // Head
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.arc(cx, cy - 8 + bob, 7, 0, Math.PI*2); ctx.fill();
+    // Helmet ridge
+    ctx.fillStyle = '#6a1030';
+    ctx.fillRect(cx - 6, cy - 13 + bob, 12, 3);
+    // Glowing eyes
+    ctx.fillStyle = '#ff4000'; ctx.beginPath(); ctx.arc(cx - 2.5, cy - 8 + bob, 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff4000'; ctx.beginPath(); ctx.arc(cx + 2.5, cy - 8 + bob, 2, 0, Math.PI*2); ctx.fill();
+
+  } else if (me.type === 'shadowEcho') {
+    // Ghostly translucent figure — wispy at bottom
+    const drift = Math.sin(t * 1.2) * 2;
+    const alpha = 0.55 + Math.sin(t * 0.8) * 0.15;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = c + '50'; ctx.beginPath(); ctx.arc(cx + drift, cy - 2, 15, 0, Math.PI*2); ctx.fill();
+    // Wispy tail
+    ctx.fillStyle = c + '80';
+    ctx.beginPath();
+    ctx.moveTo(cx - 5 + drift, cy + 2);
+    ctx.bezierCurveTo(cx - 8 + drift, cy + 8, cx - 3 + drift, cy + 12, cx + drift, cy + 14);
+    ctx.bezierCurveTo(cx + 3 + drift, cy + 12, cx + 8 + drift, cy + 8, cx + 5 + drift, cy + 2);
+    ctx.fill();
+    // Body
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.arc(cx + drift, cy - 4, 8, 0, Math.PI*2); ctx.fill();
+    // Face
+    ctx.fillStyle = '#c0d0ff'; ctx.beginPath(); ctx.arc(cx + drift, cy - 6, 5, 0, Math.PI*2); ctx.fill();
+    // Hollow eyes (dark)
+    ctx.fillStyle = 'rgba(0,0,30,0.9)';
+    ctx.beginPath(); ctx.arc(cx - 1.5 + drift, cy - 7, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 1.5 + drift, cy - 7, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+  } else if (me.type === 'mindlessDrone') {
+    // Blobby pulsing mass — ooze drips
+    const pulse = 1 + Math.sin(t * 2) * 0.08;
+    ctx.fillStyle = c + '35'; ctx.beginPath(); ctx.arc(cx, cy, 15, 0, Math.PI*2); ctx.fill();
+    // Drip
+    ctx.fillStyle = c + 'aa';
+    ctx.beginPath(); ctx.moveTo(cx - 3, cy + 7); ctx.bezierCurveTo(cx - 4, cy + 11, cx - 2, cy + 14, cx - 3, cy + 16); ctx.bezierCurveTo(cx - 4, cy + 18, cx + 1, cy + 17, cx, cy + 14); ctx.bezierCurveTo(cx + 1, cy + 11, cx + 3, cy + 9, cx + 2, cy + 7); ctx.fill();
+    // Blob body
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(cx, cy - 1, 8 * pulse, 9 / pulse, 0, 0, Math.PI*2); ctx.fill();
+    // Ooze surface bumps
+    ctx.fillStyle = c + 'cc';
+    ctx.beginPath(); ctx.arc(cx - 5, cy - 3, 3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx + 4, cy - 5, 2.5, 0, Math.PI*2); ctx.fill();
+    // Eyes (tiny, sunken)
+    ctx.fillStyle = '#60ff60'; ctx.beginPath(); ctx.arc(cx - 2, cy - 2, 1.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#60ff60'; ctx.beginPath(); ctx.arc(cx + 2, cy - 2, 1.5, 0, Math.PI*2); ctx.fill();
+
+  } else if (me.type === 'corruptedWolf') {
+    // Four-legged silhouette with fangs
+    const trot = Math.sin(t * 3) * 2;
+    ctx.fillStyle = c + '30'; ctx.beginPath(); ctx.arc(cx, cy, 14, 0, Math.PI*2); ctx.fill();
+    // Back legs
+    ctx.fillStyle = c + 'aa'; ctx.fillRect(cx + 3, cy + 3, 3, 8 + trot); ctx.fillRect(cx - 6, cy + 3, 3, 8 - trot);
+    // Body
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.ellipse(cx, cy, 9, 6, 0, 0, Math.PI*2); ctx.fill();
+    // Front legs
+    ctx.fillStyle = c; ctx.fillRect(cx + 5, cy + 2, 3, 7 - trot); ctx.fillRect(cx - 8, cy + 2, 3, 7 + trot);
+    // Head (forward-leaning)
+    ctx.beginPath(); ctx.ellipse(cx - 7, cy - 3, 6, 5, -0.5, 0, Math.PI*2); ctx.fill();
+    // Ears
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.moveTo(cx - 11, cy - 7); ctx.lineTo(cx - 13, cy - 12); ctx.lineTo(cx - 8, cy - 8); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx - 5, cy - 7); ctx.lineTo(cx - 4, cy - 12); ctx.lineTo(cx - 2, cy - 8); ctx.fill();
+    // Fangs
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(cx - 9, cy - 1); ctx.lineTo(cx - 10, cy + 3); ctx.lineTo(cx - 7, cy - 1); ctx.fill();
+    // Eye
+    ctx.fillStyle = '#ff8000'; ctx.beginPath(); ctx.arc(cx - 9, cy - 4, 1.5, 0, Math.PI*2); ctx.fill();
+    // Corruption glow on paws
+    ctx.fillStyle = 'rgba(80,200,80,0.3)'; ctx.beginPath(); ctx.arc(cx - 8, cy + 2, 3, 0, Math.PI*2); ctx.fill();
+
+  } else if (me.type === 'taintedMage') {
+    // Corrupted humanoid in tattered robes
+    const sway = Math.sin(t * 0.8) * 2;
+    ctx.fillStyle = c + '40'; ctx.beginPath(); ctx.arc(cx + sway, cy, 15, 0, Math.PI*2); ctx.fill();
+    // Robe
+    ctx.fillStyle = c;
+    ctx.beginPath(); ctx.moveTo(cx - 6 + sway, cy - 6); ctx.lineTo(cx + 6 + sway, cy - 6); ctx.lineTo(cx + 9 + sway, cy + 10); ctx.lineTo(cx - 9 + sway, cy + 10); ctx.closePath(); ctx.fill();
+    // Dark aura tendrils from robe hem
+    ctx.strokeStyle = '#8020c0aa'; ctx.lineWidth = 1.5;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath(); ctx.moveTo(cx + i * 4 + sway, cy + 10); ctx.bezierCurveTo(cx + i * 5 + sway, cy + 13, cx + i * 4 + sway, cy + 15, cx + i * 3 + sway, cy + 17); ctx.stroke();
+    }
+    // Head
+    ctx.fillStyle = '#c8966e';
+    ctx.beginPath(); ctx.arc(cx + sway, cy - 10, 6, 0, Math.PI*2); ctx.fill();
+    // Hood shadow
+    ctx.fillStyle = c + 'cc';
+    ctx.beginPath(); ctx.arc(cx + sway, cy - 11, 7, Math.PI * 0.8, Math.PI * 2.2); ctx.fill();
+    // Glowing eyes (tainted purple)
+    ctx.fillStyle = '#c040ff'; ctx.beginPath(); ctx.arc(cx - 2 + sway, cy - 11, 2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#c040ff'; ctx.beginPath(); ctx.arc(cx + 2 + sway, cy - 11, 2, 0, Math.PI*2); ctx.fill();
+
+  } else if (me.type === 'voidSentinel') {
+    // Tall armored construct — angular
+    const bob = Math.sin(t * 0.6) * 1;
+    ctx.fillStyle = c + '40'; ctx.beginPath(); ctx.arc(cx, cy + bob, 16, 0, Math.PI*2); ctx.fill();
+    // Pillar legs
+    ctx.fillStyle = '#1a0830';
+    ctx.fillRect(cx - 7, cy + 3 + bob, 5, 10); ctx.fillRect(cx + 2, cy + 3 + bob, 5, 10);
+    // Arm weapons
+    ctx.fillStyle = '#3a1060';
+    ctx.fillRect(cx - 14, cy - 5 + bob, 5, 12); ctx.fillRect(cx + 9, cy - 5 + bob, 5, 12);
+    // Torso
+    ctx.fillStyle = c;
+    ctx.fillRect(cx - 8, cy - 8 + bob, 16, 14);
+    // Chest seal glyph
+    ctx.strokeStyle = '#8040c0aa'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy - 2 + bob, 4, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - 6 + bob); ctx.lineTo(cx, cy + 2 + bob); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - 4, cy - 2 + bob); ctx.lineTo(cx + 4, cy - 2 + bob); ctx.stroke();
+    // Head/helm
+    ctx.fillStyle = c;
+    ctx.fillRect(cx - 7, cy - 16 + bob, 14, 10);
+    // Visor slit
+    ctx.fillStyle = '#8040ff'; ctx.fillRect(cx - 5, cy - 11 + bob, 10, 2);
+
+  } else {
+    // Fallback generic enemy
+    ctx.fillStyle = c + '40'; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = c; ctx.beginPath(); ctx.arc(cx, cy, 8, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff4040'; ctx.fillRect(cx - 3, cy - 2, 2, 2); ctx.fillRect(cx + 1, cy - 2, 2, 2);
+  }
+}
+
+function drawNPC(npc) {
+  if (!npc.active) return;
+  const x = MAP_OX + npc.x * TILE;
+  const y = MAP_OY + npc.y * TILE;
+
+  if (npc.id === 'alyse') {
+    // Alyse — light-blue glow, tainted streaks
+    ctx.fillStyle = 'rgba(160,180,255,0.18)';
+    ctx.beginPath();
+    ctx.arc(x + TILE/2, y + TILE/2, 17, 0, Math.PI * 2);
+    ctx.fill();
+    // Body
+    ctx.fillStyle = '#c0d0f0';
+    ctx.beginPath();
+    ctx.arc(x + TILE/2, y + TILE/2 - 4, 7, 0, Math.PI * 2);
+    ctx.fill();
+    // Hair (light blond)
+    ctx.fillStyle = '#e8dca0';
+    ctx.beginPath();
+    ctx.arc(x + TILE/2, y + TILE/2 - 7, 6, Math.PI, Math.PI * 2);
+    ctx.fill();
+    // Taint streaks — dark green lines on body
+    ctx.strokeStyle = 'rgba(20,80,20,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x + TILE/2 - 4, y + TILE/2 - 2);
+    ctx.lineTo(x + TILE/2 - 6, y + TILE/2 + 6);
+    ctx.moveTo(x + TILE/2 + 2, y + TILE/2 - 4);
+    ctx.lineTo(x + TILE/2 + 4, y + TILE/2 + 4);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    // "!" indicator
+    ctx.fillStyle = '#ffe060';
+    ctx.font = 'bold 10px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', x + TILE/2, y + TILE/2 - 16);
+    ctx.textAlign = 'left';
+  } else {
+    // Default NPC (Frank etc.) — grey glow
+    ctx.fillStyle = 'rgba(100,120,100,0.2)';
+    ctx.beginPath();
+    ctx.arc(x + TILE/2, y + TILE/2, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#8a9a8a';
+    ctx.beginPath();
+    ctx.arc(x + TILE/2, y + TILE/2 - 4, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#3a3a3a';
+    ctx.beginPath();
+    ctx.arc(x + TILE/2, y + TILE/2 - 7, 6, Math.PI, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ============================================================
+//  BATTLE ANIMATION SYSTEM
+// ============================================================
+
+// Combatant render positions (with animation offsets)
+// 3-wide layout: safe zone y=80–460 (HUD 64px top, battle UI 250px bottom on 768px canvas)
+// Name label is drawn at py+38, HP bar at py+20 — Alyse at y=440 puts name at y=478, safe.
+let partyRenderPos = [{ x: 200, y: 210 }, { x: 200, y: 330 }, { x: 200, y: 450 }];
+let enemyRenderPos = [{ x: 1050, y: 300 }, { x: 1050, y: 430 }];
+
+// Active animation
+let activeAnimation = null; // { type, ... }
+let damageNumbers = []; // { x, y, text, color, life, maxLife, vy }
+let projectiles = []; // { x, y, tx, ty, color, speed, life, size }
+let battleParticles = []; // { x, y, vx, vy, life, maxLife, color, size, type }
+
+function spawnBattleParticle(x, y, color, type = 'pixel') {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 0.5 + Math.random() * 2;
+  battleParticles.push({
+    x, y,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    life: 0,
+    maxLife: 20 + Math.random() * 30,
+    color,
+    size: 2 + Math.random() * 3,
+    type
+  });
+}
+
+// Combatant animation state (per-entity offsets/flash)
+let combatantAnim = {}; // keyed by 'party_0', 'party_1', 'enemy_0', etc.
+// { ox, oy, flashTimer, flashColor, scale, recoilX }
+
+function resetCombatantAnim() {
+  combatantAnim = {};
+  for (let i = 0; i < PARTY.length; i++) combatantAnim['party_' + i] = { ox: 0, oy: 0, flashTimer: 0, flashColor: null, scale: 1, recoilX: 0 };
+  for (let i = 0; i < 4; i++) combatantAnim['enemy_' + i] = { ox: 0, oy: 0, flashTimer: 0, flashColor: null, scale: 1, recoilX: 0 };
+}
+
+function getAnimState(key) {
+  if (!combatantAnim[key]) combatantAnim[key] = { ox: 0, oy: 0, flashTimer: 0, flashColor: null, scale: 1, recoilX: 0 };
+  return combatantAnim[key];
+}
+
+// ============================================================
+//  ANIMATION TIMELINE SYSTEM
+//
+//  Instead of setTimeout, we queue animation steps with durations.
+//  Each step runs for its duration, then advances to the next.
+//  This lets us interleave movement, projectiles, hit flash, and damage numbers.
+// ============================================================
+
+let animTimeline = [];
+let animStepElapsed = 0;
+let animStepStartTime = 0;
+
+function queueAnimationStep(duration, fn) {
+  animTimeline.push({ duration, fn, done: false });
+}
+
+function startAnimationSequence(steps) {
+  animTimeline = steps;
+  animStepElapsed = 0;
+  animStepStartTime = performance.now();
+  activeAnimation = { type: 'sequence' };
+}
+
+function updateAnimations(dt) {
+  if (activeAnimation && activeAnimation.type === 'sequence') {
+    const now = performance.now();
+    animStepElapsed += dt;
+
+    const currentStep = animTimeline.find(s => !s.done);
+    if (!currentStep) {
+      // All steps done
+      activeAnimation = null;
+      animTimeline = [];
+      // Don't auto-call nextTurn — the last step's callback handles it
+      return;
+    }
+
+    if (animStepElapsed >= currentStep.duration) {
+      currentStep.done = true;
+      animStepElapsed = 0;
+      animStepStartTime = now;
+      if (currentStep.fn) currentStep.fn();
+    }
+  }
+
+  // Update damage numbers
+  damageNumbers.forEach(dn => {
+    dn.life += dt;
+    dn.y += dn.vy * dt;
+    dn.vy *= 0.97;
+  });
+  damageNumbers = damageNumbers.filter(dn => dn.life < dn.maxLife);
+
+  // Update projectiles
+  projectiles.forEach(proj => {
+    proj.life += dt;
+    const progress = Math.min(1, proj.life * proj.speed);
+    proj.x = proj.sx + (proj.tx - proj.sx) * progress;
+    proj.y = proj.sy + (proj.ty - proj.sy) * progress;
+    
+    // Spawn trail particles
+    if (Math.random() < 0.4) {
+      spawnBattleParticle(proj.x, proj.y, proj.color, 'trail');
+    }
+  });
+  projectiles = projectiles.filter(p => p.life * p.speed < 1.2);
+
+  // Update battle particles
+  battleParticles.forEach(p => {
+    p.life++;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vx *= 0.95;
+    p.vy *= 0.95;
+  });
+  battleParticles = battleParticles.filter(p => p.life < p.maxLife);
+
+  // Update combatant animations (decay)
+  Object.keys(combatantAnim).forEach(key => {
+    const a = combatantAnim[key];
+    if (a.flashTimer > 0) a.flashTimer -= dt;
+    a.ox *= 0.85;
+    a.oy *= 0.85;
+    a.recoilX *= 0.82;
+    a.scale += (1 - a.scale) * 0.2;
+  });
+}
+
+// ============================================================
+//  ANIMATION HELPERS
+// ============================================================
+
+function animateMeleeAttack(attackerKey, targetKey, onHit) {
+  const aState = getAnimState(attackerKey);
+  const tState = getAnimState(targetKey);
+  // Party is on the left (x≈200), enemies on the right (x≈1050).
+  // Party members dash right (+x) to strike; enemies dash left (-x).
+  const dashDir = attackerKey.startsWith('enemy') ? -1 : 1;
+  const recoilDir = -dashDir; // target recoils away from attacker
+
+  startAnimationSequence([
+    // 1. Attacker lunges toward target
+    { duration: 200, fn: () => { aState.ox = 180 * dashDir; } },
+    // 2. Hit lands
+    { duration: 150, fn: () => {
+      aState.ox = 180 * dashDir;
+      tState.flashTimer = 150;
+      tState.flashColor = '#ffffff';
+      tState.recoilX = 15 * recoilDir;
+      tState.scale = 1.1;
+      const targetPos = targetKey.startsWith('party') ? partyRenderPos[parseInt(targetKey.split('_')[1])] : enemyRenderPos[parseInt(targetKey.split('_')[1])];
+      spawnHitBurst(targetPos.x, targetPos.y - 8, '#ffffff', 8);
+      if (onHit) onHit();
+    }},
+    // 3. Attacker returns
+    { duration: 250, fn: () => { aState.ox = 0; } },
+    // 4. Done
+    { duration: 100, fn: () => {
+      battleState.animating = false;
+      updateBattleUI();
+      nextTurn();
+    }},
+  ]);
+}
+
+function spawnCastEffect(x, y, color) {
+  for (let i = 0; i < 15; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 10 + Math.random() * 20;
+    const px = x + Math.cos(angle) * dist;
+    const py = y + Math.sin(angle) * dist;
+    battleParticles.push({
+      x: px, y: py,
+      vx: (x - px) * 0.1, // move toward center
+      vy: (y - py) * 0.1,
+      life: 0,
+      maxLife: 30,
+      color,
+      size: 2 + Math.random() * 2,
+      type: 'pixel'
+    });
+  }
+}
+
+function spawnHitBurst(x, y, color, count = 12) {
+  for (let i = 0; i < count; i++) {
+    spawnBattleParticle(x, y, color, Math.random() < 0.3 ? 'shatter' : 'pixel');
+  }
+}
+
+function animateProjectile(attackerKey, targetKey, color, projectileSize, onHit) {
+  const tState = getAnimState(targetKey);
+  const startPos = attackerKey.startsWith('party') ? partyRenderPos[parseInt(attackerKey.split('_')[1])] : enemyRenderPos[parseInt(attackerKey.split('_')[1])];
+  const targetPos = targetKey.startsWith('party') ? partyRenderPos[parseInt(targetKey.split('_')[1])] : enemyRenderPos[parseInt(targetKey.split('_')[1])];
+
+  startAnimationSequence([
+    // 1. Cast effect on attacker
+    { duration: 300, fn: () => {
+      spawnCastEffect(startPos.x, startPos.y - 8, color);
+    }},
+    // 2. Projectile travels
+    { duration: 400, fn: () => {
+      projectiles.push({
+        x: startPos.x, y: startPos.y - 8,
+        sx: startPos.x, sy: startPos.y - 8,
+        tx: targetPos.x, ty: targetPos.y - 8,
+        color, size: projectileSize, speed: 3, life: 0,
+      });
+    }},
+    // 3. Hit
+    { duration: 400, fn: () => {
+      tState.flashTimer = 200;
+      tState.flashColor = color;
+      tState.recoilX = -12;
+      tState.scale = 1.15;
+      spawnHitBurst(targetPos.x, targetPos.y - 8, color);
+      if (onHit) onHit();
+    }},
+    // 4. Resolve
+    { duration: 200, fn: () => {
+      battleState.animating = false;
+      updateBattleUI();
+      nextTurn();
+    }},
+  ]);
+}
+
+function animateGenericSkill(attackerKey, targetKey, color, onHit) {
+  const tState = getAnimState(targetKey);
+  const startPos = attackerKey.startsWith('party') ? partyRenderPos[parseInt(attackerKey.split('_')[1])] : enemyRenderPos[parseInt(attackerKey.split('_')[1])];
+  const targetPos = targetKey.startsWith('party') ? partyRenderPos[parseInt(targetKey.split('_')[1])] : enemyRenderPos[parseInt(targetKey.split('_')[1])];
+
+  startAnimationSequence([
+    // 1. Cast effect on attacker
+    { duration: 300, fn: () => {
+      spawnCastEffect(startPos.x, startPos.y - 8, color);
+    }},
+    // 2. Effect on target
+    { duration: 400, fn: () => {
+      tState.flashTimer = 400;
+      tState.flashColor = color;
+      tState.scale = 1.1;
+      // Particles rising from target
+      for (let i = 0; i < 10; i++) {
+        battleParticles.push({
+          x: targetPos.x + (Math.random() - 0.5) * 40,
+          y: targetPos.y,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: -1 - Math.random(),
+          life: 0,
+          maxLife: 40,
+          color,
+          size: 3 + Math.random() * 2,
+          type: 'pixel'
+        });
+      }
+      if (onHit) onHit();
+    }},
+    // 3. Resolve
+    { duration: 300, fn: () => {
+      battleState.animating = false;
+      updateBattleUI();
+      nextTurn();
+    }},
+  ]);
+}
+
+function animateHeal(targetKey, color, onHeal) {
+  const tState = getAnimState(targetKey);
+
+  startAnimationSequence([
+    { duration: 300, fn: () => {
+      tState.flashTimer = 400;
+      tState.flashColor = color || '#40d060';
+      tState.scale = 1.08;
+      if (onHeal) onHeal();
+    }},
+    { duration: 400, fn: () => {
+      battleState.animating = false;
+      updateBattleUI();
+      nextTurn();
+    }},
+  ]);
+}
+
+function animateBuff(casterKey, targetKey, color, onBuff) {
+  const tState = getAnimState(targetKey);
+  startAnimationSequence([
+    { duration: 300, fn: () => {
+      tState.flashTimer = 300;
+      tState.flashColor = color || '#6090d0';
+      tState.scale = 1.05;
+      if (onBuff) onBuff();
+    }},
+    { duration: 200, fn: () => {
+      battleState.animating = false;
+      updateBattleUI();
+      nextTurn();
+    }},
+  ]);
+}
+
+function animateDefend(casterKey, onDone) {
+  const aState = getAnimState(casterKey);
+  startAnimationSequence([
+    { duration: 200, fn: () => {
+      aState.scale = 1.08;
+      aState.flashTimer = 300;
+      aState.flashColor = '#6090d0';
+      if (onDone) onDone();
+    }},
+    { duration: 300, fn: () => {
+      battleState.animating = false;
+      updateBattleUI();
+      nextTurn();
+    }},
+  ]);
+}
+
+function animateFlee(onDone) {
+  startAnimationSequence([
+    { duration: 300, fn: () => {
+      PARTY.forEach((_, i) => getAnimState('party_' + i).ox = -30);
+      if (onDone) onDone();
+    }},
+    { duration: 200, fn: () => {
+      // Don't call nextTurn here — endBattleFlee handles state
+    }},
+  ]);
+}
+
+function spawnDamageNumber(targetKey, amount, color, isCritical, extraText) {
+  const pos = targetKey.startsWith('party')
+    ? partyRenderPos[parseInt(targetKey.split('_')[1])]
+    : enemyRenderPos[parseInt(targetKey.split('_')[1])];
+  
+  damageNumbers.push({
+    x: pos.x + (Math.random() - 0.5) * 20,
+    y: pos.y - 30,
+    text: (isCritical ? '💥 ' : '') + amount + (extraText ? '\n' + extraText : ''),
+    color: color || '#ff6060',
+    life: 0,
+    maxLife: 1200,
+    vy: -0.06,
+    size: isCritical ? 20 : 16,
+    multiLine: !!extraText
+  });
+}
+
+function spawnHealNumber(targetKey, amount) {
+  const pos = partyRenderPos[parseInt(targetKey.split('_')[1])];
+  damageNumbers.push({
+    x: pos.x + (Math.random() - 0.5) * 20,
+    y: pos.y - 30,
+    text: '+' + amount,
+    color: '#40d060',
+    life: 0,
+    maxLife: 1200,
+    vy: -0.05,
+    size: 16,
+  });
+}
+
+function spawnTextNumber(targetKey, text, color) {
+  const pos = targetKey.startsWith('party')
+    ? partyRenderPos[parseInt(targetKey.split('_')[1])]
+    : enemyRenderPos[parseInt(targetKey.split('_')[1])];
+  damageNumbers.push({
+    x: pos.x,
+    y: pos.y - 30,
+    text: text,
+    color: color || '#c0c0c0',
+    life: 0,
+    maxLife: 1000,
+    vy: -0.04,
+    size: 14,
+  });
+}
+
+function spawnBuffEffect(targetKey, buffType) {
+  const pos = targetKey.startsWith('party')
+    ? partyRenderPos[parseInt(targetKey.split('_')[1])]
+    : enemyRenderPos[parseInt(targetKey.split('_')[1])];
+  
+  const colors = {
+    def: '#6090d0',
+    shield: '#a0d0ff',
+    purify: '#c0ffd0',
+  };
+  const color = colors[buffType] || '#c0c0c0';
+  const text = {
+    def: 'DEF UP!',
+    shield: 'SHIELDED!',
+    purify: 'PURIFIED!',
+  }[buffType] || buffType.toUpperCase();
+  
+  damageNumbers.push({
+    x: pos.x,
+    y: pos.y - 40,
+    text: text,
+    color: color,
+    life: 0,
+    maxLife: 800,
+    vy: -0.03,
+    size: 13,
+  });
+}
+function drawBattle() {
+  if (state !== 'battle') return;
+
+  // Background — dark purple with lava glow
+  const grad = ctx.createRadialGradient(W/2, H/2, 50, W/2, H/2, 400);
+  grad.addColorStop(0, '#1a0a2e');
+  grad.addColorStop(0.5, '#0e0620');
+  grad.addColorStop(1, '#06020e');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Lava glow from above
+  ctx.fillStyle = 'rgba(208,96,48,0.05)';
+  ctx.beginPath();
+  ctx.ellipse(W/2, 0, 300, 100, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Branch-like ceiling
+  ctx.fillStyle = '#1a1a2e';
+  for (let i = 0; i < 8; i++) {
+    const bx = i * 110 + 20;
+    ctx.beginPath();
+    ctx.moveTo(bx, 0);
+    ctx.lineTo(bx + 15, 60 + Math.sin(i * 0.7) * 20);
+    ctx.lineTo(bx + 30, 0);
+    ctx.fill();
+  }
+
+  // Party sprites (left side)
+  PARTY.forEach((p, i) => {
+    if (p.hp <= 0) return;
+    const basePos = partyRenderPos[i];
+    const anim = getAnimState('party_' + i);
+    const px = basePos.x + anim.ox + anim.recoilX;
+    const py = basePos.y + anim.oy;
+    const sc = anim.scale;
+    const t  = performance.now() * 0.002;
+    const idle = Math.sin(t + i * 1.2) * 2; // gentle idle bob, offset per char
+
+    ctx.lineCap = 'round';
+
+    // Defend shield ring
+    if (p.defending) {
+      ctx.strokeStyle = 'rgba(96,144,208,0.45)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(px, py - 10 + idle, 30 * sc, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+
+    // Aura glow
+    ctx.fillStyle = p.color + '18';
+    ctx.beginPath();
+    ctx.arc(px, py - 6 + idle, 32 * sc, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Flash overlay
+    if (anim.flashTimer > 0 && anim.flashColor) {
+      ctx.globalAlpha = Math.min(1, anim.flashTimer / 100) * 0.65;
+      ctx.fillStyle = anim.flashColor;
+      ctx.beginPath();
+      ctx.arc(px, py - 10 + idle, 22 * sc, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Shadow at feet
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(px, py + 22 * sc, 12 * sc, 4 * sc, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Legs
+    ctx.strokeStyle = p.color + 'bb';
+    ctx.lineWidth = 4 * sc;
+    ctx.beginPath(); ctx.moveTo(px - 3 * sc, py + 6 * sc + idle); ctx.lineTo(px - 5 * sc, py + 20 * sc + idle); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px + 3 * sc, py + 6 * sc + idle); ctx.lineTo(px + 5 * sc, py + 20 * sc + idle); ctx.stroke();
+    // Feet
+    ctx.fillStyle = p.color + 'aa';
+    ctx.beginPath(); ctx.ellipse(px - 5 * sc, py + 21 * sc + idle, 5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(px + 5 * sc, py + 21 * sc + idle, 5 * sc, 2.5 * sc, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Arms
+    ctx.strokeStyle = p.color + 'cc';
+    ctx.lineWidth = 3.5 * sc;
+    ctx.beginPath(); ctx.moveTo(px - 8 * sc, py - 6 * sc + idle); ctx.lineTo(px - 13 * sc, py + 4 * sc + idle); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px + 8 * sc, py - 6 * sc + idle); ctx.lineTo(px + 13 * sc, py + 4 * sc + idle); ctx.stroke();
+
+    // Body
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.moveTo(px - 7 * sc, py - 12 * sc + idle);
+    ctx.lineTo(px + 7 * sc, py - 12 * sc + idle);
+    ctx.lineTo(px + 9 * sc, py + 6 * sc + idle);
+    ctx.lineTo(px - 9 * sc, py + 6 * sc + idle);
+    ctx.closePath(); ctx.fill();
+
+    // Collar/neck
+    ctx.fillStyle = p.color + 'cc';
+    ctx.beginPath(); ctx.arc(px, py - 14 * sc + idle, 4 * sc, 0, Math.PI * 2); ctx.fill();
+
+    // Neck
+    ctx.fillStyle = '#c8966e';
+    ctx.fillRect(px - 3 * sc, py - 19 * sc + idle, 6 * sc, 6 * sc);
+
+    // Head
+    ctx.fillStyle = '#c8966e';
+    ctx.beginPath();
+    ctx.arc(px, py - 25 * sc + idle, 12 * sc, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair
+    ctx.fillStyle = p.hairColor || '#5a4020';
+    if (p.id === 'avery') {
+      // Top cap
+      ctx.beginPath(); ctx.arc(px, py - 27 * sc + idle, 12.5 * sc, Math.PI * 0.85, Math.PI * 2.15); ctx.fill();
+      // Left curtain flowing down
+      ctx.beginPath(); ctx.arc(px - 12 * sc, py - 16 * sc + idle, 8 * sc, Math.PI * 0.3, Math.PI * 1.3); ctx.fill();
+      ctx.beginPath(); ctx.arc(px - 13 * sc, py - 4 * sc + idle, 7 * sc, Math.PI * 0.2, Math.PI * 1.1); ctx.fill();
+      // Right curtain flowing down
+      ctx.beginPath(); ctx.arc(px + 12 * sc, py - 16 * sc + idle, 8 * sc, Math.PI * 1.7, Math.PI * 2.7); ctx.fill();
+      ctx.beginPath(); ctx.arc(px + 13 * sc, py - 4 * sc + idle, 7 * sc, Math.PI * 1.9, Math.PI * 2.8); ctx.fill();
+    } else if (p.id === 'nate') {
+      ctx.beginPath(); ctx.arc(px, py - 27 * sc + idle, 12.5 * sc, Math.PI * 0.9, Math.PI * 2.1); ctx.fill();
+      ctx.beginPath(); ctx.arc(px + 9 * sc, py - 21 * sc + idle, 5 * sc, Math.PI * 1.5, Math.PI * 2.5); ctx.fill();
+    } else if (p.id === 'alyse') {
+      ctx.beginPath(); ctx.arc(px, py - 27 * sc + idle, 12.5 * sc, Math.PI * 0.8, Math.PI * 2.2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px - 11 * sc, py - 18 * sc + idle, 5 * sc, Math.PI * 0.4, Math.PI * 1.4); ctx.fill();
+      ctx.beginPath(); ctx.arc(px + 11 * sc, py - 18 * sc + idle, 5 * sc, Math.PI * 1.6, Math.PI * 2.6); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(px, py - 27 * sc + idle, 12.5 * sc, Math.PI * 0.9, Math.PI * 2.1); ctx.fill();
+    }
+
+    // Eyes
+    ctx.fillStyle = p.eyeColor || '#ffffff';
+    ctx.beginPath(); ctx.ellipse(px - 4 * sc, py - 25 * sc + idle, 2.5 * sc, 2 * sc, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(px + 4 * sc, py - 25 * sc + idle, 2.5 * sc, 2 * sc, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath(); ctx.arc(px - 4 * sc, py - 25 * sc + idle, 1.2 * sc, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(px + 4 * sc, py - 25 * sc + idle, 1.2 * sc, 0, Math.PI * 2); ctx.fill();
+
+    // Character specials
+    if (p.id === 'avery') {
+      const g = 0.4 + Math.sin(t * 1.5) * 0.3;
+      ctx.fillStyle = `rgba(74,154,208,${g * 0.7})`;
+      ctx.beginPath(); ctx.arc(px, py - 5 * sc + idle, 5 * sc, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = p.eyeColor + 'dd';
+      ctx.beginPath();
+      ctx.moveTo(px, py - 9 * sc + idle); ctx.lineTo(px + 4 * sc, py - 4 * sc + idle);
+      ctx.lineTo(px, py - 1 * sc + idle); ctx.lineTo(px - 4 * sc, py - 4 * sc + idle);
+      ctx.closePath(); ctx.fill();
+    } else if (p.id === 'nate') {
+      const pulse = 0.5 + Math.sin(t * 1.8) * 0.3;
+      ctx.fillStyle = `rgba(240,224,128,${pulse * 0.7})`;
+      ctx.beginPath(); ctx.arc(px + 13 * sc, py + 4 * sc + idle, 5 * sc, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f0e080cc';
+      ctx.beginPath(); ctx.arc(px + 13 * sc, py + 4 * sc + idle, 3 * sc, 0, Math.PI * 2); ctx.fill();
+    } else if (p.id === 'alyse') {
+      const bfT = t * 1.2;
+      const bfX = px + 18 * sc + Math.cos(bfT * 1.3) * 4;
+      const bfY = py - 20 * sc + idle + Math.sin(bfT) * 4;
+      ctx.fillStyle = 'rgba(208,216,255,0.6)';
+      ctx.save(); ctx.translate(bfX, bfY); ctx.rotate(Math.sin(bfT * 3) * 0.5);
+      ctx.beginPath(); ctx.ellipse(-5, 0, 7, 3, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(5, 0, 7, 3, 0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+
+    // HP/MP bars
+    drawSmallBar(px - 25, py + 30 * sc, 50, p.hp, p.maxHp, '#30a050');
+    drawSmallBar(px - 25, py + 36 * sc, 50, p.mp, p.maxMp, '#3060c0');
+
+    // Taint dots
+    if (p.taint > 0) {
+      for (let ti = 0; ti < Math.min(p.taint, 5); ti++) {
+        ctx.fillStyle = '#8020c0';
+        ctx.beginPath(); ctx.arc(px - 20 + ti * 8, py + 42 * sc, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    // Name
+    ctx.fillStyle = p.color;
+    ctx.font = (11 * sc) + 'px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(p.name, px, py + 50 * sc);
+
+    // Active turn indicator
+    if (battleState.activeCharIdx === i) {
+      const pulse = 1 + Math.sin(performance.now() * 0.01) * 0.1;
+      ctx.strokeStyle = 'rgba(160,96,208,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px, py - 8 * sc + idle, 34 * pulse * sc, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      // Arrow indicator below name
+      ctx.fillStyle = 'rgba(160,96,208,0.8)';
+      ctx.font = '10px Cinzel, serif';
+      ctx.fillText('▲', px, py + 60 * sc);
+    }
+  });
+
+  // Enemy sprites (right side)
+  battleState.enemies.forEach((e, i) => {
+    if (e.hp <= 0) return;
+    const basePos = enemyRenderPos[i];
+    const anim = getAnimState('enemy_' + i);
+    const px = basePos.x + anim.ox + anim.recoilX;
+    const py = basePos.y + anim.oy;
+    const sc = anim.scale * (e.isMiniBoss ? 1.55 : 1.0);
+    const t  = performance.now() * 0.002 + i * 1.3;
+    const c  = e.color;
+
+    ctx.lineCap = 'round';
+
+    // Flash overlay
+    if (anim.flashTimer > 0 && anim.flashColor) {
+      ctx.globalAlpha = Math.min(1, anim.flashTimer / 100) * 0.6;
+      ctx.fillStyle = anim.flashColor;
+      ctx.beginPath(); ctx.arc(px, py, 36 * sc, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Per-type battle sprites (same shapes as map, scaled up ~2×)
+    if (e.id === 'imp') {
+      const bob = Math.sin(t * 2) * 3;
+      ctx.fillStyle = c + '30'; ctx.beginPath(); ctx.arc(px, py + bob, 26 * sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c + '60';
+      ctx.beginPath(); ctx.ellipse(px - 14*sc, py - 4*sc + bob, 10*sc, 7*sc, -0.6, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(px + 14*sc, py - 4*sc + bob, 10*sc, 7*sc, 0.6, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(px, py + 4*sc + bob, 12*sc, 14*sc, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px, py - 10*sc + bob, 10*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ff8040';
+      ctx.beginPath(); ctx.moveTo(px-6*sc, py-18*sc+bob); ctx.lineTo(px-10*sc, py-28*sc+bob); ctx.lineTo(px-2*sc, py-20*sc+bob); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(px+6*sc, py-18*sc+bob); ctx.lineTo(px+10*sc, py-28*sc+bob); ctx.lineTo(px+2*sc, py-20*sc+bob); ctx.fill();
+      ctx.fillStyle = '#ff3030';
+      ctx.beginPath(); ctx.arc(px-4*sc, py-10*sc+bob, 3*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+4*sc, py-10*sc+bob, 3*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(px-4*sc, py-10*sc+bob, 1.5*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+4*sc, py-10*sc+bob, 1.5*sc, 0, Math.PI*2); ctx.fill();
+
+    } else if (e.id === 'creeper') {
+      const sway = Math.sin(t) * 4;
+      ctx.fillStyle = c + '30'; ctx.beginPath(); ctx.arc(px+sway, py, 26*sc, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = c + 'aa'; ctx.lineWidth = 2*sc;
+      for (let j = -2; j <= 2; j++) {
+        ctx.beginPath(); ctx.moveTo(px+j*5*sc+sway, py+12*sc);
+        ctx.bezierCurveTo(px+j*7*sc+sway, py+22*sc, px+j*6*sc+sway, py+28*sc, px+j*4*sc+sway, py+34*sc); ctx.stroke();
+      }
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(px+sway, py, 10*sc, 18*sc, 0, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+sway, py-20*sc, 10*sc, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#80ff80'; ctx.lineWidth = 1.5*sc;
+      ctx.beginPath(); ctx.arc(px-4*sc+sway, py-22*sc, 3*sc, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px+4*sc+sway, py-22*sc, 3*sc, 0, Math.PI*2); ctx.stroke();
+
+    } else if (e.id === 'scout') {
+      const bob = Math.sin(t * 1.5) * 2;
+      ctx.fillStyle = c + '40'; ctx.beginPath(); ctx.arc(px, py+bob, 34*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#8a2040';
+      ctx.beginPath(); ctx.arc(px-20*sc, py-8*sc+bob, 10*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+20*sc, py-8*sc+bob, 10*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(px, py+4*sc+bob, 16*sc, 18*sc, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#6a1030';
+      ctx.fillRect(px-10*sc, py-8*sc+bob, 20*sc, 16*sc);
+      ctx.strokeStyle = '#ff6040aa'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(px-8*sc, py-2*sc+bob); ctx.lineTo(px+8*sc, py-2*sc+bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px, py-8*sc+bob); ctx.lineTo(px, py+8*sc+bob); ctx.stroke();
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(px, py-16*sc+bob, 14*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#6a1030'; ctx.fillRect(px-12*sc, py-28*sc+bob, 24*sc, 6*sc);
+      ctx.fillStyle = '#ff4000';
+      ctx.beginPath(); ctx.arc(px-5*sc, py-16*sc+bob, 4*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+5*sc, py-16*sc+bob, 4*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(px-5*sc, py-16*sc+bob, 2*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+5*sc, py-16*sc+bob, 2*sc, 0, Math.PI*2); ctx.fill();
+
+    } else if (e.id === 'shadowEcho') {
+      const drift = Math.sin(t * 1.2) * 4;
+      const alpha = 0.5 + Math.sin(t * 0.8) * 0.2;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = c + '50'; ctx.beginPath(); ctx.arc(px+drift, py-4, 30*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c + '80';
+      ctx.beginPath();
+      ctx.moveTo(px-10*sc+drift, py+4*sc); ctx.bezierCurveTo(px-16*sc+drift, py+16*sc, px-6*sc+drift, py+28*sc, px+drift, py+32*sc);
+      ctx.bezierCurveTo(px+6*sc+drift, py+28*sc, px+16*sc+drift, py+16*sc, px+10*sc+drift, py+4*sc); ctx.fill();
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(px+drift, py-8*sc, 16*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#c0d0ff';
+      ctx.beginPath(); ctx.arc(px+drift, py-10*sc, 10*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,30,0.9)';
+      ctx.beginPath(); ctx.arc(px-3*sc+drift, py-12*sc, 3*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+3*sc+drift, py-12*sc, 3*sc, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+
+    } else if (e.id === 'mindlessDrone') {
+      const pulse = 1 + Math.sin(t * 2) * 0.1;
+      ctx.fillStyle = c + '35'; ctx.beginPath(); ctx.arc(px, py, 30*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c + 'aa';
+      ctx.beginPath(); ctx.moveTo(px-6*sc, py+14*sc); ctx.bezierCurveTo(px-8*sc, py+22*sc, px-4*sc, py+28*sc, px-6*sc, py+34*sc);
+      ctx.bezierCurveTo(px-8*sc, py+38*sc, px+2*sc, py+36*sc, px, py+30*sc); ctx.bezierCurveTo(px+2*sc, py+24*sc, px+6*sc, py+20*sc, px+4*sc, py+14*sc); ctx.fill();
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(px, py-2*sc, 16*sc*pulse, 18*sc/pulse, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c + 'cc';
+      ctx.beginPath(); ctx.arc(px-10*sc, py-6*sc, 6*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+8*sc, py-10*sc, 5*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#60ff60';
+      ctx.beginPath(); ctx.arc(px-4*sc, py-4*sc, 3*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+4*sc, py-4*sc, 3*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#003300';
+      ctx.beginPath(); ctx.arc(px-4*sc, py-4*sc, 1.5*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+4*sc, py-4*sc, 1.5*sc, 0, Math.PI*2); ctx.fill();
+
+    } else if (e.id === 'corruptedWolf') {
+      const trot = Math.sin(t * 3) * 4;
+      ctx.fillStyle = c + '30'; ctx.beginPath(); ctx.arc(px, py, 28*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c + 'aa';
+      ctx.fillRect(px+6*sc, py+6*sc, 6*sc, 16*sc+trot); ctx.fillRect(px-12*sc, py+6*sc, 6*sc, 16*sc-trot);
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.ellipse(px, py, 18*sc, 12*sc, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillRect(px+10*sc, py+4*sc, 6*sc, 14*sc-trot); ctx.fillRect(px-16*sc, py+4*sc, 6*sc, 14*sc+trot);
+      ctx.beginPath(); ctx.ellipse(px-14*sc, py-6*sc, 12*sc, 10*sc, -0.5, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(px-22*sc, py-14*sc); ctx.lineTo(px-26*sc, py-24*sc); ctx.lineTo(px-16*sc, py-16*sc); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(px-10*sc, py-14*sc); ctx.lineTo(px-8*sc, py-24*sc); ctx.lineTo(px-4*sc, py-16*sc); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.moveTo(px-18*sc, py-2*sc); ctx.lineTo(px-20*sc, py+6*sc); ctx.lineTo(px-14*sc, py-2*sc); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(px-14*sc, py-2*sc); ctx.lineTo(px-15*sc, py+5*sc); ctx.lineTo(px-10*sc, py-2*sc); ctx.fill();
+      ctx.fillStyle = '#ff8000';
+      ctx.beginPath(); ctx.arc(px-18*sc, py-8*sc, 3*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = 'rgba(80,200,80,0.35)';
+      ctx.beginPath(); ctx.arc(px-16*sc, py+4*sc, 5*sc, 0, Math.PI*2); ctx.fill();
+
+    } else if (e.id === 'taintedMage') {
+      const sway = Math.sin(t * 0.8) * 4;
+      ctx.fillStyle = c + '40'; ctx.beginPath(); ctx.arc(px+sway, py, 30*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.moveTo(px-12*sc+sway, py-12*sc); ctx.lineTo(px+12*sc+sway, py-12*sc);
+      ctx.lineTo(px+18*sc+sway, py+20*sc); ctx.lineTo(px-18*sc+sway, py+20*sc); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#8020c0aa'; ctx.lineWidth = 2*sc;
+      for (let j = -2; j <= 2; j++) {
+        ctx.beginPath(); ctx.moveTo(px+j*7*sc+sway, py+20*sc);
+        ctx.bezierCurveTo(px+j*9*sc+sway, py+26*sc, px+j*8*sc+sway, py+30*sc, px+j*6*sc+sway, py+36*sc); ctx.stroke();
+      }
+      ctx.fillStyle = '#c8966e';
+      ctx.beginPath(); ctx.arc(px+sway, py-20*sc, 12*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c + 'cc';
+      ctx.beginPath(); ctx.arc(px+sway, py-22*sc, 14*sc, Math.PI*0.8, Math.PI*2.2); ctx.fill();
+      ctx.fillStyle = '#c040ff';
+      ctx.beginPath(); ctx.arc(px-4*sc+sway, py-22*sc, 4*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+4*sc+sway, py-22*sc, 4*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(px-4*sc+sway, py-22*sc, 2*sc, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px+4*sc+sway, py-22*sc, 2*sc, 0, Math.PI*2); ctx.fill();
+
+    } else if (e.id === 'voidSentinel') {
+      const bob = Math.sin(t * 0.6) * 2;
+      ctx.fillStyle = c + '40'; ctx.beginPath(); ctx.arc(px, py+bob, 34*sc, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#1a0830';
+      ctx.fillRect(px-14*sc, py+6*sc+bob, 10*sc, 20*sc); ctx.fillRect(px+4*sc, py+6*sc+bob, 10*sc, 20*sc);
+      ctx.fillStyle = '#3a1060';
+      ctx.fillRect(px-28*sc, py-10*sc+bob, 10*sc, 24*sc); ctx.fillRect(px+18*sc, py-10*sc+bob, 10*sc, 24*sc);
+      ctx.fillStyle = c;
+      ctx.fillRect(px-16*sc, py-16*sc+bob, 32*sc, 28*sc);
+      ctx.fillStyle = '#8040c0';
+      ctx.strokeStyle = '#8040c0aa'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(px, py-4*sc+bob, 8*sc, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px, py-12*sc+bob); ctx.lineTo(px, py+4*sc+bob); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px-8*sc, py-4*sc+bob); ctx.lineTo(px+8*sc, py-4*sc+bob); ctx.stroke();
+      ctx.fillStyle = c; ctx.fillRect(px-14*sc, py-32*sc+bob, 28*sc, 20*sc);
+      ctx.fillStyle = '#8040ff'; ctx.fillRect(px-10*sc, py-22*sc+bob, 20*sc, 4*sc);
+
+    } else {
+      // Fallback
+      const sz = 20 * sc;
+      ctx.fillStyle = c + '30'; ctx.beginPath(); ctx.arc(px, py, sz+10, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(px, py, sz, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ff4040'; ctx.fillRect(px-6, py-4, 4, 4); ctx.fillRect(px+2, py-4, 4, 4);
+    }
+
+    // HP bar
+    const barW = e.isMiniBoss ? 70 : 56;
+    drawSmallBar(px - barW/2, py + 34*sc, barW, e.hp, e.maxHp, '#c03030');
+
+    // Name
+    ctx.fillStyle = e.isMiniBoss ? '#d06030' : '#c06060';
+    ctx.font = (e.isMiniBoss ? 12 : 10) + 'px Cinzel, serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(e.name, px, py + 34*sc + 14);
+
+    // Active turn indicator
+    if (battleState.activeCharIdx === 10 + i) {
+      const pulse = 1 + Math.sin(performance.now() * 0.01) * 0.1;
+      ctx.strokeStyle = 'rgba(192,48,48,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(px, py, (30*sc + 4) * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1;
+    }
+  });
+
+  // Projectiles
+  projectiles.forEach(proj => {
+    ctx.fillStyle = proj.color;
+    ctx.globalAlpha = 0.9;
+    ctx.shadowColor = proj.color;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(proj.x, proj.y, proj.size, 0, Math.PI * 2);
+    ctx.fill();
+    // Trail
+    ctx.globalAlpha = 0.3;
+    ctx.beginPath();
+    ctx.arc(proj.x - (proj.tx - proj.sx) * 0.05, proj.y - (proj.ty - proj.sy) * 0.05, proj.size * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  });
+
+  // Battle particles
+  battleParticles.forEach(p => {
+    const alpha = 1 - (p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = alpha;
+    if (p.type === 'shatter') {
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+    } else {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  });
+  ctx.globalAlpha = 1;
+
+  // Damage numbers / heal numbers / text
+  damageNumbers.forEach(dn => {
+    const alpha = 1 - (dn.life / dn.maxLife);
+    ctx.globalAlpha = alpha;
+    ctx.textAlign = 'center';
+    
+    const lines = dn.text.split('\n');
+    lines.forEach((line, idx) => {
+      const yOff = idx * (dn.size + 2);
+      const size = idx === 0 ? dn.size : dn.size * 0.7; // Smaller text for extraText
+      ctx.font = 'bold ' + size + 'px Cinzel, serif';
+      
+      // Shadow for readability
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillText(line, dn.x + 1, dn.y + yOff + 1);
+      ctx.fillStyle = dn.color;
+      ctx.fillText(line, dn.x, dn.y + yOff);
+    });
+    ctx.globalAlpha = 1;
+  });
+
+  ctx.textAlign = 'left';
+}
+
+function drawSmallBar(x, y, w, val, max, color) {
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(x, y, w, 4);
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w * Math.max(0, val / max), 4);
+}
+
+// ============================================================
+//  MAIN RENDER LOOP
+// ============================================================
+function render() {
+  ctx.clearRect(0, 0, W, H);
+
+  if (state === 'title') return; // Title screen is HTML overlay
+
+  // Draw map
+  if (state === 'explore' || state === 'dialogue') {
+    // Floor background image
+    if (gameState.currentFloor === 1 && IMG_BG_FLOOR_1.complete && IMG_BG_FLOOR_1.naturalWidth > 0) {
+      ctx.globalAlpha = 0.25;
+      ctx.drawImage(IMG_BG_FLOOR_1, 0, 0, W, H);
+      ctx.globalAlpha = 1;
+    }
+
+    for (let ty = 0; ty < MAP_H; ty++) {
+      for (let tx = 0; tx < MAP_W; tx++) {
+        drawTile(tx, ty, FLOORS[gameState.currentFloor].tiles[ty][tx]);
+      }
+    }
+
+    // Draw enemies
+    FLOORS[gameState.currentFloor].enemies.forEach(me => drawEnemyOnMap(me));
+
+    // Draw NPCs
+    const floor = FLOORS[gameState.currentFloor];
+    if (floor && floor.npcs) {
+      floor.npcs.forEach(npc => drawNPC(npc));
+    }
+
+    // Draw player
+    drawPlayer();
+
+    // Draw Nate
+    drawNate();
+
+    // Draw chest particles
+    if (chestParticles.length > 0) {
+      chestParticles.forEach(p => {
+        const alpha = 1 - (p.life / p.maxLife);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    // Interaction hint
+    const px = player.x, py = player.y;
+    const _hintFloor = FLOORS[gameState.currentFloor];
+    const _hintChest = _hintFloor && _hintFloor.chests && _hintFloor.chests[0];
+    const _hintStairs = _hintFloor ? _hintFloor.stairsPos : null;
+    if ((_hintChest && px === _hintChest.pos.x && py === _hintChest.pos.y && !chestOpened) ||
+        (_hintStairs && px === _hintStairs.x && py === _hintStairs.y)) {
+      ctx.fillStyle = 'rgba(138,74,176,0.5)';
+      ctx.font = '11px Cinzel, serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('[E] Interact', MAP_OX + px * TILE + TILE/2, MAP_OY + py * TILE - 8);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // Draw formation screen
+  if (state === 'formation') {
+    drawFormation();
+  }
+
+  // Draw battle
+  if (state === 'battle') {
+    drawBattle();
+  }
+}
+
+// ============================================================
+//  GAME LOOP
+// ============================================================
+let lastTime = 0;
+
+function gameLoop(timestamp) {
+  const dt = timestamp - lastTime;
+  lastTime = timestamp;
+
+  updateExplore(dt);
+  tickWalk(dt);
+  if (state === 'battle' || state === 'formation') updateAnimations(dt);
+  
+  // Update chest animation timer and particles
+  if (chestAnimTimer > 0) chestAnimTimer -= dt;
+  chestParticles.forEach(p => {
+    p.life += dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 0.00005 * dt; // slight gravity
+  });
+  chestParticles = chestParticles.filter(p => p.life < p.maxLife);
+  
+  render();
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+//  GAME START
+// ============================================================
+function startGame() {
+  transition(0.8, () => {
+    document.getElementById('title-screen').style.display = 'none';
+    document.getElementById('hud').classList.add('visible');
+    document.getElementById('floor-label').classList.add('visible');
+    initGame();
+    state = 'explore';
+
+    // Portal entry cutscene → then entry dialogue
+    showCutscene('portal_entry', () => {
+      showDialogue('entry', () => {
+        showDialogue('entryNate');
+      });
+    });
+  });
+}
+
+function resetGame() {
+  document.getElementById('result-screen').classList.remove('visible');
+  
+  // Reset game state
+  gameState.currentFloor = 1;
+  gameState.xp = { avery: 0, nate: 0 };
+  gameState.level = { avery: 1, nate: 1 };
+  gameState.gold = 0;
+  gameState.inventory = { healingDrop: 3, crystalShard: 2 };
+  gameState.storyFlags = {
+    metFrank: false, alysePurified: false, ellenFound: false,
+    franMet: false, comboUnlocked: false,
+  };
+  gameState.research = { runeFragments: [], timeFragments: [], memoryFragments: [] };
+  gameState.equipment = { nate: null, avery: null, fran: null };
+  
+  // Reset party
+  PARTY[0].hp = PARTY[0].maxHp; PARTY[0].mp = PARTY[0].maxMp; PARTY[0].taint = 0;
+  PARTY[1].hp = PARTY[1].maxHp; PARTY[1].mp = PARTY[1].maxMp; PARTY[1].taint = 0;
+  PARTY.forEach(p => { p.buffs = []; p.defending = false; p.position = p.id === 'avery' ? 'front' : 'back'; });
+  
+  // Reload Floor 1
+  loadFloor(1);
+  nateFollow.trail = [{ x: ENTRY_POS.x + 1, y: ENTRY_POS.y }, { x: ENTRY_POS.x, y: ENTRY_POS.y }];
+  patrolTimer = 0;
+  document.getElementById('hud').classList.add('visible');
+  document.getElementById('floor-label').classList.add('visible');
+  initHUD();
+  updateHUD();
+  state = 'explore';
+  showDialogue('entry', () => {
+    showDialogue('entryNate');
+  });
+}
+
+// ============================================================
+//  SAVE SYSTEM
+// ============================================================
+const SAVE_KEY = 'kalmirth_labyrinth_v1';
+
+function saveGame() {
+  const saveData = {
+    version: 1,
+    currentFloor: gameState.currentFloor,
+    player: { x: player.x, y: player.y, dir: player.dir },
+    party: PARTY.map(p => ({
+      id: p.id,
+      hp: p.hp, maxHp: p.maxHp,
+      mp: p.mp, maxMp: p.maxMp,
+      atk: p.atk, def: p.def, spd: p.spd, mag: p.mag,
+      taint: p.taint || 0,
+      position: p.position || 'front',
+      buffs: [] // don't save temporary buffs
+    })),
+    inventory: { ...gameState.inventory },
+    gold: gameState.gold,
+    xp: { ...gameState.xp },
+    level: { ...gameState.level },
+    enemiesDefeated,
+    chestOpened,
+    midFloorTriggered,
+    defeatedEnemies: FLOORS[gameState.currentFloor].enemies.map(me => !me.active),
+    storyFlags: { ...gameState.storyFlags },
+    research: { ...gameState.research },
+    equipment: { ...gameState.equipment },
+    playtime: 0,
+    timestamp: Date.now()
+  };
+  localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+}
+
+function loadGame() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    
+    // Restore game state
+    gameState.currentFloor = data.currentFloor || 1;
+    gameState.gold = data.gold || 0;
+    gameState.inventory = data.inventory || { healingDrop: 3, crystalShard: 2 };
+    gameState.xp = data.xp || { avery: 0, nate: 0 };
+    gameState.level = data.level || { avery: 1, nate: 1 };
+    gameState.storyFlags = data.storyFlags || gameState.storyFlags;
+    gameState.research = data.research || gameState.research;
+    gameState.equipment = data.equipment || gameState.equipment;
+    
+    // Load the floor
+    loadFloor(gameState.currentFloor);
+    
+    // Override player position from save
+    player.x = data.player.x;
+    player.y = data.player.y;
+    player.dir = data.player.dir;
+
+    // Update party stats
+    data.party.forEach(savedChar => {
+      const p = PARTY.find(char => char.id === savedChar.id);
+      if (p) {
+        p.hp = savedChar.hp; p.maxHp = savedChar.maxHp;
+        p.mp = savedChar.mp; p.maxMp = savedChar.maxMp;
+        p.atk = savedChar.atk; p.def = savedChar.def;
+        p.spd = savedChar.spd; p.mag = savedChar.mag;
+        p.taint = savedChar.taint || 0;
+        p.position = savedChar.position || 'front';
+      }
+    });
+
+    enemiesDefeated = data.enemiesDefeated || 0;
+    chestOpened = data.chestOpened || false;
+    midFloorTriggered = data.midFloorTriggered || false;
+
+    // Restore enemy states
+    const _loadedEnemies = FLOORS[gameState.currentFloor].enemies;
+    data.defeatedEnemies.forEach((defeated, i) => {
+      if (_loadedEnemies[i]) _loadedEnemies[i].active = !defeated;
+    });
+
+    // Reset Nate follow trail to player pos
+    nateFollow.trail = [];
+    for(let i=0; i<3; i++) nateFollow.trail.push({x: player.x, y: player.y});
+
+    return true;
+  } catch (e) {
+    console.error("Save load failed", e);
+    return false;
+  }
+}
+
+function checkSave() {
+  const hasSave = localStorage.getItem(SAVE_KEY) !== null;
+  document.getElementById('btn-continue').style.display = hasSave ? 'block' : 'none';
+}
+
+// ============================================================
+//  FORMATION DRAG — canvas mouse events
+// ============================================================
+function getCanvasMousePos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top)  * scaleY,
+  };
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  if (state !== 'formation') return;
+  const { x, y } = getCanvasMousePos(e);
+  // Hit-test each party member circle (radius 34 from _drawFormationChar)
+  for (let i = 0; i < PARTY.length; i++) {
+    const pos = getFormationPos(i);
+    const dx = x - pos.x, dy = y - pos.y;
+    if (Math.sqrt(dx * dx + dy * dy) <= 36) {
+      formationState.drag = { active: true, charIdx: i, mx: x, my: y };
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (state !== 'formation') return;
+  const { x, y } = getCanvasMousePos(e);
+  if (formationState.drag.active) {
+    formationState.drag.mx = x;
+    formationState.drag.my = y;
+  } else {
+    // Show grab cursor when hovering over a character
+    let overChar = false;
+    for (let i = 0; i < PARTY.length; i++) {
+      const pos = getFormationPos(i);
+      const dx = x - pos.x, dy = y - pos.y;
+      if (Math.sqrt(dx * dx + dy * dy) <= 36) { overChar = true; break; }
+    }
+    canvas.style.cursor = overChar ? 'grab' : 'default';
+  }
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (state !== 'formation' || !formationState.drag.active) return;
+  const { x } = getCanvasMousePos(e);
+  const i = formationState.drag.charIdx;
+  const newPos = x < FORMATION_SPLIT_X ? 'back' : 'front';
+  PARTY[i].position = newPos;
+  formationState.drag = { active: false, charIdx: -1, mx: 0, my: 0 };
+  canvas.style.cursor = 'default';
+});
+
+// Drag leaves window — cancel drag
+canvas.addEventListener('mouseleave', () => {
+  if (formationState.drag.active) {
+    formationState.drag.active = false;
+    canvas.style.cursor = 'default';
+  }
+});
+
+// ============================================================
+//  EVENT LISTENERS
+// ============================================================
+document.getElementById('btn-start').addEventListener('click', startGame);
+
+document.getElementById('btn-continue').addEventListener('click', () => {
+  if (loadGame()) {
+    transition(0.8, () => {
+      document.getElementById('title-screen').style.display = 'none';
+      document.getElementById('hud').classList.add('visible');
+      document.getElementById('floor-label').classList.add('visible');
+      initHUD();
+      updateHUD();
+      state = 'explore';
+    });
+  }
+});
+
+document.getElementById('btn-howto').addEventListener('click', () => {
+  document.getElementById('how-to-play').classList.add('visible');
+});
+
+document.getElementById('btn-back').addEventListener('click', () => {
+  document.getElementById('how-to-play').classList.remove('visible');
+});
+
+// Dialogue click to advance
+document.getElementById('dialogue-overlay').addEventListener('click', () => {
+  if (state === 'dialogue') advanceDialogue();
+});
+
+// Action menu button clicks
+document.querySelectorAll('#action-menu .action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const action = btn.dataset.action;
+    if (action === 'skill') showSkillMenu();
+    else if (action === 'item') showItemMenu();
+    else playerAction(action);
+  });
+});
+
+// ============================================================
+//  ASSET PRELOAD
+// ============================================================
+const IMG_BG_FLOOR_1 = new Image();
+IMG_BG_FLOOR_1.src = 'assets/bg_floor_1.png';
+
+// ============================================================
+//  START
+// ============================================================
+checkSave();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>

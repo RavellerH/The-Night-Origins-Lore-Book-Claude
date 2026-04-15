@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir *)",
+      "Bash(findstr *)",
+      "Bash(tree *)",
+      "Bash(mkdir *)",
+      "Bash(start *)",
+      "Bash(del *)",
+      "Bash(echo *)",
+      "Bash(powershell *)",
+      "Bash(python *)",
+      "Bash(node *)",
+      "Read(C:\\Users\\WIN10\\Documents\\Obsidian Vault\\Lore Navigator\\..\\Lore/**)"
+    ]
+  },
+  "$version": 3
+}

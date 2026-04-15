@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Callen's Training</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #050508;
+      color: #b8c8d8;
+      font-family: 'Open Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+    
+    #back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 8px 16px;
+      border: 1px solid #2a3a4a;
+      background: #0a1015;
+      color: #6a8a9a;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-decoration: none;
+      transition: all 0.2s;
+      z-index: 50;
+    }
+    
+    #back-btn:hover {
+      border-color: #4a6a7a;
+      color: #8ab0c8;
+    }
+    
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      letter-spacing: 4px;
+      color: #4a6080;
+      text-shadow: 0 0 20px rgba(74, 96, 128, 0.3);
+      margin-bottom: 10px;
+    }
+    
+    #top-bar {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 10px;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+    
+    #wave-display { color: #8ab0c8; }
+    #score-display { color: #c0a030; }
+    #combo-display { color: #ff6060; }
+    
+    #game-canvas {
+      border: 2px solid #1a2535;
+    }
+    
+    #bottom-bar {
+      display: flex;
+      gap: 20px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    
+    .bar-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .bar-label {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #6a8a9a;
+      width: 50px;
+    }
+    
+    .bar-bg {
+      width: 120px;
+      height: 14px;
+      background: #0a0f15;
+      border: 1px solid #2a3a4a;
+    }
+    
+    .bar-fill {
+      height: 100%;
+      transition: width 0.2s;
+    }
+    
+    #hp-fill { background: linear-gradient(#4080c0, #205080); }
+    #special-fill { background: linear-gradient(#c04040, #802020); }
+    
+    #controls-hint {
+      font-size: 11px;
+      color: #4a6a7a;
+      margin-top: 8px;
+    }
+    
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(5, 5, 8, 0.97);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      z-index: 100;
+      padding: 40px;
+    }
+    
+    #overlay.hidden { display: none; }
+    
+    #overlay h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      letter-spacing: 5px;
+    }
+    
+    #overlay.intro h2 { color: #4a6080; }
+    #overlay.training h2 { color: #6a8a9a; }
+    #overlay.twist h2 { color: #c04040; }
+    #overlay.gameover h2 { color: #c04040; }
+    #overlay.victory h2 { color: #c0a030; }
+    #overlay.ending h2 { color: #808080; }
+    
+    #overlay p {
+      color: #6a8a9a;
+      font-size: 14px;
+      max-width: 500px;
+      text-align: center;
+      line-height: 1.8;
+    }
+    
+    #overlay button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      border: 1px solid #4a6080;
+      background: transparent;
+      color: #6a8aaa;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    #overlay button:hover {
+      background: rgba(74, 96, 128, 0.2);
+    }
+    
+    #wave-announce {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      letter-spacing: 6px;
+      color: #4a6080;
+      text-shadow: 0 0 30px rgba(74, 96, 128, 0.5);
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+      z-index: 50;
+    }
+    
+    #wave-announce.visible { opacity: 1; }
+    
+    #combo-popup {
+      position: fixed;
+      font-family: 'Cinzel', serif;
+      font-size: 36px;
+      color: #c0a030;
+      text-shadow: 0 0 20px rgba(192, 160, 48, 0.8);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 60;
+    }
+    
+    .rage-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(200, 40, 40, 0.15);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 5;
+    }
+    
+    .rage-overlay.active { opacity: 1; }
+  </style>
+</head>
+<body>
+  <a id="back-btn" href="../index.html">← GAMES</a>
+  
+  <h1>CALLEN'S TRAINING</h1>
+  
+  <div id="top-bar">
+    <span>WAVE: <span id="wave-display">0/15</span></span>
+    <span>SCORE: <span id="score-display">0</span></span>
+    <span>COMBO: <span id="combo-display">0</span></span>
+  </div>
+  
+  <canvas id="game-canvas" width="800" height="400"></canvas>
+  
+  <div id="bottom-bar">
+    <div class="bar-container">
+      <span class="bar-label">HEALTH</span>
+      <div class="bar-bg"><div class="bar-fill" id="hp-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="bar-container">
+      <span class="bar-label">RAGE</span>
+      <div class="bar-bg"><div class="bar-fill" id="special-fill" style="width: 0%"></div></div>
+    </div>
+  </div>
+  
+  <div id="controls-hint">A/D move · W jump · J light attack · K heavy attack · SPACE rage mode</div>
+  
+  <div id="wave-announce"></div>
+  <div id="combo-popup"></div>
+  <div class="rage-overlay" id="rage-overlay"></div>
+  
+  <div id="overlay" class="intro">
+    <h2>CALLEN'S TRAINING</h2>
+    <p>Two years after the assault on Blue River Village.<br><br>
+    You are Callen. Sixteen years old. You were captured by the Mage Hunters.<br><br>
+    The man who leads your training is Zachariel. He is hard. He is cruel. He pushes you past what you thought possible.<br><br>
+    He led the attack that night. You don't know what that means. Not yet.</p>
+    <button onclick="startGame()">BEGIN TRAINING</button>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════
+    // CONFIG
+    // ═══════════════════════════════════════════════════════
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    const GROUND = H - 80;
+    
+    // ═══════════════════════════════════════════════════════
+    // PLAYER (Callen)
+    // ═══════════════════════════════════════════════════════
+    const P = {
+      x: 150,
+      y: GROUND,
+      vx: 0,
+      vy: 0,
+      size: 30,
+      hp: 100,
+      maxHp: 100,
+      facing: 1,
+      grounded: true,
+      attacking: false,
+      attackType: null,
+      attackFrame: 0,
+      combo: 0,
+      comboTimer: 0,
+      special: 0,
+      maxSpecial: 100,
+      rage: false,
+      invuln: 0,
+      attackHit: false
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // ENEMY DEFINITIONS
+    // ═══════════════════════════════════════════════════════
+    const ENEMY_DEF = {
+      dummy:   { hp: 30, speed: 0, damage: 0, color: '#3a3a40', size: 35, score: 10, attackCd: 0 },
+      novice:  { hp: 60, speed: 1.5, damage: 8, color: '#602020', size: 28, score: 25, attackCd: 1500 },
+      hunter:  { hp: 100, speed: 2.2, damage: 12, color: '#704030', size: 26, score: 40, attackCd: 1200 },
+      berserker: { hp: 180, speed: 1.8, damage: 20, color: '#802020', size: 32, score: 60, attackCd: 1800 },
+      sylva:   { hp: 350, speed: 2.5, damage: 18, color: '#9060a0', size: 35, score: 150, attackCd: 800, boss: true },
+      zachariel: { hp: 500, speed: 2, damage: 25, color: '#804020', size: 40, score: 500, attackCd: 1000, boss: true }
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // WAVE DEFINITIONS
+    // ═══════════════════════════════════════════════════════
+    const WAVES = [
+      [{ type: 'dummy', count: 2 }],
+      [{ type: 'dummy', count: 3 }],
+      [{ type: 'novice', count: 2 }],
+      [{ type: 'novice', count: 2 }, { type: 'dummy', count: 2 }],
+      [{ type: 'hunter', count: 2 }],
+      [{ type: 'hunter', count: 2 }, { type: 'novice', count: 2 }],
+      [{ type: 'sylva', count: 1 }],
+      [{ type: 'dummy', count: 1 }], // Twist wave - no enemies, just dialogue
+      [{ type: 'zachariel', count: 1 }]
+    ];
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME STATE
+    // ═══════════════════════════════════════════════════════
+    let G = {
+      started: false,
+      phase: 'intro',
+      wave: 0,
+      score: 0,
+      enemies: [],
+      particles: [],
+      hitEffects: [],
+      spawnQueue: [],
+      spawnTimer: 0,
+      twistShown: false,
+      twistActive: false,
+      gameEnded: false
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // INPUT
+    // ═══════════════════════════════════════════════════════
+    const keys = {};
+    let attackPressed = false;
+    let heavyPressed = false;
+    
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      
+      if (e.key === ' ' && G.phase === 'game' && P.special >= P.maxSpecial) {
+        activateRage();
+      }
+      
+      if (e.key.toLowerCase() === 'j' && !attackPressed) {
+        attackPressed = true;
+        lightAttack();
+      }
+      
+      if (e.key.toLowerCase() === 'k' && !heavyPressed) {
+        heavyPressed = true;
+        heavyAttack();
+      }
+    });
+    
+    document.addEventListener('keyup', e => {
+      keys[e.key.toLowerCase()] = false;
+      if (e.key.toLowerCase() === 'j') attackPressed = false;
+      if (e.key.toLowerCase() === 'k') heavyPressed = false;
+    });
+    
+    // ═══════════════════════════════════════════════════════
+    // UI
+    // ═══════════════════════════════════════════════════════
+    const waveDisplay = document.getElementById('wave-display');
+    const scoreDisplay = document.getElementById('score-display');
+    const comboDisplay = document.getElementById('combo-display');
+    const hpFill = document.getElementById('hp-fill');
+    const specialFill = document.getElementById('special-fill');
+    const overlay = document.getElementById('overlay');
+    const waveAnnounce = document.getElementById('wave-announce');
+    const rageOverlay = document.getElementById('rage-overlay');
+    const comboPopup = document.getElementById('combo-popup');
+    
+    function updateUI() {
+      waveDisplay.textContent = `${G.wave}/15`;
+      scoreDisplay.textContent = G.score;
+      comboDisplay.textContent = P.combo;
+      hpFill.style.width = `${(P.hp / P.maxHp) * 100}%`;
+      specialFill.style.width = `${(P.special / P.maxSpecial) * 100}%`;
+    }
+    
+    function announce(text) {
+      waveAnnounce.textContent = text;
+      waveAnnounce.classList.add('visible');
+      setTimeout(() => waveAnnounce.classList.remove('visible'), 2000);
+    }
+    
+    function showComboPopup(text, x, y) {
+      comboPopup.textContent = text;
+      comboPopup.style.left = x + 'px';
+      comboPopup.style.top = y + 'px';
+      comboPopup.style.opacity = '1';
+      comboPopup.style.transform = 'translateY(0)';
+      setTimeout(() => {
+        comboPopup.style.opacity = '0';
+        comboPopup.style.transform = 'translateY(-20px)';
+      }, 800);
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // COMBAT
+    // ═══════════════════════════════════════════════════════
+    function lightAttack() {
+      if (P.attacking || G.phase !== 'game') return;
+      
+      P.attacking = true;
+      P.attackType = 'light';
+      P.attackFrame = 0;
+      P.attackHit = false;
+      
+      setTimeout(() => {
+        P.attacking = false;
+        P.attackType = null;
+      }, 200);
+    }
+    
+    function heavyAttack() {
+      if (P.attacking || G.phase !== 'game') return;
+      
+      P.attacking = true;
+      P.attackType = 'heavy';
+      P.attackFrame = 0;
+      P.attackHit = false;
+      
+      setTimeout(() => {
+        P.attacking = false;
+        P.attackType = null;
+      }, 400);
+    }
+    
+    function activateRage() {
+      P.rage = true;
+      P.special = 0;
+      rageOverlay.classList.add('active');
+      
+      // Rage lasts 5 seconds
+      setTimeout(() => {
+        P.rage = false;
+        rageOverlay.classList.remove('active');
+      }, 5000);
+    }
+    
+    function getAttackBox() {
+      const range = P.attackType === 'heavy' ? 80 : 50;
+      const height = P.attackType === 'heavy' ? 60 : 40;
+      
+      return {
+        x: P.x + (P.facing === 1 ? 10 : -range - 10),
+        y: P.y - 40,
+        w: range,
+        h: height,
+        damage: P.attackType === 'heavy' ? (P.rage ? 50 : 35) : (P.rage ? 25 : 15)
+      };
+    }
+    
+    function checkAttackHits() {
+      if (!P.attacking || P.attackHit) return;
+      
+      const box = getAttackBox();
+      
+      for (const e of G.enemies) {
+        if (e.hit) continue;
+        
+        if (e.x > box.x && e.x < box.x + box.w &&
+            e.y > box.y && e.y < box.y + box.h) {
+          
+          let dmg = box.damage;
+          if (e.boss) dmg *= 0.7;
+          
+          e.hp -= dmg;
+          e.hit = true;
+          e.vx = P.facing * (P.attackType === 'heavy' ? 8 : 4);
+          e.vy = -2;
+          
+          // Combo
+          P.combo++;
+          P.comboTimer = 1500;
+          P.special = Math.min(P.maxSpecial, P.special + 15);
+          G.score += 10 * P.combo;
+          
+          // Effects
+          spawnHitEffect(e.x, e.y);
+          shakeScreen(P.attackType === 'heavy' ? 5 : 2);
+          
+          // Popup
+          if (P.combo >= 3) {
+            const texts = ['NICE!', 'COMBO!', 'GREAT!', 'AWESOME!', 'UNSTOPPABLE!'];
+            const idx = Math.min(Math.floor(P.combo / 3), texts.length - 1);
+            showComboPopup(texts[idx] + ' x' + P.combo, e.x, e.y - 50);
+          }
+          
+          setTimeout(() => e.hit = false, 300);
+        }
+      }
+      
+      P.attackHit = true;
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // EFFECTS
+    // ═══════════════════════════════════════════════════════
+    let shakeAmount = 0;
+    
+    function shakeScreen(amount) {
+      shakeAmount = amount;
+    }
+    
+    function spawnHitEffect(x, y) {
+      G.hitEffects.push({
+        x, y,
+        size: 20,
+        life: 1
+      });
+    }
+    
+    function spawnParticle(x, y, color) {
+      G.particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 6,
+        vy: -Math.random() * 4 - 2,
+        color,
+        life: 1,
+        size: 3 + Math.random() * 4
+      });
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME FUNCTIONS
+    // ═══════════════════════════════════════════════════════
+    function startGame() {
+      overlay.classList.add('hidden');
+      G.started = true;
+      G.phase = 'game';
+      G.wave = 0;
+      G.score = 0;
+      G.enemies = [];
+      G.particles = [];
+      G.hitEffects = [];
+      G.twistShown = false;
+      G.twistActive = false;
+      G.gameEnded = false;
+      
+      P.x = 150;
+      P.y = GROUND;
+      P.hp = P.maxHp;
+      P.special = 0;
+      P.rage = false;
+      P.combo = 0;
+      P.attacking = false;
+      
+      rageOverlay.classList.remove('active');
+      
+      updateUI();
+      startNextWave();
+    }
+    
+    function startNextWave() {
+      G.wave++;
+      
+      if (G.wave > 9) {
+        victory();
+        return;
+      }
+      
+      announce(`TRAINING WAVE ${G.wave}`);
+      
+      G.spawnQueue = [];
+      
+      // Twist wave (7) - no enemies, just dialogue
+      if (G.wave === 7) {
+        G.twistActive = true;
+        setTimeout(() => showTwist(), 1500);
+        return;
+      }
+      
+      const waveData = WAVES[G.wave - 1];
+      waveData.forEach(group => {
+        for (let i = 0; i < group.count; i++) {
+          G.spawnQueue.push(group.type);
+        }
+      });
+      
+      G.spawnTimer = 0;
+      G.phase = 'game';
+      updateUI();
+    }
+    
+    function showTwist() {
+      G.phase = 'twist';
+      G.twistShown = true;
+      
+      overlay.classList.remove('hidden');
+      overlay.className = 'twist';
+      overlay.innerHTML = `
+        <h2>THE TRUTH</h2>
+        <p style="color: #c04040; font-size: 16px; font-style: italic;">
+          "You've done well, Callen. Better than I expected."
+        </p>
+        <p>
+          Zachariel stands before you. His hammer rests on his shoulder.
+        </p>
+        <p>
+          "But there's something you should know."
+        </p>
+        <p style="color: #c04040;">
+          "The people you call your parents — Nathaniel and Ryllae — the ones frozen in crystal — I was there that night."
+        </p>
+        <p style="color: #c04040;">
+          "I led the attack on Blue River Village. I gave the order. I declared them 'already gone.'"
+        </p>
+        <p>
+          "Nathaniel is my brother. We fought. He lost. Now you train under the man who led the assault that destroyed everything you loved."
+        </p>
+        <p style="color: #808080; font-style: italic;">
+          How does that feel?
+        </p>
+        <button onclick="twistEnd()">FACE HIM</button>
+      `;
+    }
+    
+    function twistEnd() {
+      overlay.classList.add('hidden');
+      G.twistActive = false;
+      startNextWave();
+    }
+    
+    function spawnEnemy(type) {
+      const def = ENEMY_DEF[type];
+      const side = Math.random() > 0.5 ? W + 50 : -50;
+      
+      G.enemies.push({
+        type,
+        x: side,
+        y: GROUND + (Math.random() - 0.5) * 50,
+        vx: 0,
+        vy: 0,
+        hp: def.hp,
+        maxHp: def.hp,
+        speed: def.speed,
+        damage: def.damage,
+        color: def.color,
+        size: def.size,
+        score: def.score,
+        attackCd: def.attackCd,
+        lastAttack: 0,
+        boss: def.boss || false,
+        hit: false,
+        stunned: 0
+      });
+    }
+    
+    function update(dt) {
+      if (G.phase !== 'game') return;
+      
+      // Player movement
+      P.vx = 0;
+      if (keys['a'] || keys['arrowleft']) {
+        P.vx = -4;
+        P.facing = -1;
+      }
+      if (keys['d'] || keys['arrowright']) {
+        P.vx = 4;
+        P.facing = 1;
+      }
+      
+      // Jump
+      if ((keys['w'] || keys['arrowup']) && P.grounded) {
+        P.vy = -12;
+        P.grounded = false;
+      }
+      
+      // Gravity
+      P.vy += 0.6;
+      P.x += P.vx;
+      P.y += P.vy;
+      
+      // Ground check
+      if (P.y >= GROUND) {
+        P.y = GROUND;
+        P.vy = 0;
+        P.grounded = true;
+      }
+      
+      // Bounds
+      P.x = Math.max(P.size, Math.min(W - P.size, P.x));
+      
+      // Combo decay
+      if (P.comboTimer > 0) {
+        P.comboTimer -= dt;
+        if (P.comboTimer <= 0) {
+          P.combo = 0;
+        }
+      }
+      
+      // Invuln decay
+      if (P.invuln > 0) P.invuln -= dt;
+      
+      // Attack hit detection
+      checkAttackHits();
+      
+      // Spawn enemies
+      G.spawnTimer += dt;
+      if (G.spawnTimer > 600 && G.spawnQueue.length > 0) {
+        G.spawnTimer = 0;
+        spawnEnemy(G.spawnQueue.shift());
+      }
+      
+      // Update enemies
+      const now = Date.now();
+      G.enemies.forEach(e => {
+        // Stunned
+        if (e.stunned > 0) {
+          e.stunned -= dt;
+          return;
+        }
+        
+        // Move toward player
+        const dx = P.x - e.x;
+        const dy = P.y - e.y;
+        const speed = e.speed * (P.rage ? 1.5 : 1);
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        // Always move toward player
+        if (dist > 40) {
+          e.x += (dx / dist) * speed;
+          e.y += (dy / dist) * speed;
+        } else {
+          // Attack when close
+          if (now - e.lastAttack > e.attackCd && P.invuln <= 0) {
+            e.lastAttack = now;
+            let dmg = e.damage;
+            if (P.rage) dmg *= 0.5;
+            P.hp -= dmg;
+            P.invuln = 400;
+            P.combo = 0;
+            shakeScreen(8);
+            spawnParticle(P.x, P.y - 20, '#ff4040');
+          }
+        }
+        
+        // Apply knockback
+        if (e.vx !== 0) {
+          e.x += e.vx;
+          e.y += e.vy || 0;
+          e.vx *= 0.85;
+          if (Math.abs(e.vx) < 0.5) e.vx = 0;
+        }
+        
+        // Bounds
+        e.x = Math.max(e.size, Math.min(W - e.size, e.x));
+        e.y = Math.max(e.size, Math.min(H - 80, e.y));
+      });
+      
+      // Remove dead enemies
+      G.enemies = G.enemies.filter(e => {
+        if (e.hp <= 0) {
+          G.score += e.score;
+          for (let i = 0; i < 8; i++) {
+            spawnParticle(e.x, e.y - 20, e.color);
+          }
+          return false;
+        }
+        return true;
+      });
+      
+      // Update particles
+      G.particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.2;
+        p.life -= 0.025;
+      });
+      G.particles = G.particles.filter(p => p.life > 0);
+      
+      // Update hit effects
+      G.hitEffects.forEach(h => h.life -= 0.1);
+      G.hitEffects = G.hitEffects.filter(h => h.life > 0);
+      
+      // Screen shake decay
+      shakeAmount *= 0.9;
+      if (shakeAmount < 0.1) shakeAmount = 0;
+      
+      // Check game over
+      if (P.hp <= 0) {
+        gameOver();
+        return;
+      }
+      
+      // Check wave complete
+      if (!G.twistActive && G.enemies.length === 0 && G.spawnQueue.length === 0) {
+        setTimeout(() => {
+          if (G.phase === 'game') startNextWave();
+        }, 1000);
+      }
+      
+      updateUI();
+    }
+    
+    function gameOver() {
+      G.phase = 'gameover';
+      overlay.classList.remove('hidden');
+      overlay.className = 'gameover';
+      overlay.innerHTML = `
+        <h2>DEFEATED</h2>
+        <p>You trained for two years. It wasn't enough.</p>
+        <p>Score: ${G.score}</p>
+        <button onclick="startGame()">TRY AGAIN</button>
+      `;
+    }
+    
+    function victory() {
+      G.phase = 'victory';
+      G.gameEnded = true;
+      overlay.classList.remove('hidden');
+      overlay.className = 'ending';
+      ending('spare');
+    }
+    
+    function ending(choice) {
+      overlay.classList.remove('hidden');
+      overlay.className = 'ending';
+      
+      overlay.innerHTML = `
+        <h2>THE CHOICE</h2>
+        <p>Zachariel is down. You stand over him, blade in hand.</p>
+        <p>He led the attack on Blue River Village. He took everything from you.</p>
+        <p>Zachariel looks up at you. He doesn't beg. He never would.</p>
+        <p style="margin-top: 20px; color: #808080; font-style: italic;">
+          You lower your blade.
+        </p>
+        <p>
+          "You're weak," he says. "Just like Nathaniel."<br>
+          "No," you reply. "I'm better."
+        </p>
+        <p style="margin-top: 20px; color: #808080;">
+          You walk away. You don't become what he made you.<br>
+          You become what you choose to be.
+        </p>
+        <p style="color: #c0a030; margin-top: 20px;">Final Score: ${G.score}</p>
+        <button onclick="startGame()">PLAY AGAIN</button>
+      `;
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════
+    function render() {
+      ctx.save();
+      
+      // Screen shake
+      if (shakeAmount > 0) {
+        ctx.translate(
+          (Math.random() - 0.5) * shakeAmount * 2,
+          (Math.random() - 0.5) * shakeAmount * 2
+        );
+      }
+      
+      // Clear
+      ctx.fillStyle = '#050508';
+      ctx.fillRect(0, 0, W, H);
+      
+      // Background layers
+      ctx.fillStyle = '#080a10';
+      ctx.fillRect(0, GROUND + 30, W, H - GROUND);
+      
+      // Ground line
+      ctx.strokeStyle = '#1a2535';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, GROUND + 30);
+      ctx.lineTo(W, GROUND + 30);
+      ctx.stroke();
+      
+      // Particles
+      G.particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      
+      // Hit effects
+      G.hitEffects.forEach(h => {
+        ctx.globalAlpha = h.life;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.size * (1 - h.life), 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+      
+      // Attack indicator
+      if (P.attacking) {
+        const box = getAttackBox();
+        ctx.fillStyle = P.rage ? 'rgba(255, 80, 80, 0.3)' : 'rgba(200, 180, 120, 0.3)';
+        ctx.fillRect(box.x, box.y, box.w, box.h);
+      }
+      
+      // Enemies
+      G.enemies.forEach(e => {
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y - e.size / 2, e.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Boss indicator
+        if (e.boss) {
+          ctx.strokeStyle = '#c0a030';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+        
+        // HP bar
+        const hpPct = e.hp / e.maxHp;
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(e.x - 25, e.y - e.size * 2 - 10, 50, 6);
+        ctx.fillStyle = hpPct > 0.5 ? '#4080c0' : hpPct > 0.25 ? '#c0a030' : '#c04040';
+        ctx.fillRect(e.x - 25, e.y - e.size * 2 - 10, 50 * hpPct, 6);
+      });
+      
+      // Player (Callen)
+      ctx.save();
+      ctx.translate(P.x, P.y);
+      
+      // Invuln flash
+      if (P.invuln > 0 && Math.floor(P.invuln / 60) % 2) {
+        ctx.globalAlpha = 0.5;
+      }
+      
+      // Body
+      ctx.fillStyle = P.rage ? '#604040' : '#4a6080';
+      ctx.beginPath();
+      ctx.arc(0, -P.size, P.size, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Sword
+      ctx.save();
+      ctx.scale(P.facing, 1);
+      
+      if (P.attacking) {
+        const angle = P.attackType === 'heavy' ? 
+          Math.sin(P.attackFrame * 0.5) * 1.5 : 
+          Math.sin(P.attackFrame * 0.8) * 0.8;
+        ctx.rotate(angle);
+      }
+      
+      ctx.strokeStyle = P.rage ? '#ff6060' : '#a0b0c0';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(P.size * 0.5, -P.size);
+      ctx.lineTo(P.size * 1.8, -P.size);
+      ctx.stroke();
+      
+      ctx.restore();
+      ctx.restore();
+      
+      // Rage indicator
+      if (P.rage) {
+        ctx.strokeStyle = '#ff4040';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(P.x, P.y - P.size, P.size + 5, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      
+      ctx.restore();
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME LOOP
+    // ═══════════════════════════════════════════════════════
+    let lastTime = 0;
+    
+    function gameLoop(timestamp) {
+      const dt = timestamp - lastTime;
+      lastTime = timestamp;
+      
+      if (G.started) {
+        update(dt);
+      }
+      
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Start
+    gameLoop(0);
+  </script>
+</body>
+</html>

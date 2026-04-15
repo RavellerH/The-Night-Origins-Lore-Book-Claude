@@ -449,7 +449,7 @@ function updatePaths(filter) {
   const franD = [];
 
   // Filter and sort nodes for pathing
-  const nodes = PLOT_DATA.sort((a, b) => a.y - b.y);
+  const nodes = [...PLOT_DATA].sort((a, b) => a.y - b.y);
 
   nodes.forEach((node, i) => {
     if (node.path.includes('common') || (node.path.includes('avery') && node.path.includes('fran'))) {

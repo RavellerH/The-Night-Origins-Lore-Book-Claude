@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wmic cpu *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(wmic os *)",
+      "Bash(powershell *)"
+    ]
+  }
+}

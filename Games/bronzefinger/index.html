@@ -236,9 +236,167 @@
     padding:24px 20px;
     gap:20px;
     overflow-y:auto;
-    max-width:600px;
+    max-width:640px;
     margin:0 auto;
     width:100%;
+  }
+
+  /* BF COMMENTARY */
+  #bf-comment {
+    width:100%;
+    font-style:italic;
+    font-size:14px;
+    color:var(--text-dim);
+    line-height:1.5;
+    min-height:22px;
+    text-align:center;
+    animation: fadeIn 0.5s ease;
+  }
+
+  /* REPUTATION */
+  #reputation-bar {
+    width:100%;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+  }
+  .rep-stars { color:var(--gold); font-size:14px; letter-spacing:2px; }
+  .rep-label { flex:1; text-align:right; }
+
+  /* UPGRADE SHOP */
+  #upgrade-panel {
+    width:100%;
+    border:1px solid var(--border);
+    background:var(--card);
+    padding:14px;
+    display:none;
+  }
+  #upgrade-panel.active { display:block; }
+  #upgrade-panel h3 {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    color:var(--gold);
+    margin-bottom:10px;
+    text-align:center;
+  }
+  .upgrade-item {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px;
+    margin-bottom:6px;
+    background:rgba(0,0,0,0.2);
+    border:1px solid var(--border);
+    border-radius:4px;
+    cursor:pointer;
+    transition:border-color .2s;
+  }
+  .upgrade-item:hover { border-color:var(--gold-dim); }
+  .upgrade-item.owned { opacity:0.4; cursor:default; border-color:rgba(110,231,183,0.3); }
+  .upgrade-item .up-icon { font-size:20px; }
+  .upgrade-item .up-info { flex:1; }
+  .upgrade-item .up-info h4 { font-size:12px; color:var(--text); }
+  .upgrade-item .up-info p { font-size:10px; color:var(--text-dim); }
+  .upgrade-item .up-cost { font-size:12px; color:var(--gold); font-weight:700; white-space:nowrap; }
+
+  /* WORLD EVENT */
+  #world-event {
+    width:100%;
+    border:1px solid var(--ember);
+    background:rgba(217,119,6,0.04);
+    padding:14px;
+    display:none;
+    animation: fadeIn 0.5s ease;
+  }
+  #world-event.active { display:block; }
+  .we-label {
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.25em;
+    text-transform:uppercase;
+    color:var(--ember);
+    margin-bottom:6px;
+  }
+  .we-text {
+    font-size:14px;
+    font-style:italic;
+    color:var(--text);
+    line-height:1.5;
+  }
+
+  /* HAMMER MINI-GAME */
+  #hammer-game {
+    width:100%;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+  }
+  #hammer-game.active { display:flex; }
+  .hg-label {
+    font-family:'Cinzel',serif;
+    font-size:10px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  #hammer-bar-container {
+    width:100%;
+    max-width:300px;
+    height:30px;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:4px;
+    overflow:hidden;
+    position:relative;
+  }
+  #hammer-bar {
+    position:absolute;
+    top:0;
+    width:4px;
+    height:100%;
+    background:var(--gold);
+    animation: none;
+  }
+  #hammer-zone {
+    position:absolute;
+    top:0;
+    height:100%;
+    background:rgba(110,231,183,0.15);
+    border-left:2px solid rgba(110,231,183,0.5);
+    border-right:2px solid rgba(110,231,183,0.5);
+  }
+  #hammer-btn {
+    font-family:'Cinzel',serif;
+    font-size:12px;
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    background:var(--card);
+    border:1px solid var(--gold-dim);
+    color:var(--gold);
+    padding:8px 24px;
+    cursor:pointer;
+    transition:all .2s;
+  }
+  #hammer-btn:hover { background:rgba(200,155,60,0.1); }
+  #hammer-result {
+    font-size:13px;
+    min-height:20px;
+    font-style:italic;
+    color:var(--text-dim);
+  }
+  .hammer-flash {
+    animation: hammerFlashAnim 0.3s ease;
+  }
+  @keyframes hammerFlashAnim {
+    0% { box-shadow: inset 0 0 20px rgba(245,158,11,0.5); }
+    100% { box-shadow: none; }
   }
 
   /* CUSTOMER PANEL */
@@ -522,6 +680,18 @@
 </div>
 
 <div class="main-area">
+  <div id="reputation-bar">
+    <span class="rep-stars" id="rep-stars">★☆☆☆☆</span>
+    <span class="rep-label" id="rep-label">Unknown Smith</span>
+  </div>
+
+  <div id="bf-comment">The forge is warm. The morning is yours.</div>
+
+  <div id="world-event">
+    <div class="we-label">📜 News from Beyond the Forge</div>
+    <div class="we-text" id="we-text"></div>
+  </div>
+
   <div id="customer-area">
     <img id="customer-silhouette" src="../../game-bg/customer-silhouette.jpeg" alt="">
     <div class="customer-name" id="customer-name">Waiting for first customer…</div>
@@ -535,11 +705,26 @@
     <div id="craft-progress"></div>
   </div>
 
+  <div id="hammer-game">
+    <div class="hg-label">⚒️ Shape the Metal — Time Your Strikes</div>
+    <div id="hammer-bar-container">
+      <div id="hammer-zone"></div>
+      <div id="hammer-bar"></div>
+    </div>
+    <button id="hammer-btn" onclick="hammerStrike()">STRIKE</button>
+    <div id="hammer-result"></div>
+  </div>
+
   <div id="payment-area">
     <div class="payment-preamble" id="pay-preamble"></div>
     <div class="payment-pause" id="pay-pause">· · ·</div>
     <div id="payment-amount"></div>
     <div id="bf-reaction"></div>
+  </div>
+
+  <div id="upgrade-panel">
+    <h3>⚒️ Forge Upgrades</h3>
+    <div id="upgrade-list"></div>
   </div>
 
   <div id="end-of-day">
@@ -914,6 +1099,452 @@ function startNewDay() {
 }
 
 init();
+
+// ── NEW FEATURES ──────────────────────────────────────────────────────────────
+
+// World Events tied to Kalmirth lore
+const WORLD_EVENTS = [
+  { day: 1, text: 'A traveler mentions the Blue River is losing its glow. Bronzefinger says nothing. He\'s heard stranger things for less.' },
+  { day: 2, text: 'Someone comes in talking about a Mage Hunter attack on a village far to the west. Bronzefinger doesn\'t ask which village. He already knows.' },
+  { day: 3, text: 'A customer mentions the City of the Blinding Light has been attacked. Bronzefinger tightens a bolt that doesn\'t need tightening.' },
+  { day: 5, text: 'News arrives that an alliance of mage factions is forming in the Huge Woods. "Good luck with that," Bronzefinger mutters.' },
+  { day: 7, text: 'A Hellhood in a red hood walks past the forge. Doesn\'t come in. Bronzefinger locks the door anyway.' },
+  { day: 9, text: 'The ground trembles slightly. Customers blame a cart outside. Bronzefinger knows his forge. That wasn\'t a cart.' },
+  { day: 11, text: 'A druid in wolf form trots past the forge. Bronzefinger doesn\'t look up from his work. He\'s seen stranger before breakfast.' },
+  { day: 13, text: 'Someone says the Dark Mages have joined the Alliance. Bronzefinger: "They\'ll need better weapons then. Shame about the payment."' },
+  { day: 15, text: 'The tremors are getting worse. A customer\'s horseshoe fell off while he waited. Bronzefinger puts it back on. Charges double.' },
+  { day: 17, text: 'A Nordell soldier comes through, asking about the underground. Bronzefinger knows nothing. Or pretends to. The soldier leaves unconvinced.' },
+  { day: 19, text: 'A woman with a purple crystal fragment stuck to her hand walks past. Bronzefinger stares for a long time. Says nothing.' },
+  { day: 21, text: 'The forest near the forge has gone wrong — wrong angles, wrong color. Bronzefinger works by the firelight now.' },
+  { day: 23, text: 'A demon from below came to the surface and didn\'t attack. The soldier who told him seemed relieved. Bronzefinger isn\'t.' },
+  { day: 25, text: 'An old elf was seen near the Blue River. Smiling. Walking into the forest for the last time. Bronzefinger doesn\'t know who. But he pours a drink.' },
+];
+
+// Bronzefinger commentary
+const BF_OPENING = [
+  'The forge is warm. The morning is yours.',
+  'Bronzefinger is already at the anvil. He was here before dawn. He always is.',
+  'The forge bellows wheeze slightly on the up-stroke. He\'ll fix it. Eventually.',
+  'Morning light catches the edge of the anvil. Bronzefinger ignores it.',
+  'Someone left a broken pot on the counter last night. Still here.',
+];
+
+const BF_AFTER_GOOD = [
+  'Good work. The kind that pays in coin, if the world were fair. It isn\'t.',
+  'He wipes the soot from his hands. Satisfied. Then remembers he shouldn\'t be.',
+  '"Right," he says. That\'s the most pleased he gets.',
+];
+
+const BF_AFTER_WEIRD = [
+  'He puts it on the shelf. The shelf has a lot of things on it now.',
+  'He accepts it. Of course he accepts it. He always does.',
+  '"Fine," he says. It is not fine. It is never fine.',
+  'He considers the item. He considers the customer. He considers his life choices.',
+];
+
+const BF_BETWEEN = [
+  'A moment of quiet. The fire crackles.',
+  'He sharpens a chisel that doesn\'t need sharpening. Habit.',
+  'The anvil ticks as it cools slightly. He feeds the forge.',
+  'He looks at the shelf of received items. Adds another slot with chalk.',
+  'A hammer falls. He picks it up. It\'s the right one.',
+];
+
+// Forge upgrades
+const UPGRADES = [
+  { id: 'better_bellows', icon: '💨', name: 'Reinforced Bellows', desc: 'Bellows push more air — jobs complete 10% faster', cost: 5, owned: false },
+  { id: 'steel_anvil', icon: '⬛', name: 'Steel Anvil Face', desc: 'Harder surface — hammer mini-game zones are wider', cost: 10, owned: false },
+  { id: 'whetstone_set', icon: '🪨', name: 'Fine Whetstone Set', desc: 'Better edge work — increases reputation gain per job', cost: 8, owned: false },
+  { id: 'shop_sign', icon: '🪧', name: 'Painted Shop Sign', desc: 'Attracts richer customers — more coin-weighted payments', cost: 15, owned: false },
+  { id: 'forge_expansion', icon: '🏠', name: 'Forge Expansion', desc: 'Room for apprentices — +1 extra customer per day', cost: 25, owned: false },
+];
+
+// Reputation levels
+const REP_LEVELS = [
+  { stars: '★☆☆☆☆', label: 'Unknown Smith', threshold: 0 },
+  { stars: '★★☆☆☆', label: 'Local Smith', threshold: 5 },
+  { stars: '★★★☆☆', label: 'Reliable Forge', threshold: 15 },
+  { stars: '★★★★☆', label: 'Trusted Artisan', threshold: 30 },
+  { stars: '★★★★★', label: 'Master of the Forge', threshold: 50 },
+];
+
+let reputation = 0;
+let hammerActive = false;
+let hammerAnimFrame = null;
+let hammerBarPos = 0;
+let hammerBarDir = 1;
+let hammerBarSpeed = 3;
+let hammerZoneLeft = 35;
+let hammerZoneRight = 65;
+let hammerHits = 0;
+let hammerTotal = 3;
+let useHammerGame = false; // unlocked after day 1
+
+function updateReputation(delta) {
+  reputation += delta;
+  let level = REP_LEVELS[0];
+  for (const rl of REP_LEVELS) {
+    if (reputation >= rl.threshold) level = rl;
+  }
+  document.getElementById('rep-stars').textContent = level.stars;
+  document.getElementById('rep-label').textContent = level.label;
+}
+
+function setBFComment(text) {
+  const el = document.getElementById('bf-comment');
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'fadeIn 0.5s ease';
+  el.textContent = text;
+}
+
+function showWorldEvent(day) {
+  const events = WORLD_EVENTS.filter(e => e.day === day);
+  if (events.length === 0) {
+    document.getElementById('world-event').classList.remove('active');
+    return;
+  }
+  const event = events[0];
+  document.getElementById('we-text').textContent = event.text;
+  document.getElementById('world-event').classList.add('active');
+  // Auto-hide after 5 seconds
+  setTimeout(() => document.getElementById('world-event').classList.remove('active'), 5000);
+}
+
+function renderUpgrades() {
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = '';
+  for (const up of UPGRADES) {
+    const div = document.createElement('div');
+    div.className = 'upgrade-item' + (up.owned ? ' owned' : '');
+    div.innerHTML = `
+      <div class="up-icon">${up.icon}</div>
+      <div class="up-info"><h4>${up.name}</h4><p>${up.desc}</p></div>
+      <div class="up-cost">${up.owned ? '✓' : up.cost + 'c'}</div>
+    `;
+    if (!up.owned) {
+      div.onclick = () => buyUpgrade(up);
+    }
+    list.appendChild(div);
+  }
+}
+
+function buyUpgrade(up) {
+  if (up.owned || totalCoin < up.cost) return;
+  totalCoin -= up.cost;
+  up.owned = true;
+  showNotification_text('⚒️ ' + up.name + ' installed!');
+  renderUpgrades();
+  updateCoinTally();
+
+  // Apply effects
+  if (up.id === 'steel_anvil') {
+    hammerZoneRight = hammerZoneLeft + 40; // wider zone
+  }
+}
+
+function showUpgradePanel() {
+  renderUpgrades();
+  document.getElementById('upgrade-panel').classList.add('active');
+}
+
+function showNotification_text(text) {
+  const el = document.getElementById('bf-comment');
+  el.textContent = text;
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'fadeIn 0.5s ease';
+}
+
+// ── HAMMER MINI-GAME ──────────────────────────────────────────────────────────
+function startHammerGame(count) {
+  hammerActive = true;
+  hammerHits = 0;
+  hammerTotal = count || 3;
+  useHammerGame = true;
+
+  document.getElementById('craft-area').classList.remove('active');
+  document.getElementById('hammer-game').classList.add('active');
+  document.getElementById('hammer-result').textContent = `${hammerHits}/${hammerTotal} good strikes needed`;
+
+  // Difficulty based on reputation
+  const zoneWidth = UPGRADES.find(u => u.id === 'steel_anvil').owned ? 40 : 25;
+  hammerZoneLeft = 50 - zoneWidth / 2;
+  hammerZoneRight = 50 + zoneWidth / 2;
+
+  const zoneEl = document.getElementById('hammer-zone');
+  zoneEl.style.left = hammerZoneLeft + '%';
+  zoneEl.style.width = (hammerZoneRight - hammerZoneLeft) + '%';
+
+  hammerBarSpeed = 2.5 + (dayNum * 0.1); // gets faster over days
+  hammerBarPos = 0;
+  hammerBarDir = 1;
+  animateHammerBar();
+}
+
+function animateHammerBar() {
+  if (!hammerActive) return;
+  hammerBarPos += hammerBarSpeed * hammerBarDir;
+  if (hammerBarPos >= 98) { hammerBarPos = 98; hammerBarDir = -1; }
+  if (hammerBarPos <= 2) { hammerBarPos = 2; hammerBarDir = 1; }
+
+  document.getElementById('hammer-bar').style.left = hammerBarPos + '%';
+  hammerAnimFrame = requestAnimationFrame(animateHammerBar);
+}
+
+function hammerStrike() {
+  if (!hammerActive) return;
+
+  const inZone = hammerBarPos >= hammerZoneLeft && hammerBarPos <= hammerZoneRight;
+  const container = document.getElementById('hammer-bar-container');
+
+  if (inZone) {
+    hammerHits++;
+    container.classList.add('hammer-flash');
+    setTimeout(() => container.classList.remove('hammer-flash'), 300);
+    document.getElementById('hammer-result').textContent =
+      `✓ Good strike! (${hammerHits}/${hammerTotal})`;
+  } else {
+    document.getElementById('hammer-result').textContent =
+      `✗ Missed. Keep going.`;
+  }
+
+  if (hammerHits >= hammerTotal) {
+    hammerActive = false;
+    cancelAnimationFrame(hammerAnimFrame);
+    document.getElementById('hammer-result').textContent = 'Excellent work. The piece is well-formed.';
+    // Quality bonus — better payment chance
+    reputation += 2;
+    updateReputation(0);
+    setTimeout(() => {
+      document.getElementById('hammer-game').classList.remove('active');
+      document.getElementById('craft-area').classList.remove('active');
+      startPayment(true); // quality flag
+    }, 1000);
+  }
+}
+
+// ── REVISED CUSTOMER FLOW ─────────────────────────────────────────────────────
+let originalNextCustomer = nextCustomer;
+let originalHandleMainBtn = handleMainBtn;
+let originalStartPayment = startPayment;
+let craftQualityBonus = false;
+
+nextCustomer = function() {
+  if (dayCustomers >= (CUSTOMERS_PER_DAY + (UPGRADES.find(u=>u.id==='forge_expansion').owned ? 1 : 0))) {
+    endDay(); return;
+  }
+  dayCustomers++;
+
+  const c = CUSTOMERS[Math.floor(Math.random()*CUSTOMERS.length)];
+  const name = c.names[Math.floor(Math.random()*c.names.length)];
+  currentCustomer = { ...c, displayName: name };
+  currentJob = JOBS[Math.floor(Math.random()*JOBS.length)];
+  craftStep = 0;
+  craftQualityBonus = false;
+
+  const area = document.getElementById('customer-area');
+  area.style.animation = 'none';
+  void area.offsetWidth;
+  area.style.animation = 'slideIn 0.4s ease';
+
+  document.getElementById('customer-name').textContent = name;
+  document.getElementById('customer-request').textContent = c.type==='kid'
+    ? 'A small boy wants a sword. "A real one. I have a plan." He does not have a plan.'
+    : name + ' ' + c.line;
+  document.getElementById('customer-icon').textContent = c.icon;
+
+  document.getElementById('craft-area').classList.remove('active');
+  document.getElementById('payment-area').classList.remove('active');
+  document.getElementById('hammer-game').classList.remove('active');
+  document.getElementById('end-of-day').classList.remove('active');
+
+  setBFComment(BF_BETWEEN[Math.floor(Math.random()*BF_BETWEEN.length)]);
+
+  // World events
+  showWorldEvent(dayNum);
+
+  // Show "Get to work" button
+  document.getElementById('main-btn').textContent = 'Get to work';
+  document.getElementById('main-btn').style.display = 'inline-block';
+
+  phase = 'working';
+};
+
+handleMainBtn = function() {
+  if (phase === 'intro') {
+    document.getElementById('main-btn').style.display = 'none';
+    setBFComment(BF_OPENING[Math.floor(Math.random()*BF_OPENING.length)]);
+    setTimeout(nextCustomer, 400);
+  } else if (phase === 'working') {
+    document.getElementById('main-btn').style.display = 'none';
+    startCrafting();
+  } else if (phase === 'next') {
+    nextCustomer();
+  } else if (phase === 'eod') {
+    startNewDay();
+  }
+};
+
+// ── REVISED CRAFTING (with hammer game option) ────────────────────────────────
+originalStartCrafting = startCrafting;
+startCrafting = function() {
+  phase = 'crafting';
+  craftStep = 0;
+
+  // After day 1, use hammer mini-game instead of simple tool clicking
+  if (useHammerGame || dayNum > 1) {
+    startHammerGame(currentJob.tools.length);
+    return;
+  }
+
+  document.getElementById('craft-area').classList.add('active');
+  renderTools();
+  updateCraftProgress();
+};
+
+// ── REVISED PAYMENT (with quality bonus) ──────────────────────────────────────
+startPayment = function(qualityBonus) {
+  craftQualityBonus = qualityBonus;
+  phase = 'payment';
+  document.getElementById('craft-area').classList.remove('active');
+  document.getElementById('hammer-game').classList.remove('active');
+  const area = document.getElementById('payment-area');
+  area.classList.add('active');
+
+  // Adjust payment weights based on quality and reputation
+  const payment = pickPayment();
+
+  document.getElementById('pay-preamble').textContent =
+    `"Right," says ${currentCustomer.displayName}. "About payment."`;
+  document.getElementById('pay-pause').style.display = 'block';
+  document.getElementById('payment-amount').style.display = 'none';
+  document.getElementById('bf-reaction').style.display = 'none';
+
+  setTimeout(() => {
+    document.getElementById('pay-pause').style.display = 'none';
+    const amtEl = document.getElementById('payment-amount');
+    amtEl.textContent = payment.text;
+    amtEl.classList.toggle('coin', payment.coin);
+    amtEl.style.display = 'block';
+
+    setTimeout(() => {
+      const rxEl = document.getElementById('bf-reaction');
+      let rx;
+      if (payment.coin) {
+        rx = payment.reaction;
+        let bonus = payment.amount;
+        if (craftQualityBonus) bonus = Math.floor(bonus * 1.5);
+        dayCoin += bonus;
+        reputation += 1;
+        updateCoinTally();
+        updateReputation(0);
+      } else {
+        rx = BF_AFTER_WEIRD[Math.floor(Math.random()*BF_AFTER_WEIRD.length)];
+        dayWeird.push(payment.text);
+        if (!allWeird.includes(payment.text)) allWeird.push(payment.text);
+        reputation += 1;
+        updateReputation(0);
+      }
+      if (craftQualityBonus && payment.coin) {
+        rx += ' And good work, too.';
+      }
+      rxEl.textContent = rx;
+      rxEl.style.display = 'block';
+
+      // Achievement
+      if (payment.coin) {
+        const existing = document.getElementById('ach-code-box');
+        if (existing) existing.remove();
+        const codeDiv = document.createElement('div');
+        codeDiv.id = 'ach-code-box';
+        codeDiv.style.cssText = "margin-top:16px;font-family:'Cinzel',serif;font-size:10px;color:var(--gold);border:1px solid var(--gold-dim);padding:10px;background:rgba(200,155,60,0.1);max-width:340px;text-align:center;animation:fadeIn 0.6s ease;";
+        codeDiv.innerHTML = "LORE NAVIGATOR CODE UNLOCKED<br><span style='font-size:16px;letter-spacing:3px;'>K-FORGE-COIN</span><br><span style='font-size:8px;opacity:0.7;letter-spacing:1px;'>REDEEM IN ACHIEVEMENTS</span>";
+        document.getElementById('payment-area').appendChild(codeDiv);
+      }
+
+      // Upgrade button appears at end of payment
+      setTimeout(() => {
+        showUpgradePanel();
+
+        const remaining = CUSTOMERS_PER_DAY + (UPGRADES.find(u=>u.id==='forge_expansion').owned?1:0) - dayCustomers;
+        document.getElementById('main-btn').textContent =
+          remaining > 0 ? `Next customer (${remaining} left)` : 'Close up for the day';
+        document.getElementById('main-btn').style.display = 'inline-block';
+        phase = 'next';
+      }, 1800);
+    }, 800);
+  }, 1800);
+};
+
+// ── REVISED END OF DAY ────────────────────────────────────────────────────────
+originalEndDay = endDay;
+endDay = function() {
+  phase = 'eod';
+  document.getElementById('customer-area').style.display = 'none';
+  document.getElementById('payment-area').classList.remove('active');
+  document.getElementById('craft-area').classList.remove('active');
+  document.getElementById('hammer-game').classList.remove('active');
+  document.getElementById('main-btn').style.display = 'none';
+  document.getElementById('upgrade-panel').classList.remove('active');
+
+  const eod = document.getElementById('end-of-day');
+  eod.classList.add('active');
+
+  document.getElementById('eod-coin').innerHTML =
+    dayCoin > 0
+      ? `You earned <span>${dayCoin} copper</span> in actual coin today.`
+      : `You earned <span>nothing</span> in actual coin today.`;
+
+  document.getElementById('eod-weird').textContent =
+    dayWeird.length > 0
+      ? `In addition, you now have:`
+      : 'You received nothing but jobs well done and empty promises.';
+
+  const strip = document.getElementById('weird-strip');
+  strip.innerHTML = dayWeird.map(w=>`<div class="weird-tag">${w}</div>`).join('');
+
+  // BF end-of-day line based on reputation
+  const bfLine = reputation >= 30
+    ? '"Decent day," Bronzefinger says. He means it. That\'s rare.'
+    : reputation >= 15
+      ? '"Could be worse," he says. It often is.'
+      : EOD_LINES[Math.floor(Math.random()*EOD_LINES.length)];
+  document.getElementById('eod-bfline').textContent = bfLine;
+
+  document.getElementById('main-btn').textContent = 'Start another day';
+  document.getElementById('main-btn').style.display = 'inline-block';
+  phase = 'eod';
+
+  const d = getSave();
+  d.bronzefinger.dayCount++;
+  d.bronzefinger.weirdPayments = allWeird;
+  d.bronzefinger.coinEarned = (d.bronzefinger.coinEarned || 0) + dayCoin;
+  writeSave(d);
+};
+
+// ── REVISED START NEW DAY ─────────────────────────────────────────────────────
+originalStartNewDay = startNewDay;
+startNewDay = function() {
+  dayNum++;
+  dayCustomers = 0;
+  dayWeird = [];
+  dayCoin = 0;
+  updateDayCounter();
+  updateCoinTally();
+
+  const eod = document.getElementById('end-of-day');
+  eod.classList.remove('active');
+  document.getElementById('customer-area').style.display = '';
+  document.getElementById('upgrade-panel').classList.remove('active');
+
+  setBFComment(BF_OPENING[Math.floor(Math.random()*BF_OPENING.length)]);
+  updateReputation(0);
+
+  // Show first customer
+  document.getElementById('main-btn').style.display = 'none';
+  setTimeout(nextCustomer, 400);
+};
 </script>
 </body>
 </html>

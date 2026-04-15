@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thea's Stand</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #020408;
+      color: #b8c8d8;
+      font-family: 'Open Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+    
+    #back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 8px 16px;
+      border: 1px solid #2a3a4a;
+      background: #0a1015;
+      color: #6a8a9a;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-decoration: none;
+      transition: all 0.2s;
+      z-index: 50;
+    }
+    
+    #back-btn:hover {
+      border-color: #4a6a7a;
+      color: #8ab0c8;
+    }
+    
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 22px;
+      letter-spacing: 4px;
+      color: #c0a060;
+      text-shadow: 0 0 20px rgba(192, 160, 96, 0.3);
+      margin-bottom: 10px;
+    }
+    
+    #top-bar {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 10px;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+    
+    #wave-display { color: #8ab0c8; }
+    #score-display { color: #c8a030; }
+    #kills-display { color: #6a8a9a; }
+    
+    #game-canvas {
+      border: 2px solid #1a2535;
+      cursor: crosshair;
+    }
+    
+    #bottom-bar {
+      display: flex;
+      gap: 20px;
+      margin-top: 10px;
+      align-items: center;
+      font-size: 12px;
+    }
+    
+    .bar-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .bar-label {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #6a8a9a;
+      width: 60px;
+    }
+    
+    .bar-bg {
+      width: 150px;
+      height: 16px;
+      background: #0a0f15;
+      border: 1px solid #2a3a4a;
+      position: relative;
+    }
+    
+    .bar-fill {
+      height: 100%;
+      transition: width 0.2s;
+    }
+    
+    #hp-fill { background: linear-gradient(#c04040, #802020); }
+    #stam-fill { background: linear-gradient(#4080c0, #205080); }
+    
+    #potion-count {
+      font-family: 'Cinzel', serif;
+      color: #50a050;
+      padding: 4px 10px;
+      border: 1px solid #2a4a2a;
+      background: #0a1510;
+    }
+    
+    #controls-hint {
+      font-size: 11px;
+      color: #4a6a7a;
+      margin-top: 8px;
+    }
+    
+    #shop-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 4, 8, 0.95);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      z-index: 100;
+    }
+    
+    #shop-overlay.visible { display: flex; }
+    
+    #shop-overlay h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      letter-spacing: 4px;
+      color: #c8a030;
+    }
+    
+    #shop-gold {
+      color: #c8a030;
+      font-size: 14px;
+    }
+    
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      max-width: 500px;
+    }
+    
+    .shop-item {
+      padding: 15px;
+      border: 1px solid #2a3a4a;
+      background: #0a1015;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    
+    .shop-item:hover:not(.bought) {
+      border-color: #c8a030;
+      background: #0f1520;
+    }
+    
+    .shop-item.bought {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    .shop-item .name {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      color: #b8c8d8;
+      margin-bottom: 5px;
+    }
+    
+    .shop-item .cost {
+      font-size: 12px;
+      color: #c8a030;
+    }
+    
+    #shop-close {
+      margin-top: 20px;
+      padding: 10px 25px;
+      border: 1px solid #4a8ab0;
+      background: transparent;
+      color: #8ab0c8;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    #shop-close:hover {
+      background: rgba(100, 180, 220, 0.1);
+    }
+    
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 4, 8, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      z-index: 100;
+    }
+    
+    #overlay.hidden { display: none; }
+    
+    #overlay h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      letter-spacing: 6px;
+    }
+    
+    #overlay.gameover h2 { color: #c04040; }
+    #overlay.victory h2 { color: #c8a030; }
+    #overlay.title h2 { color: #c0a060; }
+    
+    #overlay p {
+      color: #6a8a9a;
+      font-size: 14px;
+      max-width: 400px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    
+    #overlay button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      border: 1px solid #c0a060;
+      background: transparent;
+      color: #c0a060;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    #overlay button:hover {
+      background: rgba(192, 160, 96, 0.1);
+    }
+    
+    #wave-announce {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      letter-spacing: 6px;
+      color: #c0a060;
+      text-shadow: 0 0 30px rgba(192, 160, 96, 0.5);
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+      z-index: 50;
+    }
+    
+    #wave-announce.visible { opacity: 1; }
+  </style>
+</head>
+<body>
+  <a id="back-btn" href="../index.html">← GAMES</a>
+  
+  <h1>THEA'S STAND</h1>
+  
+  <div id="top-bar">
+    <span>WAVE: <span id="wave-display">0/15</span></span>
+    <span>SCORE: <span id="score-display">0</span></span>
+    <span>KILLS: <span id="kills-display">0</span></span>
+  </div>
+  
+  <canvas id="game-canvas" width="700" height="500"></canvas>
+  
+  <div id="bottom-bar">
+    <div class="bar-container">
+      <span class="bar-label">HEALTH</span>
+      <div class="bar-bg"><div class="bar-fill" id="hp-fill" style="width: 100%"></div></div>
+    </div>
+    <div class="bar-container">
+      <span class="bar-label">STAMINA</span>
+      <div class="bar-bg"><div class="bar-fill" id="stam-fill" style="width: 100%"></div></div>
+    </div>
+    <span id="potion-count">POTIONS: 0</span>
+  </div>
+  
+  <div id="controls-hint">WASD move · Mouse aim · Click attack · SPACE dash · E potion</div>
+  
+  <div id="shop-overlay">
+    <h2>UPGRADE SHOP</h2>
+    <div id="shop-gold">Gold: <span id="shop-gold-value">0</span></div>
+    <div class="shop-grid" id="shop-grid"></div>
+    <button id="shop-close">CONTINUE</button>
+  </div>
+  
+  <div id="wave-announce"></div>
+  
+  <div id="overlay" class="title">
+    <h2>THEA'S STAND</h2>
+    <p>Commander of Nordell Border Forces. Twenty years fighting the Deepborn with nothing but steel. No magic. No backup. Just you and the dark.</p>
+    <button onclick="startGame()">DRAW YOUR BLADE</button>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════
+    // CONFIG
+    // ═══════════════════════════════════════════════════════
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    
+    // ═══════════════════════════════════════════════════════
+    // PLAYER (Thea Holt)
+    // ═══════════════════════════════════════════════════════
+    const P = {
+      x: W / 2,
+      y: H / 2,
+      size: 16,
+      speed: 3,
+      angle: 0,
+      hp: 100,
+      maxHp: 100,
+      stam: 100,
+      maxStam: 100,
+      potions: 0,
+      attacks: 1,
+      attackRange: 45,
+      attackDamage: 25,
+      invuln: 0,
+      attacking: false,
+      attackAngle: 0,
+      attackTimer: 0,
+      dashCooldown: 0,
+      upgrades: {}
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // ENEMY DEFINITIONS
+    // ═══════════════════════════════════════════════════════
+    const ENEMY_DEF = {
+      drone:    { hp: 20, speed: 1.2, damage: 5, color: '#802020', size: 12, score: 10, attackRange: 25, attackCd: 1000 },
+      scout:    { hp: 15, speed: 2.0, damage: 8, color: '#804030', size: 10, score: 15, attackRange: 20, attackCd: 800 },
+      warrior:  { hp: 50, speed: 0.7, damage: 15, color: '#a04040', size: 18, score: 25, attackRange: 30, attackCd: 1500 },
+      volmirth: { hp: 100, speed: 0.5, damage: 25, color: '#8040a0', size: 22, score: 50, attackRange: 35, attackCd: 2000 },
+      shadow:   { hp: 25, speed: 1.5, damage: 10, color: '#303040', size: 12, score: 30, attackRange: 25, attackCd: 1200, teleport: true }
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // WAVE DEFINITIONS
+    // ═══════════════════════════════════════════════════════
+    const WAVES = [
+      [{ type: 'drone', count: 5 }],
+      [{ type: 'drone', count: 8 }],
+      [{ type: 'drone', count: 6 }, { type: 'scout', count: 3 }],
+      [{ type: 'scout', count: 6 }, { type: 'drone', count: 4 }],
+      [{ type: 'warrior', count: 2 }, { type: 'drone', count: 5 }],
+      [{ type: 'drone', count: 8 }, { type: 'scout', count: 5 }],
+      [{ type: 'warrior', count: 3 }, { type: 'scout', count: 4 }],
+      [{ type: 'drone', count: 10 }, { type: 'warrior', count: 3 }],
+      [{ type: 'scout', count: 8 }, { type: 'warrior', count: 3 }],
+      [{ type: 'warrior', count: 4 }, { type: 'drone', count: 8 }, { type: 'volmirth', count: 1 }],
+      [{ type: 'drone', count: 12 }, { type: 'scout', count: 6 }],
+      [{ type: 'shadow', count: 5 }, { type: 'warrior', count: 4 }],
+      [{ type: 'volmirth', count: 2 }, { type: 'warrior', count: 5 }],
+      [{ type: 'drone', count: 15 }, { type: 'shadow', count: 8 }],
+      [{ type: 'volmirth', count: 3 }, { type: 'warrior', count: 6 }, { type: 'shadow', count: 6 }],
+      [{ type: 'scout', count: 15 }, { type: 'shadow', count: 10 }],
+      [{ type: 'volmirth', count: 4 }, { type: 'drone', count: 12 }],
+      [{ type: 'warrior', count: 10 }, { type: 'shadow', count: 10 }],
+      [{ type: 'volmirth', count: 6 }, { type: 'warrior', count: 8 }],
+      [{ type: 'volmirth', count: 8 }, { type: 'warrior', count: 8 }, { type: 'shadow', count: 12 }]
+    ];
+    
+    // ═══════════════════════════════════════════════════════
+    // SHOP ITEMS
+    // ═══════════════════════════════════════════════════════
+    const SHOP = [
+      { id: 'potion', name: 'Health Potion', cost: 50, desc: '+50 HP' },
+      { id: 'maxHp', name: 'Max Health +20', cost: 100, desc: '+20 max HP' },
+      { id: 'stamina', name: 'Stamina +1', cost: 75, desc: '+1 dash charge' },
+      { id: 'range', name: 'Sword Range', cost: 125, desc: '+20% range' },
+      { id: 'damage', name: 'Sword Damage', cost: 150, desc: '+25% damage' },
+      { id: 'armor', name: 'Armor', cost: 200, desc: '-10% damage taken' }
+    ];
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME STATE
+    // ═══════════════════════════════════════════════════════
+    let G = {
+      started: false,
+      phase: 'title', // title, game, shop, gameover, victory
+      wave: 0,
+      score: 0,
+      kills: 0,
+      gold: 0,
+      enemies: [],
+      particles: [],
+      slashEffects: [],
+      spawnQueue: [],
+      spawnTimer: 0,
+      dashCharges: 2,
+      maxDashCharges: 2,
+      shopBought: {}
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // INPUT
+    // ═══════════════════════════════════════════════════════
+    const keys = {};
+    let mouseX = W / 2, mouseY = H / 2;
+    let mouseDown = false;
+    
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key === ' ' && G.phase === 'game') {
+        e.preventDefault();
+        tryDash();
+      }
+      if (e.key.toLowerCase() === 'e' && G.phase === 'game') {
+        usePotion();
+      }
+    });
+    
+    document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+    
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = e.clientX - rect.left;
+      mouseY = e.clientY - rect.top;
+    });
+    
+    canvas.addEventListener('mousedown', e => {
+      if (G.phase === 'game') {
+        attack();
+      }
+    });
+    
+    // ═══════════════════════════════════════════════════════
+    // UI
+    // ═══════════════════════════════════════════════════════
+    const waveDisplay = document.getElementById('wave-display');
+    const scoreDisplay = document.getElementById('score-display');
+    const killsDisplay = document.getElementById('kills-display');
+    const hpFill = document.getElementById('hp-fill');
+    const stamFill = document.getElementById('stam-fill');
+    const potionCount = document.getElementById('potion-count');
+    const overlay = document.getElementById('overlay');
+    const shopOverlay = document.getElementById('shop-overlay');
+    const shopGrid = document.getElementById('shop-grid');
+    const shopGold = document.getElementById('shop-gold-value');
+    const waveAnnounce = document.getElementById('wave-announce');
+    
+    function updateUI() {
+      waveDisplay.textContent = `${G.wave}/15`;
+      scoreDisplay.textContent = G.score;
+      killsDisplay.textContent = G.kills;
+      hpFill.style.width = `${(P.hp / P.maxHp) * 100}%`;
+      stamFill.style.width = `${(P.stam / P.maxStam) * 100}%`;
+      potionCount.textContent = `POTIONS: ${P.potions}`;
+    }
+    
+    function announce(text) {
+      waveAnnounce.textContent = text;
+      waveAnnounce.classList.add('visible');
+      setTimeout(() => waveAnnounce.classList.remove('visible'), 2000);
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME FUNCTIONS
+    // ═══════════════════════════════════════════════════════
+    function startGame() {
+      overlay.classList.add('hidden');
+      G.started = true;
+      G.phase = 'game';
+      G.wave = 0;
+      G.score = 0;
+      G.kills = 0;
+      G.gold = 0;
+      G.enemies = [];
+      G.particles = [];
+      G.slashEffects = [];
+      G.shopBought = {};
+      G.dashCharges = 2;
+      G.maxDashCharges = 2;
+      
+      P.x = W / 2;
+      P.y = H / 2;
+      P.hp = 100;
+      P.maxHp = 100;
+      P.stam = 100;
+      P.maxStam = 100;
+      P.potions = 2;
+      P.attacks = 1;
+      P.attackRange = 45;
+      P.attackDamage = 25;
+      P.upgrades = {};
+      
+      updateUI();
+      startNextWave();
+    }
+    
+    function startNextWave() {
+      G.wave++;
+      
+      if (G.wave > 15) {
+        victory();
+        return;
+      }
+      
+      announce(`WAVE ${G.wave}`);
+      
+      G.spawnQueue = [];
+      const waveData = WAVES[G.wave - 1];
+      waveData.forEach(group => {
+        for (let i = 0; i < group.count; i++) {
+          G.spawnQueue.push(group.type);
+        }
+      });
+      G.spawnQueue.sort(() => Math.random() - 0.5);
+      G.spawnTimer = 0;
+      G.phase = 'game';
+      
+      updateUI();
+    }
+    
+    function spawnEnemy(type) {
+      const def = ENEMY_DEF[type];
+      let x, y;
+      
+      // Spawn from edges
+      const side = Math.floor(Math.random() * 4);
+      switch (side) {
+        case 0: x = -20; y = Math.random() * H; break;
+        case 1: x = W + 20; y = Math.random() * H; break;
+        case 2: x = Math.random() * W; y = -20; break;
+        case 3: x = Math.random() * W; y = H + 20; break;
+      }
+      
+      G.enemies.push({
+        type,
+        x, y,
+        hp: def.hp,
+        maxHp: def.hp,
+        speed: def.speed,
+        damage: def.damage,
+        color: def.color,
+        size: def.size,
+        score: def.score,
+        attackRange: def.attackRange,
+        attackCd: def.attackCd,
+        lastAttack: 0,
+        teleport: def.teleport || false,
+        teleportCd: 0,
+        stun: 0
+      });
+    }
+    
+    function tryDash() {
+      if (G.dashCharges > 0 && G.dashCooldown <= 0 && P.stam >= 30) {
+        G.dashCharges--;
+        P.stam -= 30;
+        P.invuln = 200;
+        G.dashCooldown = 500;
+        
+        const dx = mouseX - P.x;
+        const dy = mouseY - P.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 0) {
+          P.x += (dx / dist) * 80;
+          P.y += (dy / dist) * 80;
+        }
+      }
+    }
+    
+    function usePotion() {
+      if (P.potions > 0 && P.hp < P.maxHp) {
+        P.potions--;
+        P.hp = Math.min(P.maxHp, P.hp + 50);
+        updateUI();
+      }
+    }
+    
+    function attack() {
+      if (P.attacking) return;
+      
+      P.attacking = true;
+      P.attackAngle = Math.atan2(mouseY - P.y, mouseX - P.x);
+      P.attackTimer = 150;
+      
+      // Check hits
+      G.enemies.forEach(e => {
+        const dx = e.x - P.x;
+        const dy = e.y - P.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
+        let angleDiff = Math.abs(angle - P.attackAngle);
+        if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+        
+        if (dist <= P.attackRange + e.size && angleDiff < Math.PI / 2) {
+          let dmg = P.attackDamage;
+          if (P.upgrades.armor) dmg *= 0.9;
+          e.hp -= dmg;
+          
+          // Knockback
+          e.x += Math.cos(angle) * 10;
+          e.y += Math.sin(angle) * 10;
+          
+          // Particle
+          spawnParticle(e.x, e.y, '#ff6040');
+        }
+      });
+      
+      // Slash effect
+      G.slashEffects.push({
+        x: P.x,
+        y: P.y,
+        angle: P.attackAngle,
+        life: 1
+      });
+      
+      setTimeout(() => P.attacking = false, 150);
+    }
+    
+    function spawnParticle(x, y, color) {
+      G.particles.push({
+        x, y, color,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        life: 1,
+        size: 3 + Math.random() * 3
+      });
+    }
+    
+    function update(dt) {
+      if (G.phase !== 'game') return;
+      
+      // Player movement
+      let mx = 0, my = 0;
+      if (keys['w'] || keys['arrowup']) my -= 1;
+      if (keys['s'] || keys['arrowdown']) my += 1;
+      if (keys['a'] || keys['arrowleft']) mx -= 1;
+      if (keys['d'] || keys['arrowright']) mx += 1;
+      
+      if (mx !== 0 || my !== 0) {
+        const len = Math.sqrt(mx * mx + my * my);
+        mx /= len; my /= len;
+        P.x += mx * P.speed;
+        P.y += my * P.speed;
+      }
+      
+      // Bounds
+      P.x = Math.max(P.size, Math.min(W - P.size, P.x));
+      P.y = Math.max(P.size, Math.min(H - P.size, P.y));
+      
+      // Player angle toward mouse
+      P.angle = Math.atan2(mouseY - P.y, mouseX - P.x);
+      
+      // Cooldowns
+      if (P.invuln > 0) P.invuln -= dt;
+      if (G.dashCooldown > 0) G.dashCooldown -= dt;
+      
+      // Stamina regen
+      if (P.stam < P.maxStam) P.stam = Math.min(P.maxStam, P.stam + 0.3);
+      if (G.dashCharges < G.maxDashCharges && P.stam >= P.maxStam) {
+        G.dashCharges = Math.min(G.maxDashCharges, G.dashCharges + 1);
+        if (G.dashCharges < G.maxDashCharges) P.stam = 0;
+      }
+      
+      // Spawn enemies
+      G.spawnTimer += dt;
+      if (G.spawnTimer > 600 && G.spawnQueue.length > 0) {
+        G.spawnTimer = 0;
+        spawnEnemy(G.spawnQueue.shift());
+      }
+      
+      // Update enemies
+      const now = Date.now();
+      G.enemies.forEach(e => {
+        if (e.stun > 0) { e.stun -= dt; return; }
+        
+        // Teleport for shadows
+        if (e.teleport) {
+          e.teleportCd -= dt;
+          if (e.teleportCd <= 0) {
+            e.teleportCd = 3000 + Math.random() * 2000;
+            // Teleport behind player
+            const behindAngle = P.angle + Math.PI + (Math.random() - 0.5) * 0.5;
+            const dist = 60 + Math.random() * 40;
+            e.x = P.x + Math.cos(behindAngle) * dist;
+            e.y = P.y + Math.sin(behindAngle) * dist;
+          }
+        }
+        
+        // Move toward player
+        const dx = P.x - e.x;
+        const dy = P.y - e.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > e.attackRange) {
+          e.x += (dx / dist) * e.speed;
+          e.y += (dy / dist) * e.speed;
+        } else {
+          // Attack
+          if (now - e.lastAttack > e.attackCd && P.invuln <= 0) {
+            e.lastAttack = now;
+            let dmg = e.damage;
+            if (P.upgrades.armor) dmg *= 0.9;
+            P.hp -= dmg;
+            P.invuln = 300;
+            spawnParticle(P.x, P.y, '#ff3030');
+          }
+        }
+      });
+      
+      // Remove dead enemies
+      G.enemies = G.enemies.filter(e => {
+        if (e.hp <= 0) {
+          G.score += e.score;
+          G.kills++;
+          G.gold += Math.floor(e.score / 2);
+          // Death particles
+          for (let i = 0; i < 5; i++) {
+            spawnParticle(e.x, e.y, e.color);
+          }
+          return false;
+        }
+        return true;
+      });
+      
+      // Update particles
+      G.particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.03;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+      });
+      G.particles = G.particles.filter(p => p.life > 0);
+      
+      // Update slash effects
+      G.slashEffects.forEach(s => s.life -= 0.1);
+      G.slashEffects = G.slashEffects.filter(s => s.life > 0);
+      
+      // Check game over
+      if (P.hp <= 0) {
+        gameOver();
+        return;
+      }
+      
+      // Check wave complete
+      if (G.enemies.length === 0 && G.spawnQueue.length === 0) {
+        openShop();
+      }
+      
+      updateUI();
+    }
+    
+    function openShop() {
+      G.phase = 'shop';
+      G.gold += 100 * G.wave; // Wave bonus
+      
+      shopGold.textContent = G.gold;
+      
+      shopGrid.innerHTML = '';
+      SHOP.forEach(item => {
+        const bought = G.shopBought[item.id];
+        const div = document.createElement('div');
+        div.className = 'shop-item' + (bought ? ' bought' : '');
+        div.innerHTML = `
+          <div class="name">${item.name}</div>
+          <div class="cost">${item.cost}g</div>
+        `;
+        
+        if (!bought) {
+          div.onclick = () => buyItem(item);
+        }
+        
+        shopGrid.appendChild(div);
+      });
+      
+      shopOverlay.classList.add('visible');
+    }
+    
+    function buyItem(item) {
+      if (G.gold < item.cost || G.shopBought[item.id]) return;
+      
+      G.gold -= item.cost;
+      G.shopBought[item.id] = true;
+      
+      switch (item.id) {
+        case 'potion': P.potions += 2; break;
+        case 'maxHp': P.maxHp += 20; P.hp += 20; break;
+        case 'stamina': G.maxDashCharges += 1; break;
+        case 'range': P.attackRange *= 1.2; break;
+        case 'damage': P.attackDamage *= 1.25; break;
+        case 'armor': P.upgrades.armor = true; break;
+      }
+      
+      shopGold.textContent = G.gold;
+      const items = shopGrid.querySelectorAll('.shop-item');
+      items.forEach((el, i) => {
+        if (SHOP[i].id === item.id) el.classList.add('bought');
+      });
+      
+      updateUI();
+    }
+    
+    document.getElementById('shop-close').onclick = () => {
+      shopOverlay.classList.remove('visible');
+      startNextWave();
+    };
+    
+    function gameOver() {
+      G.phase = 'gameover';
+      overlay.classList.remove('hidden');
+      overlay.classList.add('gameover', 'title');
+      overlay.querySelector('h2').textContent = 'YOU HAVE FALLEN';
+      overlay.querySelector('p').textContent = `Waves survived: ${G.wave - 1} · Kills: ${G.kills} · Score: ${G.score}`;
+    }
+    
+    function victory() {
+      G.phase = 'victory';
+      overlay.classList.remove('hidden');
+      overlay.classList.add('victory', 'title');
+      overlay.querySelector('h2').textContent = 'THE LINE HOLDS';
+      overlay.querySelector('p').textContent = `Final Score: ${G.score} · Kills: ${G.kills}. Nordell stands because of you.`;
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════
+    function render() {
+      // Clear
+      ctx.fillStyle = '#020408';
+      ctx.fillRect(0, 0, W, H);
+      
+      // Ground
+      ctx.fillStyle = '#0a0f15';
+      ctx.fillRect(0, 0, W, H);
+      
+      // Grid effect
+      ctx.strokeStyle = '#0f1520';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < W; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = 0; y < H; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+      
+      // Particles
+      G.particles.forEach(p => {
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      
+      // Slash effects
+      G.slashEffects.forEach(s => {
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.angle);
+        ctx.globalAlpha = s.life * 0.6;
+        ctx.strokeStyle = '#e0d0a0';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, 30, -Math.PI / 3, Math.PI / 3);
+        ctx.stroke();
+        ctx.restore();
+      });
+      ctx.globalAlpha = 1;
+      
+      // Enemies
+      G.enemies.forEach(e => {
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Eyes
+        ctx.fillStyle = '#ff4040';
+        ctx.beginPath();
+        ctx.arc(e.x - 3, e.y - 2, 2, 0, Math.PI * 2);
+        ctx.arc(e.x + 3, e.y - 2, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // HP bar
+        const hpPct = e.hp / e.maxHp;
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(e.x - 15, e.y - e.size - 10, 30, 4);
+        ctx.fillStyle = hpPct > 0.5 ? '#40a040' : hpPct > 0.25 ? '#c0a030' : '#c04040';
+        ctx.fillRect(e.x - 15, e.y - e.size - 10, 30 * hpPct, 4);
+      });
+      
+      // Player (Thea)
+      ctx.save();
+      ctx.translate(P.x, P.y);
+      ctx.rotate(P.angle);
+      
+      // Invuln flash
+      if (P.invuln > 0 && Math.floor(P.invuln / 50) % 2) {
+        ctx.globalAlpha = 0.5;
+      }
+      
+      // Body
+      ctx.fillStyle = '#c0a060';
+      ctx.beginPath();
+      ctx.arc(0, 0, P.size, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Helmet
+      ctx.fillStyle = '#a08050';
+      ctx.beginPath();
+      ctx.arc(0, 0, P.size * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Sword
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(P.size * 0.5, 0);
+      ctx.lineTo(P.size + 15, 0);
+      ctx.stroke();
+      
+      ctx.restore();
+      
+      // Dash charges indicator
+      ctx.fillStyle = '#6a8a9a';
+      ctx.font = '10px Cinzel';
+      ctx.fillText(`DASH: ${G.dashCharges}/${G.maxDashCharges}`, 10, H - 10);
+      
+      // Attack range indicator (subtle)
+      if (P.attacking) {
+        ctx.strokeStyle = 'rgba(200, 180, 120, 0.2)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, P.attackRange, P.attackAngle - Math.PI / 3, P.attackAngle + Math.PI / 3);
+        ctx.stroke();
+      }
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME LOOP
+    // ═══════════════════════════════════════════════════════
+    let lastTime = 0;
+    
+    function gameLoop(timestamp) {
+      const dt = timestamp - lastTime;
+      lastTime = timestamp;
+      
+      if (G.started) {
+        update(dt);
+      }
+      
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // Start
+    gameLoop(0);
+  </script>
+</body>
+</html>

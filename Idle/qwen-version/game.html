@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Echoes of the First Breach — Deepborn Idle</title>
+<style>
+:root {
+  --bg: #0d0d0f;
+  --surface: #16161a;
+  --surface2: #1e1e24;
+  --surface3: #28282f;
+  --border: #333340;
+  --text: #e0ddd5;
+  --text-dim: #8a8780;
+  --gold: #f0c940;
+  --gold-dim: #b89a30;
+  --red: #e05020;
+  --green: #5caa5c;
+  --blue: #4080c0;
+  --purple: #7040a0;
+  --brown: #b08030;
+  --hp-red: #d04040;
+  --hp-green: #40a040;
+  --boss-orange: #e08020;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ===== TOP BAR ===== */
+.top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, rgba(13,13,15,0.98) 0%, rgba(13,13,15,0.85) 100%);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  height: 56px;
+}
+.top-bar .resources { display: flex; gap: 20px; align-items: center; }
+.resource { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; }
+.resource .icon { font-size: 18px; }
+.resource .value { color: var(--gold); font-variant-numeric: tabular-nums; }
+.resource.crystal .value { color: #80c0ff; }
+.stage-display { font-size: 15px; font-weight: 700; color: var(--text); }
+.stage-display span { color: var(--gold); }
+.menu-btn {
+  background: none; border: 1px solid var(--border); color: var(--text);
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.menu-btn:hover { background: var(--surface3); }
+
+/* ===== MAIN LAYOUT ===== */
+.game-container {
+  display: flex; flex-direction: column;
+  padding-top: 56px;
+  min-height: 100vh;
+}
+
+/* ===== BATTLE AREA ===== */
+.battle-area {
+  position: relative;
+  width: 100%;
+  height: 45vh;
+  min-height: 300px;
+  max-height: 500px;
+  background: radial-gradient(ellipse at 50% 100%, #1a1a2e 0%, #0d0d0f 70%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  border-bottom: 2px solid var(--border);
+}
+.battle-area:active { background: radial-gradient(ellipse at 50% 100%, #1f1f35 0%, #0d0d0f 70%); }
+
+.boss-timer {
+  position: absolute; top: 12px; right: 16px;
+  font-size: 22px; font-weight: 800;
+  color: var(--boss-orange);
+  text-shadow: 0 0 10px rgba(224,128,32,0.5);
+  display: none;
+}
+.boss-timer.active { display: block; }
+.boss-timer.warning { color: var(--hp-red); animation: pulse 0.5s ease infinite; }
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.enemy-display { text-align: center; }
+.enemy-name {
+  font-size: 18px; font-weight: 700; margin-bottom: 8px;
+  text-shadow: 0 0 20px rgba(112,64,160,0.3);
+}
+.enemy-name.boss { color: var(--boss-orange); font-size: 22px; }
+
+.hp-bar-container {
+  width: 280px; max-width: 80vw;
+  height: 24px;
+  background: var(--surface);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  position: relative;
+}
+.hp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--hp-red), var(--boss-orange));
+  transition: width 0.15s ease;
+  border-radius: 12px;
+}
+.hp-text {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  font-size: 11px; font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  white-space: nowrap;
+}
+
+/* Damage numbers */
+.damage-num {
+  position: absolute;
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  text-shadow: 0 0 6px rgba(255,255,255,0.4);
+  pointer-events: none;
+  animation: floatUp 0.8s ease forwards;
+  z-index: 50;
+}
+.damage-num.crit {
+  font-size: 28px;
+  color: var(--gold);
+  text-shadow: 0 0 10px rgba(240,201,64,0.6);
+}
+.damage-num.hero-dmg {
+  font-size: 16px;
+  color: var(--blue);
+}
+.damage-num.boss-hit {
+  font-size: 24px;
+  color: var(--red);
+}
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  50% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-80px) scale(0.6); }
+}
+
+/* Tap hint */
+.tap-hint {
+  position: absolute; bottom: 16px;
+  font-size: 12px; color: var(--text-dim);
+  opacity: 0.6;
+  animation: fadeHint 2s ease infinite;
+}
+@keyframes fadeHint { 0%,100% { opacity: 0.6; } 50% { opacity: 0.3; } }
+
+/* Commander Rally button */
+.rally-btn {
+  position: absolute; bottom: 16px; right: 16px;
+  background: linear-gradient(135deg, var(--gold-dim), var(--gold));
+  color: #000; border: none;
+  padding: 8px 18px; border-radius: 8px;
+  font-weight: 800; font-size: 13px;
+  cursor: pointer;
+  display: none;
+  box-shadow: 0 0 15px rgba(240,201,64,0.3);
+  z-index: 10;
+}
+.rally-btn.active { display: block; animation: pulse 1s ease infinite; }
+.rally-btn.cooldown {
+  background: var(--surface3); color: var(--text-dim);
+  box-shadow: none; animation: none; cursor: default;
+}
+
+/* ===== BOTTOM PANELS ===== */
+.bottom-panels {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 1; min-width: 80px;
+  padding: 10px 8px;
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text-dim); font-size: 12px; font-weight: 600;
+  cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--text); background: var(--surface2); }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+.tab-content { display: none; overflow-y: auto; flex: 1; padding: 12px; }
+.tab-content.active { display: block; }
+
+/* ===== UPGRADES TAB ===== */
+.upgrade-section { padding-bottom: 20px; }
+.upgrade-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.2s;
+}
+.upgrade-card:hover { border-color: var(--gold-dim); }
+.upgrade-icon {
+  width: 44px; height: 44px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; flex-shrink: 0;
+}
+.upgrade-info { flex: 1; }
+.upgrade-info h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.upgrade-info p { font-size: 11px; color: var(--text-dim); }
+.upgrade-buy {
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--text); padding: 8px 14px; border-radius: 8px;
+  cursor: pointer; font-size: 12px; font-weight: 700;
+  white-space: nowrap;
+}
+.upgrade-buy:hover:not(:disabled) { background: var(--gold-dim); color: #000; border-color: var(--gold); }
+.upgrade-buy:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===== HEROES TAB ===== */
+.faction-group { margin-bottom: 16px; }
+.faction-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px 8px 0 0;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+}
+.faction-header .arrow { transition: transform 0.2s; }
+.faction-header.open .arrow { transform: rotate(90deg); }
+.faction-heroes { display: none; }
+.faction-heroes.open { display: block; }
+
+.hero-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-top: none;
+  padding: 12px;
+  display: flex; gap: 12px; align-items: center;
+}
+.hero-card:last-child { border-radius: 0 0 8px 8px; }
+.hero-portrait {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.hero-details { flex: 1; }
+.hero-details h4 { font-size: 13px; font-weight: 700; }
+.hero-details .role { font-size: 11px; color: var(--text-dim); }
+.hero-level { font-size: 12px; font-weight: 700; color: var(--gold); }
+.hero-buy-btn {
+  background: var(--green); border: none; color: #fff;
+  padding: 6px 12px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.hero-buy-btn:hover { opacity: 0.85; }
+.hero-buy-btn:disabled { background: var(--surface3); color: var(--text-dim); cursor: not-allowed; }
+.hero-upgrade-btn {
+  background: var(--surface3); border: 1px solid var(--border);
+  color: var(--text); padding: 6px 12px; border-radius: 6px;
+  font-size: 11px; font-weight: 700; cursor: pointer;
+}
+.hero-upgrade-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.hero-upgrade-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ===== ZONES TAB ===== */
+.zone-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.zone-name { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.zone-corruption {
+  height: 8px; background: var(--surface);
+  border-radius: 4px; overflow: hidden;
+  margin-bottom: 6px;
+}
+.zone-corruption-fill {
+  height: 100%; background: var(--purple);
+  transition: width 0.3s;
+}
+.zone-stats { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); }
+
+/* ===== STORY TAB ===== */
+.story-log { padding-bottom: 20px; }
+.story-entry {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+  border-left: 3px solid var(--gold);
+}
+.story-entry h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; color: var(--gold); }
+.story-entry .act-label { font-size: 10px; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1px; }
+.story-entry p { font-size: 13px; line-height: 1.5; color: var(--text); margin-top: 6px; }
+.story-entry.locked { opacity: 0.3; border-left-color: var(--border); }
+.story-entry.locked h4 { color: var(--text-dim); }
+
+/* ===== VN OVERLAY ===== */
+.vn-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.92);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 20px;
+}
+.vn-overlay.active { display: flex; }
+
+.vn-portrait {
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 3px solid var(--border);
+  margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 50px;
+}
+
+.vn-dialog {
+  max-width: 600px; width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.vn-speaker {
+  font-size: 14px; font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--gold);
+}
+.vn-text {
+  font-size: 14px; line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.vn-choices { display: flex; flex-direction: column; gap: 8px; }
+.vn-choice {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  text-align: left;
+  transition: all 0.2s;
+}
+.vn-choice:hover { border-color: var(--gold); background: var(--surface3); }
+
+.vn-continue {
+  background: var(--gold);
+  border: none;
+  color: #000;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  align-self: center;
+  margin-top: 8px;
+}
+
+/* ===== OFFLINE PROGRESS MODAL ===== */
+.offline-modal {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center; justify-content: center;
+}
+.offline-modal.active { display: flex; }
+.offline-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 400px;
+  text-align: center;
+}
+.offline-card h2 { color: var(--gold); margin-bottom: 12px; }
+.offline-card .time { font-size: 16px; color: var(--text-dim); margin-bottom: 16px; }
+.offline-card .rewards { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
+.offline-card .reward-item { text-align: center; }
+.offline-card .reward-item .val { font-size: 22px; font-weight: 800; color: var(--gold); }
+.offline-card .reward-item .lbl { font-size: 11px; color: var(--text-dim); }
+.offline-card button {
+  background: var(--gold); border: none; color: #000;
+  padding: 10px 30px; border-radius: 8px;
+  font-weight: 700; font-size: 14px; cursor: pointer;
+}
+
+/* ===== PRESTIGE MODAL ===== */
+.prestige-modal {
+  position: fixed; inset: 0; z-index: 250;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  align-items: center; justify-content: center;
+}
+.prestige-modal.active { display: flex; }
+.prestige-card {
+  background: var(--surface);
+  border: 1px solid var(--gold-dim);
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 450px;
+  text-align: center;
+}
+.prestige-card h2 { color: var(--gold); margin-bottom: 8px; }
+.prestige-card .subtitle { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }
+.prestige-card .narrative { font-size: 14px; line-height: 1.6; margin-bottom: 20px; font-style: italic; }
+.prestige-card .rewards { margin-bottom: 20px; }
+.prestige-card .rewards p { font-size: 13px; margin-bottom: 4px; }
+.prestige-card button {
+  background: var(--gold); border: none; color: #000;
+  padding: 12px 30px; border-radius: 8px;
+  font-weight: 700; font-size: 14px; cursor: pointer;
+  margin: 0 4px;
+}
+.prestige-card button.secondary {
+  background: var(--surface3); color: var(--text);
+  border: 1px solid var(--border);
+}
+
+/* ===== NOTIFICATION ===== */
+.notification {
+  position: fixed; top: 64px; left: 50%; transform: translateX(-50%);
+  background: var(--surface2);
+  border: 1px solid var(--gold-dim);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px; font-weight: 600;
+  z-index: 150;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.notification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== SETTINGS MODAL ===== */
+.settings-modal {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center; justify-content: center;
+}
+.settings-modal.active { display: flex; }
+.settings-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 30px;
+  max-width: 350px;
+  width: 100%;
+}
+.settings-card h2 { color: var(--gold); margin-bottom: 16px; }
+.settings-card button {
+  display: block; width: 100%;
+  padding: 10px; margin-bottom: 8px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.settings-card button:hover { background: var(--surface3); }
+.settings-card button.danger { border-color: var(--hp-red); color: var(--hp-red); }
+.settings-card .close-btn {
+  margin-top: 12px;
+  background: var(--gold); color: #000; border: none; font-weight: 700;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .top-bar { padding: 6px 10px; }
+  .resource { font-size: 12px; }
+  .stage-display { font-size: 13px; }
+  .battle-area { height: 40vh; min-height: 250px; }
+  .hp-bar-container { width: 220px; }
+  .enemy-name { font-size: 16px; }
+  .enemy-name.boss { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <a href="../../Games/index.html" style="color:#8a8780;text-decoration:none;font-size:12px;display:flex;align-items:center;gap:4px;transition:color .2s;margin-right:12px;" onmouseover="this.style.color='#f0c940'" onmouseout="this.style.color='#8a8780'">← Back</a>
+  <div class="resources">
+    <div class="resource"><span class="icon">🪙</span><span class="value" id="gold-display">0</span></div>
+    <div class="resource crystal"><span class="icon">💎</span><span class="value" id="shard-display">0</span></div>
+  </div>
+  <div class="stage-display">Stage <span id="stage-display">1</span></div>
+  <button class="menu-btn" onclick="toggleSettings()">⚙️</button>
+</div>
+
+<!-- GAME CONTAINER -->
+<div class="game-container">
+
+  <!-- BATTLE AREA -->
+  <div class="battle-area" id="battle-area">
+    <div class="boss-timer" id="boss-timer">30</div>
+
+    <div class="enemy-display">
+      <div class="enemy-name" id="enemy-name">Deepborn Scout</div>
+      <div class="hp-bar-container">
+        <div class="hp-bar-fill" id="hp-bar-fill" style="width:100%"></div>
+        <div class="hp-text" id="hp-text">10 / 10</div>
+      </div>
+    </div>
+
+    <button class="rally-btn" id="rally-btn" onclick="useRally()">⚔️ RALLY</button>
+
+    <div class="tap-hint">Tap to attack — Commander Thea Holt leads the fight</div>
+  </div>
+
+  <!-- BOTTOM PANELS -->
+  <div class="bottom-panels">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="upgrades">⬆️ Upgrades</button>
+      <button class="tab-btn" data-tab="heroes">👥 Heroes</button>
+      <button class="tab-btn" data-tab="zones">🗺️ Zones</button>
+      <button class="tab-btn" data-tab="story">📖 Story</button>
+    </div>
+
+    <!-- UPGRADES TAB -->
+    <div class="tab-content active" id="tab-upgrades">
+      <div class="upgrade-section" id="upgrades-list"></div>
+    </div>
+
+    <!-- HEROES TAB -->
+    <div class="tab-content" id="tab-heroes">
+      <div id="heroes-list"></div>
+    </div>
+
+    <!-- ZONES TAB -->
+    <div class="tab-content" id="tab-zones">
+      <div id="zones-list"></div>
+    </div>
+
+    <!-- STORY TAB -->
+    <div class="tab-content" id="tab-story">
+      <div class="story-log" id="story-log"></div>
+    </div>
+  </div>
+</div>
+
+<!-- VN OVERLAY -->
+<div class="vn-overlay" id="vn-overlay">
+  <div class="vn-portrait" id="vn-portrait">🗡️</div>
+  <div class="vn-dialog">
+    <div class="vn-speaker" id="vn-speaker"></div>
+    <div class="vn-text" id="vn-text"></div>
+    <div class="vn-choices" id="vn-choices"></div>
+    <button class="vn-continue" id="vn-continue" style="display:none" onclick="vnContinue()">Continue</button>
+  </div>
+</div>
+
+<!-- OFFLINE PROGRESS MODAL -->
+<div class="offline-modal" id="offline-modal">
+  <div class="offline-card">
+    <h2>⏰ Welcome Back, Commander</h2>
+    <div class="time" id="offline-time"></div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;font-style:italic;">
+      While you were away, the Alliance held the line. The Deepborn do not sleep.
+    </div>
+    <div class="rewards">
+      <div class="reward-item"><div class="val" id="offline-gold">0</div><div class="lbl">Gold Earned</div></div>
+      <div class="reward-item"><div class="val" id="offline-stages">0</div><div class="lbl">Stages Cleared</div></div>
+    </div>
+    <button onclick="closeOfflineModal()">Continue</button>
+  </div>
+</div>
+
+<!-- PRESTIGE MODAL -->
+<div class="prestige-modal" id="prestige-modal">
+  <div class="prestige-card">
+    <h2 id="prestige-title">Prestige Unlocked</h2>
+    <div class="subtitle" id="prestige-subtitle"></div>
+    <div class="narrative" id="prestige-narrative"></div>
+    <div class="rewards" id="prestige-rewards"></div>
+    <button onclick="doPrestige()">Advance Timeline</button>
+    <button class="secondary" onclick="closePrestigeModal()">Not Yet</button>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notification" id="notification"></div>
+
+<!-- SETTINGS MODAL -->
+<div class="settings-modal" id="settings-modal">
+  <div class="settings-card">
+    <h2>⚙️ Settings</h2>
+    <button onclick="saveGame()">💾 Save Game</button>
+    <button onclick="exportSave()">📋 Export Save</button>
+    <button onclick="importSave()">📥 Import Save</button>
+    <button class="danger" onclick="hardReset()">🗑️ Reset All Progress</button>
+    <button onclick="toggleDevMode()" style="border-color:#ff4040;color:#ff4040;">🛠️ Developer Mode</button>
+    <button class="close-btn" onclick="toggleSettings()">Close</button>
+  </div>
+</div>
+
+<!-- DEV MODE PANEL -->
+<div class="settings-modal" id="dev-modal">
+  <div class="settings-card" style="max-width:400px;">
+    <h2 style="color:#ff4040;">🛠️ Developer Mode</h2>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">Cheat buttons for testing. Don't use in real play.</div>
+    <button onclick="devAddGold()" style="border-color:var(--gold);color:var(--gold);">🪙 Add 1,000,000 Gold</button>
+    <button onclick="devAddShards()" style="border-color:#80c0ff;color:#80c0ff;">💎 Add 100 Crystal Shards</button>
+    <button onclick="devOneShot()" style="border-color:var(--hp-red);color:var(--hp-red);">💀 One-Shot Current Enemy</button>
+    <button onclick="devSkipStage()" style="border-color:var(--green);color:var(--green);">⏭️ Skip 100 Stages</button>
+    <button onclick="devMaxHeroes()" style="border-color:var(--purple);color:var(--purple);">👥 Max All Heroes to Lv 100</button>
+    <button onclick="devUnlockAll()" style="border-color:var(--brown);color:var(--brown);">🔓 Unlock All Factions + Zones</button>
+    <button onclick="devTriggerScene()" style="border-color:var(--gold);color:var(--gold);">📖 Trigger Next Story Scene</button>
+    <button onclick="devTriggerPrestige()" style="border-color:var(--gold-dim);color:var(--gold-dim);">🔮 Force Prestige Available</button>
+    <button onclick="devFullMorale()" style="border-color:var(--hp-green);color:var(--hp-green);">💚 Max Morale (100)</button>
+    <button onclick="devClearCorruption()" style="border-color:var(--blue);color:var(--blue);">🌊 Clear All Zone Corruption</button>
+    <button class="close-btn" onclick="toggleDevMode()" style="margin-top:12px;">Close</button>
+  </div>
+</div>
+
+<script>
+// =====================================================
+//  ECHOES OF THE FIRST BREACH — Deepborn Idle Game
+//  Prototype — Qwen Version
+// =====================================================
+
+// ===== DATA =====
+
+const FACTIONS = [
+  { id: 'light', name: 'Light Mages', color: '#f0c940', icon: '✨', unlockStage: 1, desc: 'Holy Light · City of the Blinding Light · Leader: Sanvi' },
+  { id: 'nature', name: 'Nature Mages / Dryad', color: '#5caa5c', icon: '🌿', unlockStage: 50, desc: 'Nature & Life · Wrysse Forest → Huge Woods · Leader: Silene' },
+  { id: 'druid', name: 'Shapeshifter Druids', color: '#b08030', icon: '🐺', unlockStage: 50, desc: 'Shapeshifting · Kryonair Forest · Leader: Thunder (title)' },
+  { id: 'dark', name: 'Dark Mages (Remnant)', color: '#7040a0', icon: '🌑', unlockStage: 200, desc: 'Shadow & Void · Leaderless · Most stigmatized faction' },
+  { id: 'fire', name: 'Fire Mages', color: '#e05020', icon: '🔥', unlockStage: 300, desc: 'Flame & Destruction · Nomadic · Last to join Alliance' },
+];
+
+const HEROES = [
+  // Light Mages — descend from Lucas, the Light Origin
+  { id: 'sael', name: 'Warden Sael', faction: 'light', role: 'Shield-bearer', icon: '🛡️', baseCost: 100, baseDPS: 5, costMult: 1.15, special: 'Light sword & shield · Absorbs 10% boss damage' },
+  { id: 'ravinger', name: 'Ravinger', faction: 'light', role: 'Light battery', icon: '💡', baseCost: 500, baseDPS: 20, costMult: 1.18, special: 'Charges light orbs to power allies' },
+  { id: 'gerhart', name: 'Gerhart', faction: 'light', role: 'Heavy infantry', icon: '⚔️', baseCost: 2000, baseDPS: 60, costMult: 1.20, special: 'Massive physical strength, light-armored' },
+  // Nature Mages / Dryad — oldest human magic lineage
+  { id: 'aela', name: 'Rootwarden Aela', faction: 'nature', role: 'Earth defender', icon: '🌳', baseCost: 8000, baseDPS: 200, costMult: 1.22, special: 'Reduces Corruption in assigned zone' },
+  { id: 'myr', name: 'Bloom Keeper Myr', faction: 'nature', role: 'Life mage', icon: '🌸', baseCost: 30000, baseDPS: 600, costMult: 1.24, special: 'Heroes regenerate HP between fights' },
+  { id: 'alin', name: 'Greenward Alin', faction: 'nature', role: 'Wrysse sentinel', icon: '🌿', baseCost: 120000, baseDPS: 1800, costMult: 1.26, special: '2× DPS vs corrupted Deepborn' },
+  // Shapeshifter Druids — NOT elves; human descendants of Shapeshifter Origin
+  { id: 'bor', name: 'Ironpelt Bor', faction: 'druid', role: 'Bear-form brawler', icon: '🐻', baseCost: 15000, baseDPS: 350, costMult: 1.23, special: 'Bear form triples DPS for 12s' },
+  { id: 'narra', name: 'Swiftclaw Narra', faction: 'druid', role: 'Wolf-form striker', icon: '🐺', baseCost: 50000, baseDPS: 900, costMult: 1.25, special: '4 attacks per second (wolf form)' },
+  { id: 'hael', name: 'Stoneback Hael', faction: 'druid', role: 'Turtle-form tank', icon: '🐢', baseCost: 200000, baseDPS: 2500, costMult: 1.27, special: 'Reduces all boss damage 20%' },
+  // Dark Mages — shadow/void magic; also the only healing magic in Kalmirth
+  { id: 'wren', name: 'Shade Wren', faction: 'dark', role: 'Shadow assassin', icon: '🗡️', baseCost: 100000, baseDPS: 2000, costMult: 1.26, special: 'Deals 10% of enemy remaining HP' },
+  { id: 'sorn', name: 'Veilmage Sorn', faction: 'dark', role: 'Void caster', icon: '🌀', baseCost: 350000, baseDPS: 5000, costMult: 1.28, special: 'Void slows enemies −30% attack' },
+  { id: 'kael', name: 'Whisper Kael', faction: 'dark', role: 'Illusion / healer', icon: '👻', baseCost: 1000000, baseDPS: 12000, costMult: 1.30, special: 'Decoy + dark healing on allies' },
+  // Fire Mages — most devastating vs Deepborn; chaotic reputation
+  { id: 'drin', name: 'Ashwalker Drin', faction: 'fire', role: 'Burn specialist', icon: '🔥', baseCost: 500000, baseDPS: 8000, costMult: 1.29, special: 'Burn: 5% DPS/sec, 5 ticks' },
+  { id: 'torr', name: 'Emberbrand Torr', faction: 'fire', role: 'Explosive caster', icon: '💥', baseCost: 1500000, baseDPS: 18000, costMult: 1.31, special: 'AoE burst · 20% backfire risk' },
+  { id: 'vel', name: 'Cinderborn Vel', faction: 'fire', role: 'Area fire', icon: '☄️', baseCost: 5000000, baseDPS: 40000, costMult: 1.33, special: 'Cleanses −5% Corruption per boss kill' },
+];
+
+const ENEMIES = [
+  'Mindless Deepborn', 'Void Crawler', 'Corrupted Wolf', 'Shadow Mite', 'Corrupted Treant',
+  'Abyssal Larva', 'Hollow Stalker', 'Void Tendril', 'Crystal Eater', 'Darkness Wisp',
+  'Corrupted Mage', 'Deep Crawler', 'Hollow Husk', 'Void Spawn', 'Corrupted Sentinel',
+];
+
+const BOSS_NAMES = [
+  'Deepborn Vanguard', 'Abyssal Commander', 'Volmirth Authority', 'Corruption Titan',
+  'The Hollow King', 'The Deep Lord\'s Hand', 'The Unbound', 'Shadow Leviathan',
+  'Mindless Horde Alpha', 'Seal Breaker', 'Labyrinth Guardian', 'The First Breach',
+];
+
+const UPGRADES = [
+  { id: 'tap', name: 'Commander Attack', icon: '⚔️', desc: 'The Commander fights at the front — no magic, just skill and discipline', baseCost: 10, costMult: 1.50, effect: (lvl) => lvl * 2 },
+  { id: 'rally', name: 'Rally Command', icon: '📯', desc: 'The Commander\'s war coordination — boosts all hero DPS', baseCost: 500, costMult: 1.8, effect: (lvl) => lvl * 10 },
+  { id: 'resilience', name: 'Resilience', icon: '🛡️', desc: 'The Commander reduces boss counterattack damage to all heroes', baseCost: 200, costMult: 1.6, effect: (lvl) => lvl * 5 },
+  { id: 'goldBonus', name: 'Alliance Logistics', icon: '💰', desc: 'Better resource management — +10% gold per kill per level', baseCost: 1000, costMult: 2.0, effect: (lvl) => lvl * 10 },
+];
+
+const ZONES = [
+  { id: 'blue_river', name: 'Blue River Valley', unlockStage: 1, corruptionRate: 0.01, icon: '🏞️', desc: 'The glowing river dims — first visible sign of Deepborn corruption' },
+  { id: 'vleyrra', name: 'Vleyrra Forest', unlockStage: 50, corruptionRate: 0.015, icon: '🌲', desc: 'City of the Blinding Light · Where Zachariel fell' },
+  { id: 'huge_woods', name: 'Huge Woods', unlockStage: 75, corruptionRate: 0.015, icon: '🌳', desc: 'Alliance formation point · Center of Night Etdler' },
+  { id: 'kryonair', name: 'Kryonair / Wrysse', unlockStage: 150, corruptionRate: 0.02, icon: '⚡', desc: 'Druid stronghold + Nature Mage homeland' },
+  { id: 'underworld', name: 'Underworld Threshold', unlockStage: 300, corruptionRate: 0.03, icon: '🕳️', desc: 'Dunia Bawah · Volmirth · Time distortion zone' },
+];
+
+// Story scenes keyed by stage milestone — based on Book 2: Echoes of the First Breach
+const STORY_SCENES = [
+  {
+    stage: 10, act: 1, id: 'river_dims',
+    title: 'The River Dims',
+    portrait: '💧', speaker: 'Avery',
+    text: 'The Blue River is losing its glow, Commander. The luminous creatures beneath the surface are dying. I\'ve felt it in the crystals — a darkness spreading below. Something is waking underground.',
+    choices: [
+      { label: 'Send scouts to investigate the underground weak points', goldCost: 50, morale: 10, trustChange: { light: 5, nature: 5 }, result: 'Scouts confirm: spatial distortions near Vleyrra. The seals are weakening.' },
+      { label: 'Request Nordell military reports first', goldCost: 0, morale: -5, trustChange: {}, result: 'Thea Holt\'s reports arrive — two years of suppressed incursion data.' },
+    ]
+  },
+  {
+    stage: 25, act: 1, id: 'first_contact',
+    title: 'The Hellhood Threat',
+    portrait: '🔴', speaker: 'Scout Captain',
+    text: 'Commander — Hellhoods (Black Leaf remnants in red hoods) are spreading propaganda in the villages. They\'re saying the Dark Mages summoned the Deepborn. Rural communities are panicking.',
+    choices: [
+      { label: 'Publicly denounce the propaganda, defend Dark Mages', goldCost: 0, morale: 15, trustChange: { dark: 20, light: -5 }, result: 'Dark Mages notice the defense. Light Mages uneasy. Morale rises from transparency.' },
+      { label: 'Stay silent — don\'t give the Hellhoods attention', goldCost: 0, morale: -15, trustChange: { dark: -10 }, result: 'Propaganda spreads unchallenged. The Dark Mage remnant notices the silence.' },
+    ]
+  },
+  {
+    stage: 50, act: 1, id: 'blue_river_burns',
+    title: 'The First Breach',
+    portrait: '🌑', speaker: 'The Commander',
+    text: 'The Deepborn break through at a southern weak point — not a slow seep, a rupture. The Mindless Horde surfaces at a major settlement. The Alliance mobilizes for the first time against an underground enemy. We were built to fight mages and Black Leaf soldiers. This is not that.',
+    bossMilestone: true,
+    choices: [
+      { label: 'Avery contains with crystal while Alliance holds the line', goldCost: 0, morale: 10, trustChange: { light: 10, nature: 5 }, result: 'Containment works — temporarily. The underground is not getting quieter. Nate\'s faith holds.' },
+      { label: 'Concentrate all forces at the breach — risk other fronts', goldCost: 0, morale: -10, trustChange: { fire: 10, druid: -10 }, result: 'Breach held. Other zones take damage. Thunder notes the tactical risk.' },
+    ]
+  },
+  {
+    stage: 80, act: 2, id: 'volmirth_envoy',
+    title: 'The Volmirth Envoy',
+    portrait: '👹', speaker: 'Thea Holt',
+    text: 'Three days after the breakthrough, an entity from Volmirth surfaces at the breach point — and doesn\'t attack. An authority demon. I\'ve seen one before, two years ago. It held my gaze and left. Before you kill it, I want to know why it\'s here.',
+    choices: [
+      { label: 'Stand with Thea — hear the demon out', goldCost: 0, morale: 5, trustChange: { nature: 10, dark: 10 }, result: 'Avery backs Thea. The Alliance is divided. The demon speaks in fragments — the Deepborn are consuming Volmirth too.' },
+      { label: 'Let the Alliance vote — majority rules', goldCost: 0, morale: -10, trustChange: { light: -10, fire: -10 }, result: 'Vote is nearly unanimous: kill it. Thea steps between soldiers and envoy anyway.' },
+    ]
+  },
+  {
+    stage: 120, act: 2, id: 'what_the_envoy_says',
+    title: 'What the Envoy Says',
+    portrait: '👹', speaker: 'Volmirth Authority',
+    text: 'The demon speaks in the oldest language — Faeron\'s records partially translate. "The seals are failing. Not cracking — rotting from inside. We have lived next to the sealed Deepborn for thousands of years. We are losing our underground territory." It pauses. "We are afraid."',
+    choices: [
+      { label: 'Accept Volmirth as temporary allies — whatever the cost', goldCost: 0, morale: -15, trustChange: { dark: 15, fire: -20, light: -10 }, result: 'Human populations panic. Dark Mage propaganda worsens. But the Volmirth know the underground.' },
+      { label: 'Accept intelligence sharing only — no formal alliance', goldCost: 0, morale: -5, trustChange: { nature: 5 }, result: 'Safer politically. The Volmirth accept — for now. Thea notes the hesitation.' },
+    ]
+  },
+  {
+    stage: 150, act: 2, id: 'old_grid_awakens',
+    title: 'The Old Grid Wakens',
+    portrait: '⚡', speaker: 'Thea Holt',
+    text: 'Commander — the Volmirth mentioned "the old grid." Power channels beneath the surface are activating slightly. Warmth in old stone. I\'ve been in underground terrain for years. The ground is changing. The totem network of the Ancient Civilization — it\'s responding to Deepborn pressure.',
+    choices: [
+      { label: 'Send scholars to study the totem grid activation', goldCost: 200, morale: 10, trustChange: { nature: 15 }, result: 'Silene recognizes the description. Her encoded ritual records mention this. She cannot read them.' },
+      { label: 'Focus on immediate defense — the grid is a later problem', goldCost: 0, morale: -5, trustChange: {}, result: 'Pragmatic. But the grid continues to pulse. Something old notices.' },
+    ]
+  },
+  {
+    stage: 200, act: 3, id: 'faeron_returns',
+    title: 'Faeron Returns',
+    portrait: '🧝', speaker: 'Faeron',
+    text: 'I walked into the forest at the end of the last war — the first truly free act of my life. But I can feel the seals failing. I know what that means. I know what caused it. The elves who broke the seals were young. Their elders died first. What remained were fragments of a memory they no longer had the context to read.',
+    choices: [
+      { label: 'Hear the full truth — whatever it costs', goldCost: 0, morale: -20, trustChange: { nature: -15, druid: -10, dark: 20 }, result: 'The buried truth: desperate young elves, not malice. Ignorance, not calculation. Faeron was there. He could not stop them.' },
+      { label: 'Not yet — we need to hold the line first', goldCost: 0, morale: 0, trustChange: {}, result: 'Faeron nods. "I have waited a hundred years. I can wait longer." But the seals cannot.' },
+    ]
+  },
+  {
+    stage: 300, act: 3, id: 'the_deep_lord_stirs',
+    title: 'The Deep Lord Stirs',
+    portrait: '🕳️', speaker: 'The Outsider',
+    text: 'A Deepborn with individual consciousness approaches. It doesn\'t attack. It speaks: "We are not what you think. The Deep Lord is not our will — it is our prison." It carries the Deepborn\'s own history — what was done to them by the gods who sealed them. "Your young ones broke the seals in desperation. We did not ask to wake."',
+    choices: [
+      { label: 'Trust the Outsider — it could change everything', goldCost: 0, morale: 10, trustChange: { dark: 15, nature: -5 }, result: 'The Outsider becomes an ally. Grace (if present) can communicate. Opens a secret path forward.' },
+      { label: 'Imprison it — extract intelligence without trust', goldCost: 0, morale: -5, trustChange: {}, result: 'Safer. But the Outsider\'s knowledge is limited under duress. Avery senses a mistake being made.' },
+      { label: 'Destroy it — the Alliance sees decisive leadership', goldCost: 0, morale: 15, trustChange: { light: 10, fire: 10 }, result: 'Decisive. But a possible ally is gone. Something in Avery\'s expression says this was wrong.' },
+    ]
+  },
+];
+
+// ===== GAME STATE =====
+
+let G = {
+  stage: 1,
+  gold: 0,
+  totalGold: 0,
+  shards: 0,
+  totalShards: 0,
+  prestige: 0, // number of times prestiged
+  prestigeMultiplier: 1, // permanent multiplier from prestige
+  commanderTap: 1,
+  commanderRally: 10, // rally DPS buff %
+  commanderResilience: 0, // % boss damage reduction
+
+  // Enemy
+  enemyHP: 10,
+  enemyMaxHP: 10,
+  enemyLevel: 1,
+  isBoss: false,
+  bossTimer: 0,
+  bossTimerMax: 30,
+  bossActive: false,
+
+  // Heroes: { heroId: level }
+  heroes: {},
+
+  // Upgrades: { upgradeId: level }
+  upgrades: {},
+
+  // Faction trust
+  factionTrust: { light: 50, nature: 50, druid: 50, dark: 50, fire: 50 },
+
+  // Zone corruption (0-100)
+  zoneCorruption: { blue_river: 0, vleyrra: 0, huge_woods: 0, kryonair: 0, underworld: 0 },
+
+  // Alliance Morale (0-100)
+  morale: 50,
+
+  // Story
+  completedScenes: [],
+
+  // Rally
+  rallyCooldown: 0,
+  rallyCooldownMax: 60, // seconds
+  rallyActive: false,
+  rallyDuration: 10,
+  rallyTimer: 0,
+
+  // Offline
+  lastSaveTime: Date.now(),
+
+  // Animation
+  damageNumbers: [],
+};
+
+// Boss stages: every 25
+function isBossStage(stage) {
+  return stage % 25 === 0;
+}
+
+// ===== CORE FUNCTIONS =====
+
+function getTapDamage() {
+  let base = G.commanderTap + (G.upgrades['tap'] || 0) * 2;
+  return Math.floor(base * G.prestigeMultiplier);
+}
+
+function getTotalDPS() {
+  let dps = 0;
+  for (const hero of HEROES) {
+    const lvl = G.heroes[hero.id] || 0;
+    if (lvl > 0) {
+      dps += hero.baseDPS * lvl * (1 + (lvl - 1) * 0.1);
+    }
+  }
+  dps *= G.prestigeMultiplier;
+  // Rally buff
+  if (G.rallyActive) {
+    dps *= 1 + (G.commanderRally / 100);
+  }
+  // Morale buff
+  if (G.morale >= 80) dps *= 1.15;
+  if (G.morale < 30) dps *= 0.75;
+  return dps;
+}
+
+function getHeroCost(hero) {
+  const lvl = G.heroes[hero.id] || 0;
+  return Math.floor(hero.baseCost * Math.pow(hero.costMult, lvl));
+}
+
+function getUpgradeCost(upgrade) {
+  const lvl = G.upgrades[upgrade.id] || 0;
+  return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMult, lvl));
+}
+
+function getEnemyHP(stage) {
+  return Math.floor(10 * Math.pow(1.12, stage - 1));
+}
+
+function getGoldReward(stage) {
+  let base = Math.floor(1 + stage * 0.5);
+  let goldBonus = (G.upgrades['goldBonus'] || 0) * 10;
+  base = Math.floor(base * (1 + goldBonus / 100) * G.prestigeMultiplier);
+  if (isBossStage(stage)) base *= 5;
+  return base;
+}
+
+function advanceStage() {
+  G.stage++;
+  G.isBoss = isBossStage(G.stage);
+
+  if (G.isBoss) {
+    G.bossActive = true;
+    G.bossTimer = G.bossTimerMax;
+  } else {
+    G.bossActive = false;
+  }
+
+  G.enemyMaxHP = getEnemyHP(G.stage);
+  G.enemyHP = G.enemyMaxHP;
+  updateEnemyDisplay();
+  checkStoryTrigger();
+  updateAllUI();
+}
+
+function dealDamage(amount, source) {
+  if (G.enemyHP <= 0) return;
+  G.enemyHP -= amount;
+
+  // Show damage number
+  spawnDamageNumber(amount, source);
+
+  if (G.enemyHP <= 0) {
+    G.enemyHP = 0;
+    const gold = getGoldReward(G.stage);
+    G.gold += gold;
+    G.totalGold += gold;
+
+    // Shard chance (higher on bosses)
+    const shardChance = G.isBoss ? 0.3 : 0.02;
+    if (Math.random() < shardChance) {
+      G.shards++;
+      G.totalShards++;
+      showNotification('💎 Crystal Shard earned!');
+    }
+
+    // Corruption increases slightly
+    for (const zone of ZONES) {
+      if (G.stage >= zone.unlockStage) {
+        G.zoneCorruption[zone.id] = Math.min(100, G.zoneCorruption[zone.id] + zone.corruptionRate);
+      }
+    }
+
+    // Boss timer check
+    if (G.isBoss) {
+      G.bossActive = false;
+      // Reset zone corruption on boss kill
+      for (const zone of ZONES) {
+        if (G.stage >= zone.unlockStage) {
+          G.zoneCorruption[zone.id] = Math.max(0, G.zoneCorruption[zone.id] - 20);
+        }
+      }
+    }
+
+    updateEnemyDisplay();
+    updateAllUI();
+    advanceStage();
+  } else {
+    updateHPBar();
+  }
+}
+
+function spawnDamageNumber(amount, source) {
+  const area = document.getElementById('battle-area');
+  const el = document.createElement('div');
+  el.className = 'damage-num';
+  if (source === 'crit') el.classList.add('crit');
+  else if (source === 'hero') el.classList.add('hero-dmg');
+  else if (source === 'boss') el.classList.add('boss-hit');
+
+  el.textContent = formatNumber(amount);
+  el.style.left = (40 + Math.random() * 20) + '%';
+  el.style.top = (30 + Math.random() * 20) + '%';
+  area.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// ===== TAP HANDLER =====
+document.getElementById('battle-area').addEventListener('click', (e) => {
+  if (document.getElementById('vn-overlay').classList.contains('active')) return;
+  if (document.getElementById('offline-modal').classList.contains('active')) return;
+
+  const dmg = getTapDamage();
+  // 10% crit chance
+  const crit = Math.random() < 0.1;
+  const finalDmg = crit ? dmg * 3 : dmg;
+  dealDamage(finalDmg, crit ? 'crit' : 'tap');
+});
+
+// ===== RALLY =====
+function useRally() {
+  if (G.rallyCooldown > 0 || G.rallyActive) return;
+  G.rallyActive = true;
+  G.rallyTimer = G.rallyDuration;
+  G.rallyCooldown = G.rallyCooldownMax;
+  showNotification('⚔️ Rally activated! All heroes deal bonus DPS!');
+}
+
+// ===== BOSS TIMER =====
+function tickBossTimer(dt) {
+  if (!G.bossActive) return;
+  G.bossTimer -= dt;
+  if (G.bossTimer <= 0) {
+    // Failed boss fight
+    G.morale = Math.max(0, G.morale - 10);
+    G.bossActive = false;
+    G.bossTimer = 0;
+    // Retry: reset enemy HP
+    G.enemyHP = G.enemyMaxHP;
+    showNotification('❌ Boss fight failed. Morale -10. Retrying...');
+    updateAllUI();
+  }
+}
+
+// ===== RALLY TIMER =====
+function tickRally(dt) {
+  if (G.rallyActive) {
+    G.rallyTimer -= dt;
+    if (G.rallyTimer <= 0) {
+      G.rallyActive = false;
+    }
+  }
+  if (G.rallyCooldown > 0) {
+    G.rallyCooldown -= dt;
+    if (G.rallyCooldown < 0) G.rallyCooldown = 0;
+  }
+}
+
+// ===== CORRUPTION =====
+function tickCorruption(dt) {
+  for (const zone of ZONES) {
+    if (G.stage >= zone.unlockStage) {
+      G.zoneCorruption[zone.id] = Math.min(100, G.zoneCorruption[zone.id] + zone.corruptionRate * dt * 0.1);
+    }
+  }
+}
+
+// ===== MAIN GAME LOOP =====
+let lastTime = Date.now();
+let dpsAccum = 0;
+
+function gameLoop() {
+  const now = Date.now();
+  const dt = (now - lastTime) / 1000;
+  lastTime = now;
+
+  if (document.getElementById('vn-overlay').classList.contains('active')) {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  // Boss timer
+  tickBossTimer(dt);
+
+  // Rally timer
+  tickRally(dt);
+
+  // Corruption
+  tickCorruption(dt);
+
+  // Passive DPS
+  const dps = getTotalDPS();
+  if (dps > 0) {
+    dpsAccum += dps * dt;
+    while (dpsAccum >= 1) {
+      dealDamage(Math.floor(dpsAccum), 'hero');
+      dpsAccum -= Math.floor(dpsAccum);
+    }
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ===== STORY TRIGGERS =====
+function checkStoryTrigger() {
+  for (const scene of STORY_SCENES) {
+    if (G.stage >= scene.stage && !G.completedScenes.includes(scene.id)) {
+      triggerVNScene(scene);
+      return; // one scene at a time
+    }
+  }
+}
+
+// ===== VISUAL NOVEL SYSTEM =====
+let currentScene = null;
+let currentChoiceIndex = 0;
+
+function triggerVNScene(scene) {
+  currentScene = scene;
+  const overlay = document.getElementById('vn-overlay');
+  overlay.classList.add('active');
+
+  document.getElementById('vn-portrait').textContent = scene.portrait;
+  document.getElementById('vn-speaker').textContent = scene.speaker;
+  document.getElementById('vn-text').textContent = scene.text;
+
+  const choicesDiv = document.getElementById('vn-choices');
+  choicesDiv.innerHTML = '';
+
+  if (scene.choices && scene.choices.length > 0) {
+    scene.choices.forEach((choice, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'vn-choice';
+      btn.textContent = choice.label;
+      btn.onclick = () => makeVNChoice(i);
+      choicesDiv.appendChild(btn);
+    });
+    document.getElementById('vn-continue').style.display = 'none';
+  } else {
+    document.getElementById('vn-continue').style.display = 'block';
+    document.getElementById('vn-continue').textContent = 'Continue';
+  }
+}
+
+function makeVNChoice(index) {
+  if (!currentScene || !currentScene.choices[index]) return;
+  const choice = currentScene.choices[index];
+
+  // Apply effects
+  if (choice.goldCost && G.gold >= choice.goldCost) {
+    G.gold -= choice.goldCost;
+  }
+  G.morale = Math.max(0, Math.min(100, G.morale + (choice.morale || 0)));
+  if (choice.trustChange) {
+    for (const [faction, delta] of Object.entries(choice.trustChange)) {
+      if (G.factionTrust[faction] !== undefined) {
+        G.factionTrust[faction] = Math.max(0, Math.min(100, G.factionTrust[faction] + delta));
+      }
+    }
+  }
+
+  G.completedScenes.push(currentScene.id);
+  showNotification('📖 ' + choice.result);
+
+  // Show continue button
+  document.getElementById('vn-choices').innerHTML = '';
+  document.getElementById('vn-text').textContent = choice.result;
+  document.getElementById('vn-speaker').textContent = 'The Commander';
+  document.getElementById('vn-continue').style.display = 'block';
+  document.getElementById('vn-continue').textContent = 'Continue';
+
+  currentScene = null;
+}
+
+function vnContinue() {
+  document.getElementById('vn-overlay').classList.remove('active');
+  updateAllUI();
+}
+
+// ===== PRESTIGE =====
+let pendingPrestige = null;
+
+function checkPrestige() {
+  // Prestige available at stages 50, 150, 300
+  const milestones = [50, 150, 300];
+  for (const ms of milestones) {
+    if (G.stage >= ms && G.prestige < milestones.indexOf(ms) + 1) {
+      showPrestigeModal(ms);
+      return;
+    }
+  }
+}
+
+function showPrestigeModal(milestone) {
+  const actNum = milestone <= 50 ? 1 : milestone <= 150 ? 2 : 3;
+  const narratives = {
+    50: 'The Deepborn break through. The Alliance mobilizes for the first time against an enemy it was never designed to fight. The Volmirth Envoy is coming. And the Commander — Thea Holt — knows more than anyone in the room.',
+    150: 'The Volmirth alliance is accepted — barely. The old grid of the Ancient Civilization is stirring. The totem network pulses with warmth in old stone. Something predating all of this is waking, and the Deep Lord is only beginning to stir.',
+    300: 'Faeron has told the truth. The young elves broke the seals in desperation, not malice. The Alliance holds — barely. Faeron prepares to operate the totem grid for the containment pulse. He will not survive. The Deep Lord is pushed back, not destroyed.',
+  };
+
+  pendingPrestige = milestone;
+  document.getElementById('prestige-title').textContent = `Act ${actNum} Complete — Prestige`;
+  document.getElementById('prestige-subtitle').textContent = `Stage ${milestone} reached`;
+  document.getElementById('prestige-narrative').textContent = narratives[milestone];
+  document.getElementById('prestige-rewards').innerHTML = `
+    <p>🔮 Permanent multiplier: <strong>×${((G.prestige + 2) * 1.5).toFixed(1)}</strong> all damage & gold</p>
+    <p>💎 ${G.prestige + 1} Crystal Shard(s) earned</p>
+    <p>⚔️ Commander retains Rally and Resilience upgrades</p>
+  `;
+  document.getElementById('prestige-modal').classList.add('active');
+}
+
+function doPrestige() {
+  if (!pendingPrestige) return;
+  G.prestige++;
+  G.prestigeMultiplier = (G.prestige + 1) * 1.5;
+  G.shards += G.prestige;
+
+  // Keep upgrades
+  const keptTap = G.upgrades['tap'] || 0;
+  const keptRally = G.upgrades['rally'] || 0;
+  const keptRes = G.upgrades['resilience'] || 0;
+
+  // Reset
+  G.stage = 1;
+  G.gold = 0;
+  G.heroes = {};
+  G.upgrades = { tap: keptTap, rally: keptRally, resilience: keptRes };
+  G.morale = 50;
+  G.factionTrust = { light: 50, nature: 50, druid: 50, dark: 50, fire: 50 };
+  G.zoneCorruption = { blue_river: 0, vleyrra: 0, huge_woods: 0, kryonair: 0, underworld: 0 };
+
+  G.isBoss = false;
+  G.bossActive = false;
+  G.enemyMaxHP = getEnemyHP(1);
+  G.enemyHP = G.enemyMaxHP;
+
+  closePrestigeModal();
+  updateAllUI();
+  showNotification('🔮 Timeline advanced! Permanent multiplier: ×' + G.prestigeMultiplier.toFixed(1));
+  saveGame();
+}
+
+function closePrestigeModal() {
+  document.getElementById('prestige-modal').classList.remove('active');
+  pendingPrestige = null;
+}
+
+// ===== OFFLINE PROGRESS =====
+function calculateOfflineProgress() {
+  const now = Date.now();
+  const elapsed = (now - G.lastSaveTime) / 1000;
+  if (elapsed < 30) return; // less than 30 seconds, skip
+
+  const dps = getTotalDPS();
+  const minutes = Math.floor(elapsed / 60);
+  const maxMinutes = Math.min(minutes, 480); // cap at 8 hours
+
+  // Offline efficiency: 50% of normal rate
+  const goldEarned = Math.floor(dps * maxMinutes * 60 * 0.5 * G.prestigeMultiplier);
+  const stagesCleared = Math.floor(goldEarned / Math.max(1, getEnemyHP(G.stage) * 0.1));
+
+  G.gold += goldEarned;
+  G.totalGold += goldEarned;
+  G.stage += stagesCleared;
+
+  // Recalculate enemy
+  G.isBoss = isBossStage(G.stage);
+  G.enemyMaxHP = getEnemyHP(G.stage);
+  G.enemyHP = G.enemyMaxHP;
+
+  // Offline corruption
+  for (const zone of ZONES) {
+    if (G.stage >= zone.unlockStage) {
+      G.zoneCorruption[zone.id] = Math.min(100, G.zoneCorruption[zone.id] + zone.corruptionRate * maxMinutes * 0.3);
+    }
+  }
+
+  // Check if we missed story scenes
+  checkStoryTrigger();
+
+  // Show modal
+  document.getElementById('offline-time').textContent = `You were away for ${formatTime(elapsed)}`;
+  document.getElementById('offline-gold').textContent = formatNumber(goldEarned);
+  document.getElementById('offline-stages').textContent = '+' + stagesCleared;
+  document.getElementById('offline-modal').classList.add('active');
+
+  updateAllUI();
+}
+
+function closeOfflineModal() {
+  document.getElementById('offline-modal').classList.remove('active');
+}
+
+// ===== SAVE / LOAD =====
+function saveGame() {
+  G.lastSaveTime = Date.now();
+  const saveData = JSON.stringify(G);
+  localStorage.setItem('deepborn_idle_save', saveData);
+}
+
+function loadGame() {
+  const saveData = localStorage.getItem('deepborn_idle_save');
+  if (saveData) {
+    try {
+      const loaded = JSON.parse(saveData);
+      // Merge with defaults
+      G = { ...G, ...loaded };
+      // Recalculate commander stats from upgrades
+      G.commanderTap = 1;
+      G.commanderRally = 10 + (G.upgrades['rally'] || 0) * 10;
+      G.commanderResilience = (G.upgrades['resilience'] || 0) * 5;
+      return true;
+    } catch (e) {
+      console.error('Failed to load save:', e);
+    }
+  }
+  return false;
+}
+
+function exportSave() {
+  saveGame();
+  const data = localStorage.getItem('deepborn_idle_save');
+  navigator.clipboard.writeText(btoa(data)).then(() => {
+    showNotification('📋 Save data copied to clipboard (base64)');
+  }).catch(() => {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = btoa(data);
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    showNotification('📋 Save data copied to clipboard');
+  });
+}
+
+function importSave() {
+  const data = prompt('Paste your base64 save data:');
+  if (data) {
+    try {
+      const parsed = JSON.parse(atob(data));
+      G = { ...G, ...parsed };
+      saveGame();
+      updateAllUI();
+      showNotification('📥 Save imported successfully!');
+    } catch (e) {
+      showNotification('❌ Invalid save data');
+    }
+  }
+}
+
+function hardReset() {
+  if (confirm('Are you sure? This will delete ALL progress permanently.')) {
+    if (confirm('Really? This cannot be undone.')) {
+      localStorage.removeItem('deepborn_idle_save');
+      location.reload();
+    }
+  }
+}
+
+// ===== UI HELPERS =====
+function formatNumber(n) {
+  if (n >= 1e15) return (n / 1e15).toFixed(1) + 'Q';
+  if (n >= 1e12) return (n / 1e12).toFixed(1) + 'T';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
+  return Math.floor(n).toLocaleString();
+}
+
+function formatTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m`;
+  return `${Math.floor(seconds)}s`;
+}
+
+function showNotification(text) {
+  const el = document.getElementById('notification');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ===== UPDATE UI =====
+function updateEnemyDisplay() {
+  const nameEl = document.getElementById('enemy-name');
+  const stage = G.stage;
+  if (G.isBoss) {
+    nameEl.textContent = BOSS_NAMES[Math.floor((stage / 25 - 1) % BOSS_NAMES.length)] || 'Deepborn Boss';
+    nameEl.classList.add('boss');
+  } else {
+    const idx = (stage - 1) % ENEMIES.length;
+    nameEl.textContent = ENEMIES[idx];
+    nameEl.classList.remove('boss');
+  }
+  updateHPBar();
+}
+
+function updateHPBar() {
+  const pct = Math.max(0, (G.enemyHP / G.enemyMaxHP) * 100);
+  document.getElementById('hp-bar-fill').style.width = pct + '%';
+  document.getElementById('hp-text').textContent = `${formatNumber(G.enemyHP)} / ${formatNumber(G.enemyMaxHP)}`;
+}
+
+function updateTopBar() {
+  document.getElementById('gold-display').textContent = formatNumber(G.gold);
+  document.getElementById('shard-display').textContent = formatNumber(G.shards);
+  document.getElementById('stage-display').textContent = G.stage;
+}
+
+function updateBossTimer() {
+  const el = document.getElementById('boss-timer');
+  if (G.bossActive) {
+    el.classList.add('active');
+    el.textContent = Math.ceil(G.bossTimer);
+    if (G.bossTimer <= 10) el.classList.add('warning');
+    else el.classList.remove('warning');
+  } else {
+    el.classList.remove('active');
+    el.classList.remove('warning');
+  }
+}
+
+function updateRallyBtn() {
+  const el = document.getElementById('rally-btn');
+  if (G.bossActive || G.rallyActive) {
+    el.classList.add('active');
+    el.classList.remove('cooldown');
+    if (G.rallyActive) {
+      el.textContent = `⚔️ RALLY (${Math.ceil(G.rallyTimer)}s)`;
+    } else {
+      el.textContent = '⚔️ RALLY!';
+    }
+  } else if (G.rallyCooldown > 0) {
+    el.classList.remove('active');
+    el.classList.add('cooldown');
+    el.textContent = `⏱️ ${Math.ceil(G.rallyCooldown)}s`;
+  } else {
+    el.classList.remove('active');
+    el.classList.remove('cooldown');
+    el.textContent = '⚔️ RALLY';
+  }
+}
+
+// ===== UPGRADES TAB =====
+function renderUpgrades() {
+  const container = document.getElementById('upgrades-list');
+  container.innerHTML = '';
+
+  for (const up of UPGRADES) {
+    const lvl = G.upgrades[up.id] || 0;
+    const cost = getUpgradeCost(up);
+    const card = document.createElement('div');
+    card.className = 'upgrade-card';
+    card.innerHTML = `
+      <div class="upgrade-icon">${up.icon}</div>
+      <div class="upgrade-info">
+        <h4>${up.name} <span style="color:var(--gold);font-size:12px;">Lv ${lvl}</span></h4>
+        <p>${up.desc}</p>
+      </div>
+      <button class="upgrade-buy" onclick="buyUpgrade('${up.id}')" ${G.gold < cost ? 'disabled' : ''}>
+        🪙 ${formatNumber(cost)}
+      </button>
+    `;
+    container.appendChild(card);
+  }
+}
+
+function buyUpgrade(id) {
+  const up = UPGRADES.find(u => u.id === id);
+  if (!up) return;
+  const cost = getUpgradeCost(up);
+  if (G.gold < cost) return;
+  G.gold -= cost;
+  G.upgrades[id] = (G.upgrades[id] || 0) + 1;
+
+  // Recalculate stats
+  G.commanderRally = 10 + (G.upgrades['rally'] || 0) * 10;
+  G.commanderResilience = (G.upgrades['resilience'] || 0) * 5;
+
+  updateAllUI();
+  showNotification(`⬆️ ${up.name} upgraded to Lv ${G.upgrades[id]}`);
+}
+
+// ===== HEROES TAB =====
+let openFactions = {};
+
+function renderHeroes() {
+  const container = document.getElementById('heroes-list');
+  container.innerHTML = '';
+
+  for (const faction of FACTIONS) {
+    if (G.stage < faction.unlockStage) continue;
+
+    const factionHeroes = HEROES.filter(h => h.faction === faction.id);
+    const isOpen = openFactions[faction.id] || false;
+
+    const group = document.createElement('div');
+    group.className = 'faction-group';
+
+    const header = document.createElement('div');
+    header.className = 'faction-header' + (isOpen ? ' open' : '');
+    header.style.background = faction.color + '22';
+    header.style.color = faction.color;
+    header.innerHTML = `<span class="arrow">${isOpen ? '▸' : '▸'}</span>${faction.icon} ${faction.name}`;
+    header.title = faction.desc;
+    header.onclick = () => {
+      openFactions[faction.id] = !openFactions[faction.id];
+      renderHeroes();
+    };
+    group.appendChild(header);
+
+    const heroesDiv = document.createElement('div');
+    heroesDiv.className = 'faction-heroes' + (isOpen ? ' open' : '');
+
+    for (const hero of factionHeroes) {
+      const lvl = G.heroes[hero.id] || 0;
+      const cost = getHeroCost(hero);
+      const canAfford = G.gold >= cost;
+
+      const card = document.createElement('div');
+      card.className = 'hero-card';
+      card.innerHTML = `
+        <div class="hero-portrait" style="border:2px solid ${faction.color}40;">${hero.icon}</div>
+        <div class="hero-details">
+          <h4>${hero.name}</h4>
+          <div class="role">${hero.role} — ${hero.special}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="hero-level">${lvl > 0 ? 'Lv ' + lvl : 'Not hired'}</div>
+          ${lvl === 0
+            ? `<button class="hero-buy-btn" onclick="buyHero('${hero.id}')" ${!canAfford ? 'disabled' : ''} style="background:${faction.color};">Hire 🪙${formatNumber(cost)}</button>`
+            : `<button class="hero-upgrade-btn" onclick="buyHero('${hero.id}')" ${!canAfford ? 'disabled' : ''}>Upgrade 🪙${formatNumber(cost)}</button>`
+          }
+        </div>
+      `;
+      heroesDiv.appendChild(card);
+    }
+
+    group.appendChild(heroesDiv);
+    container.appendChild(group);
+  }
+}
+
+function buyHero(id) {
+  const hero = HEROES.find(h => h.id === id);
+  if (!hero) return;
+  const cost = getHeroCost(hero);
+  if (G.gold < cost) return;
+  G.gold -= cost;
+  G.heroes[hero.id] = (G.heroes[hero.id] || 0) + 1;
+  updateAllUI();
+  showNotification(`👥 ${hero.name} ${G.heroes[hero.id] > 1 ? 'upgraded to Lv ' + G.heroes[hero.id] : 'hired!'}`);
+}
+
+// ===== ZONES TAB =====
+function renderZones() {
+  const container = document.getElementById('zones-list');
+  container.innerHTML = '';
+
+  // Cosmology header
+  const cosmos = document.createElement('div');
+  cosmos.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px;';
+  cosmos.innerHTML = `
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--gold);">🌌 The Three Realms + The Deepborn</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;">
+      <div>☁️ <strong>Nevella</strong> — Kingdom above clouds · Angels · Non-intervention</div>
+      <div>🌍 <strong>Surface</strong> — Night Etdler · Humans, elves, mages</div>
+      <div>👹 <strong>Volmirth</strong> — Demon kingdom below · Being consumed by Deepborn</div>
+      <div>🕳️ <strong>Deepborn</strong> — Pre-civilization · Anti-life · Oldest threat</div>
+    </div>
+  `;
+  container.appendChild(cosmos);
+
+  for (const zone of ZONES) {
+    if (G.stage < zone.unlockStage) continue;
+
+    const corruption = G.zoneCorruption[zone.id];
+    const card = document.createElement('div');
+    card.className = 'zone-card';
+    card.innerHTML = `
+      <div class="zone-name">${zone.icon} ${zone.name}</div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">${zone.desc}</div>
+      <div class="zone-corruption">
+        <div class="zone-corruption-fill" style="width:${corruption}%; background:${corruption > 70 ? 'var(--hp-red)' : corruption > 40 ? 'var(--purple)' : 'var(--surface3)'}"></div>
+      </div>
+      <div class="zone-stats">
+        <span>Corruption: ${corruption.toFixed(1)}%</span>
+        <span>Rate: ${(zone.corruptionRate * 100).toFixed(1)}/stage</span>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+
+  if (container.children.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:40px;">Zones unlock as you progress through the story.</p>';
+  }
+}
+
+// ===== STORY TAB =====
+function renderStory() {
+  const container = document.getElementById('story-log');
+  container.innerHTML = '';
+
+  for (const scene of STORY_SCENES) {
+    const completed = G.completedScenes.includes(scene.id);
+    const unlocked = G.stage >= scene.stage;
+    const entry = document.createElement('div');
+    entry.className = 'story-entry' + (!unlocked ? ' locked' : '');
+
+    entry.innerHTML = `
+      <div class="act-label">Act ${scene.act} · Stage ${scene.stage}</div>
+      <h4>${scene.title}${completed ? ' ✅' : ''}</h4>
+      ${completed
+        ? `<p>${scene.text.substring(0, 100)}...</p>`
+        : unlocked
+          ? '<p>📖 This scene is available. It will trigger during gameplay.</p>'
+          : '<p>🔒 Not yet unlocked</p>'
+      }
+    `;
+    container.appendChild(entry);
+  }
+
+  if (container.children.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-dim);text-align:center;padding:40px;">No story scenes available yet. Keep playing!</p>';
+  }
+}
+
+function updateAllUI() {
+  updateTopBar();
+  updateBossTimer();
+  updateRallyBtn();
+  renderUpgrades();
+  renderHeroes();
+  renderZones();
+  renderStory();
+  checkPrestige();
+}
+
+// ===== TAB SWITCHING =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== SETTINGS =====
+function toggleSettings() {
+  const el = document.getElementById('settings-modal');
+  el.classList.toggle('active');
+}
+
+// ===== DEV MODE =====
+function toggleDevMode() {
+  // Close settings if open
+  document.getElementById('settings-modal').classList.remove('active');
+  document.getElementById('dev-modal').classList.toggle('active');
+}
+
+function devAddGold() {
+  G.gold += 1000000;
+  G.totalGold += 1000000;
+  updateAllUI();
+  showNotification('🛠️ +1,000,000 Gold');
+}
+
+function devAddShards() {
+  G.shards += 100;
+  G.totalShards += 100;
+  updateAllUI();
+  showNotification('🛠️ +100 Crystal Shards');
+}
+
+function devOneShot() {
+  dealDamage(G.enemyMaxHP * 10, 'crit');
+  showNotification('🛠️ Enemy one-shot!');
+}
+
+function devSkipStage() {
+  G.stage += 100;
+  G.isBoss = isBossStage(G.stage);
+  G.enemyMaxHP = getEnemyHP(G.stage);
+  G.enemyHP = G.enemyMaxHP;
+  updateEnemyDisplay();
+  updateAllUI();
+  showNotification('🛠️ +100 stages → Stage ' + G.stage);
+}
+
+function devMaxHeroes() {
+  for (const hero of HEROES) {
+    G.heroes[hero.id] = 100;
+  }
+  updateAllUI();
+  showNotification('🛠️ All heroes set to Lv 100');
+}
+
+function devUnlockAll() {
+  for (const faction of FACTIONS) {
+    G.factionTrust[faction.id] = 80;
+  }
+  // Force stage high enough to unlock everything
+  if (G.stage < 300) {
+    G.stage = 300;
+    G.isBoss = false;
+    G.enemyMaxHP = getEnemyHP(G.stage);
+    G.enemyHP = G.enemyMaxHP;
+    updateEnemyDisplay();
+  }
+  updateAllUI();
+  showNotification('🛠️ All factions & zones unlocked, trust at 80');
+}
+
+function devTriggerScene() {
+  // Find next uncompleted scene
+  for (const scene of STORY_SCENES) {
+    if (!G.completedScenes.includes(scene.id)) {
+      triggerVNScene(scene);
+      showNotification('🛠️ Triggering: ' + scene.title);
+      return;
+    }
+  }
+  showNotification('🛠️ All story scenes already completed');
+}
+
+function devTriggerPrestige() {
+  // Force to next prestige milestone
+  const milestones = [50, 150, 300];
+  for (const ms of milestones) {
+    if (G.prestige < milestones.indexOf(ms) + 1) {
+      if (G.stage < ms) G.stage = ms;
+      showPrestigeModal(ms);
+      showNotification('🛠️ Prestige triggered at stage ' + ms);
+      return;
+    }
+  }
+  showNotification('🛠️ All prestiges already done');
+}
+
+function devFullMorale() {
+  G.morale = 100;
+  updateAllUI();
+  showNotification('🛠️ Morale set to 100');
+}
+
+function devClearCorruption() {
+  for (const key of Object.keys(G.zoneCorruption)) {
+    G.zoneCorruption[key] = 0;
+  }
+  updateAllUI();
+  showNotification('🛠️ All zone corruption cleared');
+}
+
+// ===== AUTO SAVE =====
+setInterval(() => {
+  saveGame();
+}, 30000); // every 30 seconds
+
+// ===== INIT =====
+function init() {
+  const loaded = loadGame();
+
+  if (loaded) {
+    // Calculate offline progress
+    calculateOfflineProgress();
+  }
+
+  // Setup enemy
+  G.isBoss = isBossStage(G.stage);
+  G.enemyMaxHP = getEnemyHP(G.stage);
+  G.enemyHP = G.enemyMaxHP;
+
+  updateEnemyDisplay();
+  updateAllUI();
+
+  // Start game loop
+  lastTime = Date.now();
+  requestAnimationFrame(gameLoop);
+}
+
+init();
+</script>
+</body>
+</html>

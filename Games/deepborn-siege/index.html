@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deepborn Siege</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #020408;
+      color: #b8c8d8;
+      font-family: 'Open Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    #back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 8px 16px;
+      border: 1px solid #2a3a4a;
+      background: #0a1015;
+      color: #6a8a9a;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 50;
+    }
+    
+    #back-btn:hover {
+      border-color: #4a6a7a;
+      color: #8ab0c8;
+    }
+    
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      letter-spacing: 4px;
+      color: #8ab0c8;
+      text-shadow: 0 0 20px rgba(100, 180, 220, 0.3);
+      margin-bottom: 10px;
+    }
+    
+    #top-bar {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 15px;
+      font-family: 'Cinzel', serif;
+      font-size: 13px;
+      letter-spacing: 2px;
+    }
+    
+    #top-bar span { color: #6a8a9a; }
+    #gold-display { color: #c8a030; }
+    #lives-display { color: #d06060; }
+    
+    #game-canvas {
+      border: 2px solid #1a2535;
+      cursor: crosshair;
+    }
+    
+    #tower-bar {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+    }
+    
+    .tower-btn {
+      padding: 10px 15px;
+      border: 1px solid #2a3a4a;
+      background: #0a1015;
+      color: #b8c8d8;
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      min-width: 80px;
+    }
+    
+    .tower-btn:hover:not(:disabled) {
+      border-color: #4a6a7a;
+      background: #0f1520;
+    }
+    
+    .tower-btn.selected {
+      border-color: #6ab0d0;
+      background: rgba(100, 180, 220, 0.1);
+      box-shadow: 0 0 10px rgba(100, 180, 220, 0.2);
+    }
+    
+    .tower-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    .tower-btn .icon {
+      font-size: 20px;
+    }
+    
+    .tower-btn .cost {
+      color: #c8a030;
+      font-size: 10px;
+    }
+    
+    .tower-btn.crystal { border-left: 3px solid #4a9ad0; }
+    .tower-btn.light { border-left: 3px solid #f0e080; }
+    .tower-btn.nature { border-left: 3px solid #50a050; }
+    .tower-btn.fire { border-left: 3px solid #d05030; }
+    .tower-btn.druid { border-left: 3px solid #8060a0; }
+    
+    #bottom-bar {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      margin-top: 10px;
+    }
+    
+    #start-btn {
+      padding: 12px 30px;
+      border: 1px solid #4a8ab0;
+      background: transparent;
+      color: #8ab0c8;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    #start-btn:hover:not(:disabled) {
+      background: rgba(100, 180, 220, 0.1);
+      box-shadow: 0 0 15px rgba(100, 180, 220, 0.3);
+    }
+    
+    #start-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    #message {
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      color: #6a8a9a;
+      min-width: 200px;
+      text-align: center;
+    }
+    
+    #wave-announce {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Cinzel', serif;
+      font-size: 32px;
+      letter-spacing: 6px;
+      color: #8ab0c8;
+      text-shadow: 0 0 30px rgba(100, 180, 220, 0.5);
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+    }
+    
+    #wave-announce.visible {
+      opacity: 1;
+    }
+    
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 4, 8, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+    }
+    
+    #overlay.hidden { display: none; }
+    
+    #overlay h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      letter-spacing: 6px;
+    }
+    
+    #overlay.victory h2 { color: #c8a030; }
+    #overlay.gameover h2 { color: #d06060; }
+    
+    #overlay p {
+      color: #6a8a9a;
+      font-size: 14px;
+    }
+    
+    #overlay button {
+      margin-top: 20px;
+      padding: 12px 30px;
+      border: 1px solid #4a8ab0;
+      background: transparent;
+      color: #8ab0c8;
+      font-family: 'Cinzel', serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    #overlay button:hover {
+      background: rgba(100, 180, 220, 0.1);
+    }
+    
+    #how-to {
+      margin-top: 30px;
+      text-align: center;
+      color: #4a6a7a;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <a id="back-btn" href="../index.html">← GAMES</a>
+  
+  <h1>DEEPBORN SIEGE</h1>
+  
+  <div id="top-bar">
+    <span>WAVE: <span id="wave-display">0/20</span></span>
+    <span>GOLD: <span id="gold-display">100</span></span>
+    <span>LIVES: <span id="lives-display">10</span></span>
+  </div>
+  
+  <canvas id="game-canvas" width="640" height="480"></canvas>
+  
+  <div id="tower-bar">
+    <button class="tower-btn crystal" data-tower="crystal">
+      <span class="icon">💎</span>
+      <span>Crystal</span>
+      <span class="cost">50g</span>
+    </button>
+    <button class="tower-btn light" data-tower="light">
+      <span class="icon">☀️</span>
+      <span>Light</span>
+      <span class="cost">75g</span>
+    </button>
+    <button class="tower-btn nature" data-tower="nature">
+      <span class="icon">🌿</span>
+      <span>Nature</span>
+      <span class="cost">60g</span>
+    </button>
+    <button class="tower-btn fire" data-tower="fire">
+      <span class="icon">🔥</span>
+      <span>Fire</span>
+      <span class="cost">100g</span>
+    </button>
+    <button class="tower-btn druid" data-tower="druid">
+      <span class="icon">🌙</span>
+      <span>Druid</span>
+      <span class="cost">80g</span>
+    </button>
+  </div>
+  
+  <div id="bottom-bar">
+    <button id="start-btn">START WAVE</button>
+    <div id="message">Place towers, then start the wave</div>
+  </div>
+  
+  <div id="wave-announce"></div>
+  
+  <div id="overlay">
+    <h2>DEEPBORN SIEGE</h2>
+    <p>Defend the Alliance base from the Deepborn Horde</p>
+    <button onclick="startGame()">BEGIN</button>
+    <div id="how-to">
+      Click a tower → Click on map to place<br>
+      Towers auto-attack enemies in range<br>
+      Survive 20 waves to win
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════
+    // CONFIG
+    // ═══════════════════════════════════════════════════════
+    const TILE = 40;
+    const COLS = 16;
+    const ROWS = 12;
+    const WIDTH = COLS * TILE;
+    const HEIGHT = ROWS * TILE;
+    
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // ═══════════════════════════════════════════════════════
+    // TOWER DEFINITIONS
+    // ═══════════════════════════════════════════════════════
+    const TOWER_DEF = {
+      crystal: { cost: 150, damage: 80, range: 140, speed: 1500, color: '#4a9ad0', special: 'crystal-barrage' },
+      light:   { cost: 75, damage: 15, range: 120, speed: 500, color: '#f0e080', special: null },
+      nature:  { cost: 60, damage: 8, range: 90, speed: 800, color: '#50a050', special: 'poison' },
+      fire:    { cost: 100, damage: 25, range: 100, speed: 700, color: '#d05030', special: 'splash' },
+      druid:   { cost: 80, damage: 3, range: 85, speed: 1200, color: '#8060a0', special: 'stun' }
+    };
+    
+    const ENEMY_DEF = {
+      drone:    { hp: 30, speed: 0.8, gold: 5, color: '#802020', size: 10 },
+      scout:    { hp: 20, speed: 1.4, gold: 8, color: '#603020', size: 8 },
+      warrior:  { hp: 80, speed: 0.5, gold: 15, color: '#a04040', size: 14 },
+      volmirth: { hp: 150, speed: 0.4, gold: 30, color: '#8040a0', size: 16, resist: 0.5 },
+      shadow:   { hp: 40, speed: 1.2, gold: 20, color: '#303040', size: 9, invisible: true }
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // WAVE DEFINITIONS
+    // ═══════════════════════════════════════════════════════
+    const WAVES = [
+      [{ type: 'drone', count: 5 }],
+      [{ type: 'drone', count: 8 }],
+      [{ type: 'drone', count: 6 }, { type: 'scout', count: 3 }],
+      [{ type: 'scout', count: 6 }, { type: 'drone', count: 4 }],
+      [{ type: 'warrior', count: 2 }, { type: 'drone', count: 8 }],
+      [{ type: 'drone', count: 10 }, { type: 'scout', count: 5 }],
+      [{ type: 'warrior', count: 4 }, { type: 'scout', count: 4 }],
+      [{ type: 'drone', count: 12 }, { type: 'warrior', count: 3 }],
+      [{ type: 'scout', count: 10 }, { type: 'warrior', count: 2 }],
+      [{ type: 'warrior', count: 6 }, { type: 'drone', count: 15 }, { type: 'volmirth', count: 1 }],
+      [{ type: 'drone', count: 15 }, { type: 'scout', count: 8 }],
+      [{ type: 'shadow', count: 5 }, { type: 'warrior', count: 4 }],
+      [{ type: 'volmirth', count: 2 }, { type: 'warrior', count: 5 }],
+      [{ type: 'drone', count: 20 }, { type: 'shadow', count: 8 }],
+      [{ type: 'warrior', count: 8 }, { type: 'volmirth', count: 3 }],
+      [{ type: 'scout', count: 15 }, { type: 'shadow', count: 10 }],
+      [{ type: 'volmirth', count: 5 }, { type: 'drone', count: 15 }],
+      [{ type: 'warrior', count: 10 }, { type: 'shadow', count: 12 }],
+      [{ type: 'volmirth', count: 8 }, { type: 'warrior', count: 8 }],
+      [{ type: 'drone', count: 30 }, { type: 'volmirth', count: 5 }, { type: 'shadow', count: 15 }, { type: 'warrior', count: 10 }]
+    ];
+    
+    // ═══════════════════════════════════════════════════════
+    // PATH DEFINITION (tile coordinates)
+    // ═══════════════════════════════════════════════════════
+    const PATH = [
+      {x: 0, y: 6}, {x: 1, y: 6}, {x: 2, y: 6}, {x: 3, y: 6}, {x: 3, y: 5}, {x: 3, y: 4},
+      {x: 4, y: 4}, {x: 5, y: 4}, {x: 6, y: 4}, {x: 6, y: 5}, {x: 6, y: 6}, {x: 6, y: 7},
+      {x: 6, y: 8}, {x: 7, y: 8}, {x: 8, y: 8}, {x: 9, y: 8}, {x: 9, y: 7}, {x: 9, y: 6},
+      {x: 9, y: 5}, {x: 10, y: 5}, {x: 11, y: 5}, {x: 11, y: 6}, {x: 11, y: 7}, {x: 11, y: 8},
+      {x: 12, y: 8}, {x: 13, y: 8}, {x: 14, y: 8}, {x: 15, y: 8}
+    ];
+    
+    // Build path lookup
+    const PATH_TILES = new Set();
+    PATH.forEach(p => PATH_TILES.add(`${p.x},${p.y}`));
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME STATE
+    // ═══════════════════════════════════════════════════════
+    const G = {
+      started: false,
+      wave: 0,
+      gold: 100,
+      lives: 10,
+      phase: 'build', // build, wave, gameover, victory
+      towers: [],
+      enemies: [],
+      projectiles: [],
+      selectedTower: null,
+      mouseX: 0,
+      mouseY: 0,
+      spawnQueue: [],
+      spawnTimer: 0
+    };
+    
+    // ═══════════════════════════════════════════════════════
+    // UI ELEMENTS
+    // ═══════════════════════════════════════════════════════
+    const waveDisplay = document.getElementById('wave-display');
+    const goldDisplay = document.getElementById('gold-display');
+    const livesDisplay = document.getElementById('lives-display');
+    const startBtn = document.getElementById('start-btn');
+    const message = document.getElementById('message');
+    const overlay = document.getElementById('overlay');
+    const waveAnnounce = document.getElementById('wave-announce');
+    const towerBtns = document.querySelectorAll('.tower-btn');
+    
+    // ═══════════════════════════════════════════════════════
+    // INPUT
+    // ═══════════════════════════════════════════════════════
+    canvas.addEventListener('mousemove', e => {
+      const rect = canvas.getBoundingClientRect();
+      G.mouseX = e.clientX - rect.left;
+      G.mouseY = e.clientY - rect.top;
+    });
+    
+    canvas.addEventListener('click', e => {
+      if (G.phase === 'build' && G.selectedTower) {
+        const tx = Math.floor(G.mouseX / TILE);
+        const ty = Math.floor(G.mouseY / TILE);
+        placeTower(tx, ty, G.selectedTower);
+      }
+    });
+    
+    canvas.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      G.selectedTower = null;
+      updateTowerButtons();
+    });
+    
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        G.selectedTower = null;
+        updateTowerButtons();
+      }
+    });
+    
+    towerBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.tower;
+        if (G.gold >= TOWER_DEF[type].cost) {
+          G.selectedTower = G.selectedTower === type ? null : type;
+          updateTowerButtons();
+        }
+      });
+    });
+    
+    startBtn.addEventListener('click', startWave);
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME FUNCTIONS
+    // ═══════════════════════════════════════════════════════
+    function startGame() {
+      overlay.classList.add('hidden');
+      G.started = true;
+      G.wave = 0;
+      G.gold = 100;
+      G.lives = 10;
+      G.phase = 'build';
+      G.towers = [];
+      G.enemies = [];
+      G.projectiles = [];
+      updateUI();
+    }
+    
+    function updateUI() {
+      waveDisplay.textContent = `${G.wave}/20`;
+      goldDisplay.textContent = G.gold;
+      livesDisplay.textContent = G.lives;
+      startBtn.disabled = G.phase !== 'build';
+      updateTowerButtons();
+      
+      if (G.phase === 'build') {
+        startBtn.textContent = G.wave === 0 ? 'START WAVE 1' : 'NEXT WAVE';
+        message.textContent = 'Place towers, then start the wave';
+      } else if (G.phase === 'wave') {
+        startBtn.textContent = 'IN PROGRESS';
+        message.textContent = `Enemies remaining: ${G.enemies.length + G.spawnQueue.length}`;
+      }
+    }
+    
+    function updateTowerButtons() {
+      towerBtns.forEach(btn => {
+        const type = btn.dataset.tower;
+        btn.classList.toggle('selected', G.selectedTower === type);
+        btn.disabled = G.gold < TOWER_DEF[type].cost;
+      });
+    }
+    
+    function canPlace(tx, ty) {
+      if (tx < 0 || tx >= COLS || ty < 0 || ty >= ROWS) return false;
+      if (PATH_TILES.has(`${tx},${ty}`)) return false;
+      if (G.towers.some(t => t.tx === tx && t.ty === ty)) return false;
+      if (!G.selectedTower) return false;
+      if (G.gold < TOWER_DEF[G.selectedTower].cost) return false;
+      return true;
+    }
+    
+    function placeTower(tx, ty, type) {
+      if (!canPlace(tx, ty)) return;
+      
+      const def = TOWER_DEF[type];
+      if (G.gold < def.cost) return;
+      
+      G.gold -= def.cost;
+      G.towers.push({
+        tx, ty,
+        x: tx * TILE + TILE / 2,
+        y: ty * TILE + TILE / 2,
+        type,
+        damage: def.damage,
+        range: def.range,
+        speed: def.speed,
+        lastFire: 0,
+        level: 1,
+        special: def.special,
+        color: def.color
+      });
+      
+      G.selectedTower = null;
+      updateTowerButtons();
+      updateUI();
+    }
+    
+    function startWave() {
+      if (G.phase !== 'build') return;
+      
+      G.wave++;
+      G.phase = 'wave';
+      
+      // Announce wave
+      announceWave(`WAVE ${G.wave}`);
+      
+      // Build spawn queue
+      G.spawnQueue = [];
+      const waveData = WAVES[G.wave - 1];
+      waveData.forEach(group => {
+        for (let i = 0; i < group.count; i++) {
+          G.spawnQueue.push(group.type);
+        }
+      });
+      // Shuffle
+      G.spawnQueue.sort(() => Math.random() - 0.5);
+      G.spawnTimer = 0;
+      
+      updateUI();
+    }
+    
+    function announceWave(text) {
+      waveAnnounce.textContent = text;
+      waveAnnounce.classList.add('visible');
+      setTimeout(() => waveAnnounce.classList.remove('visible'), 2000);
+    }
+    
+    function spawnEnemy(type) {
+      const def = ENEMY_DEF[type];
+      G.enemies.push({
+        type,
+        x: PATH[0].x * TILE + TILE / 2,
+        y: PATH[0].y * TILE + TILE / 2,
+        hp: def.hp,
+        maxHp: def.hp,
+        speed: def.speed,
+        gold: def.gold,
+        color: def.color,
+        size: def.size,
+        resist: def.resist || 0,
+        invisible: def.invisible || false,
+        pathIndex: 0,
+        slowed: 0,
+        stunned: 0,
+        poisoned: 0
+      });
+    }
+    
+    function moveEnemies(dt) {
+      for (const e of G.enemies) {
+        // Status effects
+        if (e.stunned > 0) { e.stunned -= dt; continue; }
+        if (e.poisoned > 0) { e.poisoned -= dt; e.hp -= 0.5; }
+        
+        // Speed modifier
+        let speed = e.speed;
+        if (e.slowed > 0) { speed *= 0.5; e.slowed -= dt; }
+        
+        // Move toward next path point
+        const target = PATH[e.pathIndex + 1];
+        if (!target) {
+          // Reached end
+          G.lives--;
+          e.hp = 0;
+          updateUI();
+          continue;
+        }
+        
+        const tx = target.x * TILE + TILE / 2;
+        const ty = target.y * TILE + TILE / 2;
+        const dx = tx - e.x;
+        const dy = ty - e.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist < 3) {
+          e.pathIndex++;
+        } else {
+          e.x += (dx / dist) * speed;
+          e.y += (dy / dist) * speed;
+        }
+      }
+      
+      // Remove dead enemies
+      G.enemies = G.enemies.filter(e => {
+        if (e.hp <= 0) {
+          G.gold += e.gold;
+          updateUI();
+          return false;
+        }
+        return true;
+      });
+    }
+    
+    function towerAttack(tower, now) {
+      if (now - tower.lastFire < tower.speed) return;
+      
+      // Find enemies in range
+      let targets = [];
+      
+      for (const e of G.enemies) {
+        if (e.invisible) continue;
+        const dx = e.x - tower.x;
+        const dy = e.y - tower.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= tower.range) {
+          targets.push({ enemy: e, dist });
+        }
+      }
+      
+      if (targets.length === 0) return;
+      
+      tower.lastFire = now;
+      
+      // Sort by distance
+      targets.sort((a, b) => a.dist - b.dist);
+      
+      // Crystal-barrage: hits up to 4 enemies
+      if (tower.special === 'crystal-barrage') {
+        const hitCount = Math.min(4, targets.length);
+        for (let i = 0; i < hitCount; i++) {
+          const target = targets[i].enemy;
+          let dmg = tower.damage;
+          if (target.resist) dmg *= (1 - target.resist);
+          target.hp -= dmg;
+          target.slowed = 2000;
+          
+          G.projectiles.push({
+            x: tower.x,
+            y: tower.y,
+            tx: target.x,
+            ty: target.y,
+            color: tower.color,
+            life: 1
+          });
+        }
+      } else {
+        // Single target
+        const target = targets[0].enemy;
+        let dmg = tower.damage;
+        if (target.resist) dmg *= (1 - target.resist);
+        target.hp -= dmg;
+        
+        // Apply special
+        if (tower.special === 'slow') target.slowed = 1500;
+        if (tower.special === 'poison') target.poisoned = 3000;
+        if (tower.special === 'stun') target.stunned = 500;
+        
+        // Splash for fire
+        if (tower.special === 'splash') {
+          for (const e of G.enemies) {
+            if (e === target) continue;
+            const dx = e.x - target.x;
+            const dy = e.y - target.y;
+            if (Math.sqrt(dx*dx + dy*dy) < 40) {
+              e.hp -= dmg * 0.5;
+            }
+          }
+        }
+        
+        G.projectiles.push({
+          x: tower.x,
+          y: tower.y,
+          tx: target.x,
+          ty: target.y,
+          color: tower.color,
+          life: 1
+        });
+      }
+    }
+    
+    function updateProjectiles(dt) {
+      for (const p of G.projectiles) {
+        const dx = p.tx - p.x;
+        const dy = p.ty - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 5) {
+          p.life = 0;
+        } else {
+          p.x += (dx / dist) * 8;
+          p.y += (dy / dist) * 8;
+          p.life -= dt / 200;
+        }
+      }
+      G.projectiles = G.projectiles.filter(p => p.life > 0);
+    }
+    
+    function checkWaveComplete() {
+      if (G.phase !== 'wave') return;
+      if (G.enemies.length === 0 && G.spawnQueue.length === 0) {
+        G.phase = 'build';
+        
+        // Wave complete bonus
+        const bonus = 20 + G.wave * 5;
+        G.gold += bonus;
+        
+        announceWave('WAVE CLEAR');
+        
+        if (G.wave >= 20) {
+          victory();
+        } else {
+          updateUI();
+        }
+      }
+    }
+    
+    function checkGameOver() {
+      if (G.lives <= 0) {
+        G.phase = 'gameover';
+        overlay.classList.remove('hidden');
+        overlay.classList.add('gameover');
+        overlay.classList.remove('victory');
+        overlay.querySelector('h2').textContent = 'THE SIEGE FAILED';
+        overlay.querySelector('p').textContent = `You survived ${G.wave - 1} waves`;
+      }
+    }
+    
+    function victory() {
+      G.phase = 'victory';
+      overlay.classList.remove('hidden');
+      overlay.classList.add('victory');
+      overlay.querySelector('h2').textContent = 'VICTORY';
+      overlay.querySelector('p').textContent = 'The Alliance holds. The Deepborn are pushed back.';
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════
+    function render() {
+      // Clear
+      ctx.fillStyle = '#020408';
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      
+      // Draw grid
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          const px = x * TILE;
+          const py = y * TILE;
+          
+          if (PATH_TILES.has(`${x},${y}`)) {
+            ctx.fillStyle = '#0f1520';
+          } else {
+            ctx.fillStyle = '#0a0f15';
+          }
+          ctx.fillRect(px, py, TILE, TILE);
+          
+          ctx.strokeStyle = '#1a2535';
+          ctx.strokeRect(px, py, TILE, TILE);
+        }
+      }
+      
+      // Path arrows
+      ctx.fillStyle = '#1a2535';
+      for (let i = 1; i < PATH.length - 1; i++) {
+        const p = PATH[i];
+        const next = PATH[i + 1];
+        const cx = p.x * TILE + TILE / 2;
+        const cy = p.y * TILE + TILE / 2;
+        const angle = Math.atan2(next.y - p.y, next.x - p.x);
+        
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angle);
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.lineTo(-4, -5);
+        ctx.lineTo(-4, 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      
+      // Placement preview
+      if (G.selectedTower && G.phase === 'build') {
+        const tx = Math.floor(G.mouseX / TILE);
+        const ty = Math.floor(G.mouseY / TILE);
+        const valid = canPlace(tx, ty);
+        
+        ctx.fillStyle = valid ? 'rgba(100, 180, 220, 0.3)' : 'rgba(200, 80, 80, 0.3)';
+        ctx.fillRect(tx * TILE, ty * TILE, TILE, TILE);
+        
+        // Range preview
+        if (valid) {
+          const def = TOWER_DEF[G.selectedTower];
+          ctx.beginPath();
+          ctx.arc(tx * TILE + TILE/2, ty * TILE + TILE/2, def.range, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(100, 180, 220, 0.2)';
+          ctx.stroke();
+        }
+      }
+      
+      // Towers
+      for (const t of G.towers) {
+        // Base
+        ctx.fillStyle = '#0a1015';
+        ctx.fillRect(t.tx * TILE + 4, t.ty * TILE + 4, TILE - 8, TILE - 8);
+        
+        // Tower
+        ctx.fillStyle = t.color;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Glow
+        ctx.shadowColor = t.color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // Level indicator
+        if (t.level > 1) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(t.level, t.x, t.y + 3);
+        }
+      }
+      
+      // Enemies
+      for (const e of G.enemies) {
+        // Shadow/invisible
+        if (e.invisible) {
+          ctx.globalAlpha = 0.3;
+        }
+        
+        // Body
+        ctx.fillStyle = e.color;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Status effects
+        if (e.slowed > 0) {
+          ctx.strokeStyle = '#4a9ad0';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        if (e.poisoned > 0) {
+          ctx.strokeStyle = '#50a050';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        if (e.stunned > 0) {
+          ctx.strokeStyle = '#8060a0';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        
+        ctx.globalAlpha = 1;
+        
+        // HP bar
+        const hpPct = e.hp / e.maxHp;
+        const barW = e.size * 2;
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(e.x - barW/2, e.y - e.size - 8, barW, 4);
+        ctx.fillStyle = hpPct > 0.5 ? '#20a040' : hpPct > 0.25 ? '#c0a030' : '#d04040';
+        ctx.fillRect(e.x - barW/2, e.y - e.size - 8, barW * hpPct, 4);
+      }
+      
+      // Projectiles
+      for (const p of G.projectiles) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      
+      // Start/End markers
+      // Start
+      ctx.fillStyle = '#802020';
+      ctx.font = '10px Cinzel';
+      ctx.textAlign = 'center';
+      ctx.fillText('BREACH', 20, HEIGHT - 10);
+      
+      // End
+      ctx.fillStyle = '#4a8ab0';
+      ctx.fillText('BASE', WIDTH - 20, HEIGHT - 10);
+      
+      // Crystal barrier at end
+      ctx.strokeStyle = '#4a9ad0';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(WIDTH - 5, 7 * TILE);
+      ctx.lineTo(WIDTH - 5, 9 * TILE);
+      ctx.stroke();
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // GAME LOOP
+    // ═══════════════════════════════════════════════════════
+    let lastTime = 0;
+    
+    function gameLoop(timestamp) {
+      const dt = timestamp - lastTime;
+      lastTime = timestamp;
+      
+      if (G.started && G.phase === 'wave') {
+        // Spawn enemies
+        G.spawnTimer += dt;
+        if (G.spawnTimer > 800 && G.spawnQueue.length > 0) {
+          G.spawnTimer = 0;
+          spawnEnemy(G.spawnQueue.shift());
+        }
+        
+        // Update
+        moveEnemies(dt);
+        
+        const now = Date.now();
+        for (const t of G.towers) {
+          towerAttack(t, now);
+        }
+        
+        updateProjectiles(dt);
+        
+        checkWaveComplete();
+        checkGameOver();
+        updateUI();
+      }
+      
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+    
+    // ═══════════════════════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════════════════════
+    gameLoop(0);
+  </script>
+</body>
+</html>

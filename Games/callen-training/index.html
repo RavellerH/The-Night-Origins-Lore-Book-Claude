@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Callen's Training — The Black Leaf</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a0e;color:#e0ddd5;font-family:'Segoe UI',system-ui,sans-serif;overflow:hidden;height:100vh;display:flex;align-items:center;justify-content:center;user-select:none}
+canvas{display:block}
+
+/* START SCREEN */
+#start-screen{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 50% 40%,#1a1018 0%,#0a0a0e 70%);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#start-screen h1{font-size:38px;color:#7040a0;text-shadow:0 0 30px rgba(112,64,160,0.3);margin-bottom:4px;font-family:'Segoe UI',serif}
+#start-screen .sub{font-size:13px;color:#8a8780;margin-bottom:20px;font-style:italic}
+#start-screen .lore{max-width:460px;text-align:center;font-size:12px;line-height:1.6;color:#8a8780;margin-bottom:20px}
+#start-screen .lore em{color:#7040a0}
+#start-screen .lore strong{color:#c0a060}
+.btn-start{background:linear-gradient(135deg,#503080,#7040a0);color:#fff;border:none;padding:12px 32px;border-radius:8px;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 0 15px rgba(112,64,160,0.2);letter-spacing:0.5px}
+.btn-start:hover{box-shadow:0 0 25px rgba(112,64,160,0.4);transform:scale(1.03)}
+.controls-info{font-size:10px;color:#555;margin-top:16px;text-align:center;line-height:1.8}
+
+/* STORY OVERLAY */
+#story-overlay{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,0.92);display:none;align-items:center;justify-content:center;flex-direction:column}
+#story-overlay.active{display:flex}
+#story-box{max-width:500px;padding:30px;text-align:center}
+#story-box .speaker{font-size:13px;font-weight:700;margin-bottom:8px;letter-spacing:0.1em}
+#story-box .speaker.zach{color:#c0a060}
+#story-box .speaker.sylva{color:#c06060}
+#story-box .speaker.callen{color:#c0a060}
+#story-box .speaker.narrator{color:#8a8780;font-style:italic}
+#story-box .text{font-size:14px;line-height:1.7;color:#d4be8a;margin-bottom:20px}
+#story-box .choices{display:flex;flex-direction:column;gap:8px}
+#story-box .choice-btn{background:#16161a;border:1px solid #333340;color:#d4be8a;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:12px;text-align:left;transition:all .2s}
+#story-box .choice-btn:hover{border-color:#7040a0;background:#1e1e24}
+#story-box .continue-btn{background:#7040a0;border:none;color:#fff;padding:10px 24px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer}
+
+/* HUD */
+#hud{position:fixed;top:0;left:0;right:0;z-index:50;display:none;padding:6px 12px;pointer-events:none}
+#hud.active{display:flex;align-items:flex-start;justify-content:space-between}
+.hud-left,.hud-right{pointer-events:auto}
+.hp-bar-h{width:180px;height:12px;background:#222;border-radius:6px;overflow:hidden;border:1px solid #333;margin-bottom:3px}
+.hp-fill-h{height:100%;transition:width .15s;border-radius:6px;background:linear-gradient(90deg,#d04040,#40a040)}
+.xp-bar-h{width:180px;height:6px;background:#222;border-radius:3px;overflow:hidden}
+.xp-fill-h{height:100%;background:linear-gradient(90deg,#7040a0,#a060d0);border-radius:3px;transition:width .3s}
+.char-name-h{font-size:13px;font-weight:700;color:#c0a060}
+.char-level-h{font-size:10px;color:#8a8780}
+.wave-h{font-size:12px;font-weight:700;color:#7040a0;text-align:right}
+.combo-h{font-size:18px;font-weight:800;color:#f0c940;text-align:right;opacity:0;transition:opacity .3s}
+.combo-h.active{opacity:1}
+.ability-bar{display:flex;gap:4px;margin-top:4px}
+.ab-slot{width:30px;height:30px;background:#16161a;border:1px solid #333;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;position:relative}
+.ab-slot .cd{position:absolute;inset:0;background:rgba(0,0,0,0.7);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700}
+
+/* GAME OVER */
+#gameover{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.92);display:none;flex-direction:column;align-items:center;justify-content:center}
+#gameover.active{display:flex}
+#gameover h1{font-size:42px;margin-bottom:8px}
+#gameover h1.win{color:#7040a0}
+#gameover h1.lose{color:#d04040}
+#gameover .gt{font-size:14px;color:#8a8780;max-width:400px;text-align:center;line-height:1.6;margin-bottom:16px;font-style:italic}
+#gameover .stats{display:flex;gap:20px;margin-bottom:20px}
+#gameover .stat{text-align:center}
+#gameover .stat .v{font-size:24px;font-weight:800;color:#7040a0}
+#gameover .stat .l{font-size:10px;color:#8a8780}
+#gameover .btn-start{margin:4px}
+
+/* PAUSE */
+#pause{position:fixed;inset:0;z-index:180;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;flex-direction:column}
+#pause.active{display:flex}
+#pause h2{font-size:32px;color:#7040a0;margin-bottom:12px}
+#pause p{font-size:12px;color:#8a8780}
+
+/* NOTIFICATION */
+#notif{position:fixed;top:44px;left:50%;transform:translateX(-50%);background:#1e1e24;border:1px solid #7040a0;border-radius:8px;padding:6px 14px;font-size:11px;font-weight:600;z-index:150;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#notif.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <h1>Callen's Training</h1>
+  <div class="sub">A Beat-Em-Up — The Black Leaf</div>
+  <div class="lore">
+    <strong>Callen</strong> is 16. His village was just destroyed. He lost everything.<br>
+    His uncle <em>Zachariel</em> — the man with the loud laugh and the adventure stories —<br>
+    offers him a place in the Mage Hunters.<br><br>
+    Two years of training. The strongest Callen will ever be.<br>
+    And the most dangerous thing he'll face isn't the combat.<br>
+    It's <em>what the training is for</em>.
+  </div>
+  <button class="btn-start" onclick="startGame('normal')">⚔️ Begin Training</button>
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="btn-start" style="font-size:12px;padding:8px 20px;opacity:0.6" onclick="startGame('easy')">Easy — Recruit</button>
+    <button class="btn-start" style="font-size:12px;padding:8px 20px;opacity:0.6" onclick="startGame('hard')">Hard — Operative</button>
+  </div>
+  <div class="controls-info">
+    <strong>Controls:</strong> WASD Move · J Light Combo · K Heavy Attack · L Throw Knife · Shift Dodge<br>
+    Space Special Ability · Tab Switch Target
+  </div>
+</div>
+
+<div id="story-overlay">
+  <div id="story-box">
+    <div class="speaker" id="s-speaker"></div>
+    <div class="text" id="s-text"></div>
+    <div class="choices" id="s-choices"></div>
+    <button class="continue-btn" id="s-continue" style="display:none" onclick="storyContinue()">Continue</button>
+  </div>
+</div>
+
+<div id="gameover">
+  <h1 id="go-title"></h1>
+  <div class="gt" id="go-text"></div>
+  <div class="stats">
+    <div class="stat"><div class="v" id="go-wave">0</div><div class="l">Sessions</div></div>
+    <div class="stat"><div class="v" id="go-kills">0</div><div class="l">Defeated</div></div>
+    <div class="stat"><div class="v" id="go-level">0</div><div class="l">Level</div></div>
+    <div class="stat"><div class="v" id="go-combo">0</div><div class="l">Best Combo</div></div>
+  </div>
+  <button class="btn-start" onclick="location.reload()">Train Again</button>
+</div>
+
+<div id="pause">
+  <h2>⏸ Paused</h2>
+  <p>Press ESC or P to resume</p>
+</div>
+
+<div id="hud">
+  <div class="hud-left">
+    <div class="char-name-h" id="hud-name">Callen</div>
+    <div class="char-level-h" id="hud-level">Level 1</div>
+    <div class="hp-bar-h"><div class="hp-fill-h" id="hud-hp"></div></div>
+    <div class="xp-bar-h"><div class="xp-fill-h" id="hud-xp"></div></div>
+    <div class="ability-bar" id="hud-abilities"></div>
+  </div>
+  <div class="hud-right">
+    <div class="wave-h" id="hud-wave">Session 1 / 12</div>
+    <div class="combo-h" id="hud-combo">0x</div>
+  </div>
+</div>
+
+<div id="notif"></div>
+<canvas id="game"></canvas>
+
+<script>
+// =====================================================
+//  CALLEN'S TRAINING — Beat-Em-Up
+//  The Black Leaf
+// =====================================================
+
+const W = 900, H = 560;
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+canvas.width = W;
+canvas.height = H;
+
+// Scale canvas
+function fitCanvas() {
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  canvas.style.width = (W * s) + 'px';
+  canvas.style.height = (H * s) + 'px';
+}
+fitCanvas();
+window.addEventListener('resize', fitCanvas);
+
+// ===== CHARACTER: CALLEN =====
+const CALLEN = {
+  name: 'Callen', color: '#b08030', speed: 200,
+  hp: 100, damage: 12, armor: 3,
+  lightDmg: 12, heavyDmg: 25, knifeDmg: 18,
+  lightRange: 45, heavyRange: 55, knifeRange: 250,
+  lightSpeed: 0.18, heavySpeed: 0.45, knifeCooldown: 2.0,
+  knives: 8, knifeRegen: 0,
+  special: { name: 'Blade Dance', icon: '🗡️', cooldown: 10, desc: 'Spinning slash hitting all nearby enemies', dmg: 40, range: 80 },
+  dodge: { speed: 380, duration: 0.22, cooldown: 0.9 },
+};
+
+// ===== ENEMY TYPES =====
+const ET = {
+  trainee: { name:'Trainee', icon:'🥋', color:'#606070', radius:12, hp:20, dmg:6, speed:80, xp:8, gold:0, behavior:'chase', atkRange:30, atkCD:1.0, boss:false },
+  hunter:  { name:'Mage Hunter', icon:'🗡️', color:'#404060', radius:13, hp:35, dmg:10, speed:70, xp:12, gold:0, behavior:'chase', atkRange:35, atkCD:0.8, boss:false },
+  thunder: { name:'Thunderscar', icon:'⚡', color:'#c0a020', radius:14, hp:50, dmg:15, speed:100, xp:18, gold:0, behavior:'dash', atkRange:40, atkCD:1.2, dashSpeed:300, boss:false },
+  sylva:   { name:'Sylva', icon:'⚔️', color:'#c06060', radius:16, hp:200, dmg:18, speed:90, xp:60, gold:0, behavior:'boss', atkRange:45, atkCD:1.0, dashSpeed:280, boss:true },
+  zachariel:{ name:'Zachariel', icon:'🔨', color:'#c0a060', radius:18, hp:350, dmg:22, speed:70, xp:100, gold:0, behavior:'zach', atkRange:55, atkCD:1.0, boss:true },
+};
+
+// ===== STORY BEATS =====
+const STORY = [
+  { session:0, before:true,
+    speaker:'narrator', text:'Blue River Village is gone. Callen was captured. Now Zachariel — his uncle, the man who told adventure stories — stands before him with an offer.' },
+  { session:0, before:false,
+    speaker:'zach', text:'"You have talent, Callen. Real talent. Your reflexes — they\'re not normal. Don\'t ask why. Just train with me."',
+    choices:[
+      {label:'"I want to get stronger."', result:'Zachariel smiles. "Good answer."', next:null},
+      {label:'"What are the Mage Hunters?"', result:'"The ones who keep the world safe from magic. You\'ll learn."', next:null},
+    ]},
+  { session:2, before:true,
+    speaker:'narrator', text:'Six months in. Callen is already faster than most trainees. Zachariel notices everything. Including things he shouldn\'t.' },
+  { session:2, before:false,
+    speaker:'zach', text:'"Your speed. It\'s not just training. There\'s something in your blood. Have you ever wondered why?"',
+    choices:[
+      {label:'"No."', result:'Zachariel\'s eyes narrow slightly. He lets it go.', next:null},
+      {label:'"Sometimes."', result:'"Keep training. The answer will come to you."', next:null},
+    ]},
+  { session:4, before:true,
+    speaker:'narrator', text:'One year. Callen can defeat three trainees at once. Today, he faces someone different.' },
+  { session:4, before:false,
+    speaker:'sylva', text:'"The Berserker. Survived death twice. You\'re fast, kid. Let\'s see if fast is enough."',
+    choices:[]},
+  { session:4, after:true,
+    speaker:'sylva', text:'"Not bad. You\'re better than the last one." She touches the scar on her neck. "The last one didn\'t survive."',
+    choices:[]},
+  { session:6, before:true,
+    speaker:'narrator', text:'A mission. Callen\'s first real one. A mage settlement somewhere in the forest. Zachariel says they\'re dangerous.' },
+  { session:6, before:false,
+    speaker:'zach', text:'"They have magic. Magic is the enemy. You know this." But Callen notices Zachariel doesn\'t look him in the eye.',
+    choices:[
+      {label:'Follow orders without question.', result:'"Good soldier," Zachariel says. The words feel wrong.', next:null},
+      {label:'"What did they do?"', result:'"They exist. That\'s enough." The answer is too quick.', next:null},
+    ]},
+  { session:6, after:true,
+    speaker:'narrator', text:'The settlement had families. Children with glowing eyes. Callen fought them because he was told to. He tells himself they were dangerous. He\'s not sure he believes it anymore.',
+    choices:[]},
+  { session:8, before:true,
+    speaker:'narrator', text:'Eighteen months. Callen is eighteen now. The strongest he\'s ever been. And the most uncertain.' },
+  { session:8, before:false,
+    speaker:'zach', text:'"There\'s something you need to see." Zachariel leads him to a locked room. Inside: research on Origins. The people who started all magic.',
+    choices:[
+      {label:'Read the files.', result:'The truth about Origins. About what the Black Leaf wants. Callen reads in silence.', next:null},
+      {label:'"I\'m not ready."', result:'"You\'ll have to be. Soon."', next:null},
+    ]},
+  { session:10, before:true,
+    speaker:'narrator', text:'The final test. Zachariel himself. Callen\'s uncle. The man who raised him after the village burned.' },
+  { session:10, before:false,
+    speaker:'zach', text:'"Everything I taught you. Everything you learned. Now show me you\'re more than what this organization made you." Zachariel draws his lightning hammer. "Come on, nephew."',
+    choices:[]},
+];
+
+// ===== SESSIONS (waves) =====
+function makeSessions(diff) {
+  const m = diff === 'easy' ? 0.7 : diff === 'hard' ? 1.5 : 1;
+  const sessions = [];
+  const total = 12;
+  for (let i = 0; i < total; i++) {
+    const s = { number: i + 1, enemies: [], isBoss: false };
+    const n = i + 1;
+
+    if (n === 5) { // Sylva sparring
+      s.isBoss = true;
+      s.enemies.push({ type: 'sylva', hp: Math.floor(200 * m), count: 1 });
+      s.enemies.push({ type: 'trainee', count: 2, hpMult: m });
+    } else if (n === 11) { // Zachariel final
+      s.isBoss = true;
+      s.enemies.push({ type: 'zachariel', hp: Math.floor(350 * m), count: 1 });
+    } else if (n <= 2) {
+      s.enemies.push({ type: 'trainee', count: 3 + n * 2, hpMult: m });
+    } else if (n <= 4) {
+      s.enemies.push({ type: 'trainee', count: 3, hpMult: m });
+      s.enemies.push({ type: 'hunter', count: 2 + n, hpMult: m });
+    } else if (n <= 7) {
+      s.enemies.push({ type: 'hunter', count: 3, hpMult: m });
+      s.enemies.push({ type: 'thunder', count: 1 + Math.floor(n / 3), hpMult: m });
+    } else if (n <= 9) {
+      s.enemies.push({ type: 'hunter', count: 4, hpMult: m });
+      s.enemies.push({ type: 'thunder', count: 3, hpMult: m });
+    } else {
+      s.enemies.push({ type: 'hunter', count: 5, hpMult: m });
+      s.enemies.push({ type: 'thunder', count: 4, hpMult: m });
+    }
+    sessions.push(s);
+  }
+  return sessions;
+}
+
+// ===== GAME STATE =====
+let G = {};
+let player;
+let enemies = [];
+let projectiles = [];
+let particles = [];
+let dmgNums = [];
+let screenShake = { x: 0, y: 0, intensity: 0 };
+let comboCount = 0;
+let comboTimer = 0;
+let bestCombo = 0;
+let gameRunning = false;
+let gamePaused = false;
+let sessionIndex = 0;
+let sessionActive = false;
+let sessionSpawnTimer = 0;
+let sessionSpawnQueue = [];
+let sessionDelay = 0;
+let totalKills = 0;
+let difficulty = 'normal';
+let lastTime = 0;
+let storyActive = false;
+let knifeCooldown = 0;
+let specialCooldown = 0;
+let dodgeCooldown = 0;
+
+// Input
+const keys = {};
+let mouseX = W/2, mouseY = H/2;
+
+function initGame(diff) {
+  difficulty = diff;
+  player = {
+    x: W/2, y: H * 0.65,
+    hp: CALLEN.hp, maxHp: CALLEN.hp,
+    damage: CALLEN.damage, speed: CALLEN.speed, armor: CALLEN.armor,
+    knives: CALLEN.knives, maxKnives: CALLEN.knives,
+    level: 1, xp: 0, xpNext: 40,
+    facing: { x: 1, y: 0 },
+    attacking: false, attackType: null, attackTimer: 0, attackDuration: 0, attackHit: false, canAct: true,
+    dodging: false, dodgeTimer: 0, dodgeDir: { x: 0, y: 0 },
+    iframeTimer: 0, hitFlash: 0, swingAngle: 0,
+    comboCount: 0, comboTimer: 0,
+    specialActive: false, specialTimer: 0,
+    animTimer: 0,
+  };
+  enemies = [];
+  projectiles = [];
+  particles = [];
+  dmgNums = [];
+  screenShake = { x: 0, y: 0, intensity: 0 };
+  comboCount = 0; comboTimer = 0; bestCombo = 0;
+  sessionIndex = 0;
+  sessionActive = false;
+  sessionDelay = 1.5;
+  totalKills = 0;
+  knifeCooldown = 0;
+  specialCooldown = 0;
+  dodgeCooldown = 0;
+  G = { sessions: makeSessions(diff), maxSession: 12 };
+}
+
+// ===== COMBAT =====
+function startAttack(type) {
+  if (!player.canAct || player.attacking || player.dodging) return;
+  player.attacking = true;
+  player.attackType = type;
+  player.attackTimer = 0;
+  player.attackDuration = type === 'light' ? CALLEN.lightSpeed : CALLEN.heavySpeed;
+  player.attackHit = false;
+  player.canAct = false;
+}
+
+function processAttackHit() {
+  const type = player.attackType;
+  const dmg = type === 'light' ? CALLEN.lightDmg : CALLEN.heavyDmg;
+  const range = type === 'light' ? CALLEN.lightRange : CALLEN.heavyRange;
+  const arc = type === 'light' ? Math.PI * 0.7 : Math.PI * 0.5;
+  const kb = type === 'heavy' ? 180 : 40;
+
+  const dx = mouseX + camX() - player.x;
+  const dy = mouseY + camY() - player.y;
+  const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+  const atkAngle = Math.atan2(dy, dx);
+  player.facing.x = dx / dist;
+  player.facing.y = dy / dist;
+  player.swingAngle = atkAngle;
+
+  for (const e of enemies) {
+    if (e.dead) continue;
+    const ex = e.x - player.x;
+    const ey = e.y - player.y;
+    const eDist = Math.sqrt(ex*ex + ey*ey);
+    if (eDist > range + e.radius) continue;
+    const eAngle = Math.atan2(ey, ex);
+    let angleDiff = eAngle - atkAngle;
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+    if (Math.abs(angleDiff) < arc / 2) {
+      let finalDmg = dmg;
+      if (player.comboCount > 3) finalDmg *= 1 + player.comboCount * 0.08;
+      finalDmg = Math.floor(finalDmg);
+      damageEnemy(e, finalDmg);
+      const kbAngle = Math.atan2(ey, ex);
+      e.vx = -Math.cos(kbAngle) * kb;
+      e.vy = -Math.sin(kbAngle) * kb;
+      e.hitFlash = 0.2;
+      player.comboCount++;
+      player.comboTimer = 2;
+      if (player.comboCount > bestCombo) bestCombo = player.comboCount;
+      spawnHitParticles(e.x, e.y, '#c0a060');
+    }
+  }
+}
+
+function useSpecial() {
+  if (specialCooldown > 0 || !player.canAct || player.attacking) return;
+  specialCooldown = CALLEN.special.cooldown;
+  player.specialActive = true;
+  player.specialTimer = 0.4;
+  screenShake.intensity = 10;
+
+  for (const e of enemies) {
+    if (e.dead) continue;
+    const d = Math.sqrt((e.x - player.x)**2 + (e.y - player.y)**2);
+    if (d < CALLEN.special.range + e.radius) {
+      damageEnemy(e, CALLEN.special.dmg);
+      const a = Math.atan2(e.y - player.y, e.x - player.x);
+      e.vx = -Math.cos(a) * 300;
+      e.vy = -Math.sin(a) * 300;
+      e.hitFlash = 0.3;
+    }
+  }
+  // Spin particles
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const s = 100 + Math.random() * 80;
+    particles.push({ x: player.x, y: player.y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life: 0.8, size: 3 + Math.random()*4, color: '#b08030' });
+  }
+  updateAbilityHUD();
+}
+
+function throwKnife() {
+  if (knifeCooldown > 0 || player.knives <= 0 || !player.canAct || player.attacking) return;
+  player.knives--;
+  knifeCooldown = CALLEN.knifeCooldown;
+  const dx = mouseX + camX() - player.x;
+  const dy = mouseY + camY() - player.y;
+  const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+  const angle = Math.atan2(dy, dx);
+  projectiles.push({
+    x: player.x, y: player.y,
+    vx: Math.cos(angle) * 500, vy: Math.sin(angle) * 500,
+    damage: CALLEN.knifeDmg, radius: 4, color: '#c0a060',
+    lifetime: 0.8, fromPlayer: true, knife: true,
+  });
+  updateAbilityHUD();
+}
+
+function damageEnemy(e, dmg) {
+  e.hp -= dmg;
+  e.hitFlash = 0.15;
+  dmgNums.push({ x: e.x+(Math.random()-0.5)*16, y: e.y-e.radius-10, text: Math.floor(dmg).toString(), life:1, color:'#fff', size:13, vy:-50 });
+  if (e.hp <= 0) {
+    e.dead = true;
+    totalKills++;
+    player.xp += e.xp;
+    // XP particles
+    for (let i = 0; i < 6; i++) {
+      particles.push({ x:e.x+(Math.random()-0.5)*16, y:e.y+(Math.random()-0.5)*16, vx:(Math.random()-0.5)*50, vy:-20-Math.random()*30, life:1, size:3, color:'#a060d0' });
+    }
+    // Death particles
+    for (let i = 0; i < 8; i++) {
+      const a = Math.random()*Math.PI*2, s = 30+Math.random()*60;
+      particles.push({ x:e.x, y:e.y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:0.6, size:2+Math.random()*4, color: e.boss ? '#c06060' : '#606070' });
+    }
+    if (e.boss) {
+      screenShake.intensity = 15;
+      notify('👑 Boss defeated!');
+    }
+    // Level up
+    if (player.xp >= player.xpNext) {
+      player.xp -= player.xpNext;
+      player.level++;
+      player.xpNext = Math.floor(player.xpNext * 1.35);
+      player.maxHp += 8;
+      player.hp = Math.min(player.hp + 15, player.maxHp);
+      player.damage += 2;
+      player.armor += 1;
+      CALLEN.lightDmg += 2;
+      CALLEN.heavyDmg += 3;
+      CALLEN.special.dmg += 5;
+      notify('⬆️ Level ' + player.level + '! Stats increased.');
+    }
+  }
+}
+
+function damagePlayer(dmg) {
+  if (player.iframeTimer > 0 || player.dodging) return;
+  const finalDmg = Math.max(1, dmg - player.armor);
+  player.hp -= finalDmg;
+  player.hitFlash = 0.25;
+  player.iframeTimer = 0.5;
+  screenShake.intensity = 4;
+  dmgNums.push({ x:player.x, y:player.y-25, text:'-'+Math.floor(finalDmg), life:1, color:'#ff4040', size:15, vy:-50 });
+  if (player.hp <= 0) {
+    player.hp = 0;
+    endGame(false);
+  }
+  updateHUD();
+}
+
+// ===== ENEMIES =====
+function spawnEnemy(type, hp) {
+  const et = ET[type];
+  const side = Math.random() < 0.5 ? 0 : 1;
+  let x, y;
+  if (side === 0) {
+    x = Math.random() < 0.5 ? -20 : W + 20;
+    y = H * 0.3 + Math.random() * H * 0.4;
+  } else {
+    x = W * 0.2 + Math.random() * W * 0.6;
+    y = -20;
+  }
+  enemies.push({
+    x, y, vx:0, vy:0,
+    type, hp: hp||et.hp, maxHp: hp||et.hp,
+    damage: et.dmg, speed: et.speed, radius: et.radius,
+    behavior: et.behavior, attackRange: et.atkRange, attackCooldown: et.atkCD,
+    attackTimer: Math.random() * et.atkCD,
+    dead: false, hitFlash: 0, state: 'idle', stateTimer: 0,
+    dashSpeed: et.dashSpeed || 0, dashDir: {x:0,y:0},
+    isBoss: et.boss || false, phase: 1,
+  });
+}
+
+function updateEnemies(dt) {
+  for (const e of enemies) {
+    if (e.dead) continue;
+    e.hitFlash = Math.max(0, e.hitFlash - dt);
+    e.attackTimer = Math.max(0, e.attackTimer - dt);
+    e.stateTimer = Math.max(0, e.stateTimer - dt);
+
+    // Knockback
+    if (e.vx || e.vy) {
+      e.x += e.vx * dt; e.y += e.vy * dt;
+      e.vx *= 0.88; e.vy *= 0.88;
+      if (Math.abs(e.vx)<1) e.vx=0;
+      if (Math.abs(e.vy)<1) e.vy=0;
+    }
+
+    const dx = player.x - e.x;
+    const dy = player.y - e.y;
+    const dist = Math.sqrt(dx*dx+dy*dy) || 1;
+    const a = Math.atan2(dy, dx);
+
+    switch (e.behavior) {
+      case 'chase':
+        if (dist > e.attackRange) {
+          e.x += Math.cos(a)*e.speed*dt;
+          e.y += Math.sin(a)*e.speed*dt;
+        }
+        if (dist <= e.attackRange && e.attackTimer <= 0) {
+          damagePlayer(e.damage);
+          e.attackTimer = e.attackCooldown;
+        }
+        break;
+      case 'dash':
+        if (e.state === 'idle') {
+          if (dist < 200 && dist > 40) {
+            e.state = 'dashing'; e.stateTimer = 0.5;
+            e.dashDir = { x: dx/dist, y: dy/dist };
+          } else if (dist <= 40 && e.attackTimer <= 0) {
+            damagePlayer(e.damage);
+            e.attackTimer = e.attackCooldown;
+          } else {
+            e.x += Math.cos(a)*e.speed*0.5*dt;
+            e.y += Math.sin(a)*e.speed*0.5*dt;
+          }
+        } else if (e.state === 'dashing') {
+          e.x += e.dashDir.x * e.dashSpeed * dt;
+          e.y += e.dashDir.y * e.dashSpeed * dt;
+          if (e.stateTimer <= 0) {
+            e.state = 'idle';
+            if (dist < 40) damagePlayer(e.damage);
+          }
+        }
+        break;
+      case 'boss': // Sylva
+        if (dist > 50) {
+          e.x += Math.cos(a)*e.speed*dt;
+          e.y += Math.sin(a)*e.speed*dt;
+        }
+        if (dist <= e.attackRange && e.attackTimer <= 0) {
+          damagePlayer(e.damage);
+          e.attackTimer = e.attackCooldown;
+          screenShake.intensity = 5;
+        }
+        // At 40% HP, dash more often
+        if (e.hp / e.maxHp < 0.4 && e.phase === 1) {
+          e.phase = 2;
+          e.speed *= 1.2;
+        }
+        break;
+      case 'zach': // Zachariel with lightning hammer
+        if (dist > 60) {
+          e.x += Math.cos(a)*e.speed*dt;
+          e.y += Math.sin(a)*e.speed*dt;
+        }
+        if (dist <= e.attackRange && e.attackTimer <= 0) {
+          damagePlayer(e.damage);
+          e.attackTimer = e.attackCooldown;
+          screenShake.intensity = 8;
+          // Lightning AoE
+          for (const e2 of enemies) {
+            if (e2 === e || e2.dead) continue;
+            const d2 = Math.sqrt((e2.x-e.x)**2+(e2.y-e.y)**2);
+            if (d2 < 80) {
+              e2.vx += (e2.x-e.x)*2;
+              e2.vy += (e2.y-e.y)*2;
+            }
+          }
+        }
+        // At 50%, summons lightning strikes
+        if (e.hp / e.maxHp < 0.5 && e.phase === 1) {
+          e.phase = 2;
+          // Lightning particles
+          for (let i = 0; i < 10; i++) {
+            const la = Math.random()*Math.PI*2;
+            const lr = 30+Math.random()*120;
+            particles.push({ x:e.x+Math.cos(la)*lr, y:e.y+Math.sin(la)*lr, vx:0,vy:-30,life:0.6,size:3+Math.random()*4,color:'#c0a020',type:'lightning' });
+          }
+        }
+        break;
+    }
+    // Bounds
+    e.x = Math.max(-30, Math.min(W+30, e.x));
+    e.y = Math.max(20, Math.min(H-20, e.y));
+  }
+  enemies = enemies.filter(e => !e.dead);
+}
+
+// ===== PROJECTILES =====
+function updateProjectiles(dt) {
+  for (const p of projectiles) {
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.lifetime -= dt;
+    if (p.fromPlayer) {
+      for (const e of enemies) {
+        if (e.dead) continue;
+        const d = Math.sqrt((e.x-p.x)**2+(e.y-p.y)**2);
+        if (d < p.radius + e.radius) {
+          damageEnemy(e, p.damage);
+          e.hitFlash = 0.2;
+          if (!p.knife) { p.dead = true; break; }
+          else { p.dead = true; break; } // knives pierce once
+        }
+      }
+    } else {
+      const d = Math.sqrt((player.x-p.x)**2+(player.y-p.y)**2);
+      if (d < p.radius + 14) { damagePlayer(p.damage); p.dead = true; }
+    }
+    if (p.lifetime <= 0 || p.x<-50||p.x>W+50||p.y<-50||p.y>H+50) p.dead = true;
+  }
+  projectiles = projectiles.filter(p => !p.dead);
+}
+
+// ===== PLAYER UPDATE =====
+function camX() { return 0; }
+function camY() { return 0; }
+
+function updatePlayer(dt) {
+  player.iframeTimer = Math.max(0, player.iframeTimer - dt);
+  player.hitFlash = Math.max(0, player.hitFlash - dt);
+  knifeCooldown = Math.max(0, knifeCooldown - dt);
+  specialCooldown = Math.max(0, specialCooldown - dt);
+  dodgeCooldown = Math.max(0, dodgeCooldown - dt);
+
+  // Knife regen
+  if (player.knives < player.maxKnives) {
+    player.knives += dt * CALLEN.knifeRegen;
+    if (player.knives > player.maxKnives) player.knives = player.maxKnives;
+  }
+
+  // Combo timer
+  player.comboTimer = Math.max(0, player.comboTimer - dt);
+  if (player.comboTimer <= 0) { player.comboCount = 0; updateComboHUD(); }
+
+  // Dodge
+  if (keys['shift'] && dodgeCooldown <= 0 && !player.dodging && !player.attacking) {
+    let dx=0,dy=0;
+    if (keys['w']||keys['arrowup']) dy=-1;
+    if (keys['s']||keys['arrowdown']) dy=1;
+    if (keys['a']||keys['arrowleft']) dx=-1;
+    if (keys['d']||keys['arrowright']) dx=1;
+    if (dx===0&&dy===0) { dx=player.facing.x; dy=player.facing.y; }
+    const d=Math.sqrt(dx*dx+dy*dy)||1;
+    player.dodging=true; player.dodgeTimer=CALLEN.dodge.duration;
+    player.dodgeDir={x:dx/d,y:dy/d}; player.iframeTimer=CALLEN.dodge.duration;
+    dodgeCooldown = CALLEN.dodge.cooldown;
+  }
+  if (player.dodging) {
+    player.dodgeTimer -= dt;
+    player.x += player.dodgeDir.x * CALLEN.dodge.speed * dt;
+    player.y += player.dodgeDir.y * CALLEN.dodge.speed * dt;
+    if (player.dodgeTimer <= 0) player.dodging = false;
+  } else if (!player.attacking) {
+    let dx=0,dy=0;
+    if (keys['w']||keys['arrowup']) dy=-1;
+    if (keys['s']||keys['arrowdown']) dy=1;
+    if (keys['a']||keys['arrowleft']) dx=-1;
+    if (keys['d']||keys['arrowright']) dx=1;
+    if (dx!==0||dy!==0) {
+      const d=Math.sqrt(dx*dx+dy*dy);
+      player.x += (dx/d)*player.speed*dt;
+      player.y += (dy/d)*player.speed*dt;
+    }
+  }
+
+  // Attack
+  if (player.attacking) {
+    player.attackTimer += dt;
+    const progress = player.attackTimer / player.attackDuration;
+    player.swingAngle = (progress - 0.5) * Math.PI * 0.8;
+    if (!player.attackHit && progress > 0.35) {
+      player.attackHit = true;
+      processAttackHit();
+    }
+    if (player.attackTimer >= player.attackDuration) {
+      player.attacking = false; player.canAct = true; player.attackType = null;
+    }
+  }
+
+  // Special active
+  if (player.specialActive) {
+    player.specialTimer -= dt;
+    if (player.specialTimer <= 0) player.specialActive = false;
+  }
+
+  // Facing
+  const fdx = mouseX - player.x;
+  const fdy = mouseY - player.y;
+  const fd = Math.sqrt(fdx*fdx+fdy*fdy) || 1;
+  player.facing.x = fdx/fd; player.facing.y = fdy/fd;
+
+  // Bounds
+  player.x = Math.max(15, Math.min(W-15, player.x));
+  player.y = Math.max(30, Math.min(H-15, player.y));
+}
+
+// ===== SESSIONS =====
+function updateSessions(dt) {
+  if (sessionDelay > 0) {
+    sessionDelay -= dt;
+    if (sessionDelay <= 0) startNextSession();
+    return;
+  }
+  if (!sessionActive) return;
+
+  sessionSpawnTimer -= dt;
+  if (sessionSpawnTimer <= 0 && sessionSpawnQueue.length > 0) {
+    const next = sessionSpawnQueue.shift();
+    spawnEnemy(next.type, next.hp);
+    sessionSpawnTimer = 0.4 + Math.random() * 0.5;
+  }
+
+  if (sessionSpawnQueue.length === 0 && enemies.length === 0) {
+    sessionActive = false;
+    sessionIndex++;
+    if (sessionIndex >= G.maxSession) { endGame(true); return; }
+    sessionDelay = 2;
+    // Check for story after session
+    showStoryAfterSession();
+    updateHUD();
+  }
+}
+
+function startNextSession() {
+  sessionActive = true;
+  const sess = G.sessions[sessionIndex];
+  sessionSpawnQueue = [];
+  for (const g of sess.enemies) {
+    for (let i = 0; i < g.count; i++) {
+      sessionSpawnQueue.push({ type: g.type, hp: g.hp ? g.hp : Math.floor(ET[g.type].hp * (g.hpMult||1)) });
+    }
+  }
+  sessionSpawnTimer = 0;
+  notify('⚔️ Session ' + (sessionIndex + 1));
+}
+
+// ===== STORY =====
+function showStoryBeforeSession() {
+  for (const s of STORY) {
+    if (s.session === sessionIndex && s.before && !s._shown) {
+      s._shown = true;
+      triggerStory(s);
+      return true;
+    }
+  }
+  return false;
+}
+
+function showStoryAfterSession() {
+  for (const s of STORY) {
+    if (s.session === sessionIndex && s.after && !s._shown) {
+      s._shown = true;
+      triggerStory(s);
+      return;
+    }
+  }
+  // Check for "before" stories that haven't triggered (player skipped them)
+  if (!showStoryBeforeSession()) {
+    sessionDelay = 1.5; // auto continue
+  }
+}
+
+let currentStory = null;
+function triggerStory(s) {
+  currentStory = s;
+  const overlay = document.getElementById('story-overlay');
+  overlay.classList.add('active');
+  gamePaused = true;
+
+  const speakerEl = document.getElementById('s-speaker');
+  speakerEl.className = 'speaker ' + (s.speaker === 'zach' ? 'zach' : s.speaker === 'sylva' ? 'sylva' : s.speaker === 'callen' ? 'callen' : 'narrator');
+  speakerEl.textContent = s.speaker === 'zach' ? 'Zachariel' : s.speaker === 'sylva' ? 'Sylva' : s.speaker === 'callen' ? 'Callen' : '';
+
+  document.getElementById('s-text').textContent = s.text;
+
+  const choicesDiv = document.getElementById('s-choices');
+  choicesDiv.innerHTML = '';
+  const contBtn = document.getElementById('s-continue');
+
+  if (s.choices && s.choices.length > 0) {
+    contBtn.style.display = 'none';
+    s.choices.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = c.label;
+      btn.onclick = () => {
+        document.getElementById('s-text').textContent = c.result;
+        choicesDiv.innerHTML = '';
+        contBtn.style.display = '';
+        contBtn.textContent = 'Continue';
+      };
+      choicesDiv.appendChild(btn);
+    });
+  } else {
+    contBtn.style.display = '';
+    contBtn.textContent = 'Continue';
+  }
+}
+
+function storyContinue() {
+  document.getElementById('story-overlay').classList.remove('active');
+  currentStory = null;
+  gamePaused = false;
+  lastTime = performance.now();
+  requestAnimationFrame(gameLoop);
+}
+
+// ===== DRAWING =====
+function draw() {
+  ctx.save();
+  if (screenShake.intensity > 0) {
+    screenShake.x = (Math.random()-0.5)*screenShake.intensity;
+    screenShake.y = (Math.random()-0.5)*screenShake.intensity;
+    screenShake.intensity *= 0.9;
+    if (screenShake.intensity < 0.5) screenShake.intensity = 0;
+    ctx.translate(screenShake.x, screenShake.y);
+  }
+
+  // Background
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0e0c14');
+  bg.addColorStop(0.6, '#12101a');
+  bg.addColorStop(1, '#1a1418');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Floor
+  ctx.fillStyle = '#14121a';
+  ctx.fillRect(0, H * 0.25, W, H * 0.75);
+  // Floor lines
+  ctx.strokeStyle = '#1e1c24';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 40) {
+    ctx.beginPath(); ctx.moveTo(x, H*0.25); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = H*0.25; y < H; y += 40) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  // Training ring
+  ctx.strokeStyle = '#2a2030';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(W/2, H*0.6, W*0.35, H*0.25, 0, 0, Math.PI*2);
+  ctx.stroke();
+
+  // Ground shadow for player
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(player.x, player.y + 18, 14, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Ground shadows for enemies
+  for (const e of enemies) {
+    if (e.dead) continue;
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(e.x, e.y + e.radius*0.7, e.radius*0.7, e.radius*0.25, 0, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  // Projectiles
+  for (const p of projectiles) {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+    ctx.fillStyle = p.color;
+    ctx.fill();
+    // Trail
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius*2, 0, Math.PI*2);
+    ctx.fillStyle = p.color+'15';
+    ctx.fill();
+  }
+
+  // Enemies
+  for (const e of enemies) {
+    if (e.dead) continue;
+    const et = ET[e.type];
+    // Body
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.radius, 0, Math.PI*2);
+    ctx.fillStyle = e.hitFlash > 0 ? '#fff' : et.color;
+    ctx.fill();
+    ctx.strokeStyle = e.isBoss ? '#ff4040' : '#00000050';
+    ctx.lineWidth = e.isBoss ? 3 : 1.5;
+    ctx.stroke();
+
+    // Boss glow
+    if (e.isBoss) {
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.radius+10, 0, Math.PI*2);
+      ctx.strokeStyle = e.type==='zachariel' ? '#c0a06030' : '#c0606030';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    // Weapon for bosses
+    if (e.type === 'zachariel') {
+      const wa = Math.atan2(player.y-e.y, player.x-e.x);
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.rotate(wa);
+      ctx.fillStyle = '#c0a020';
+      ctx.fillRect(15, -3, 30, 6);
+      // Lightning
+      ctx.fillStyle = '#f0e04060';
+      ctx.beginPath();
+      ctx.arc(45, 0, 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    } else if (e.type === 'sylva') {
+      const wa = Math.atan2(player.y-e.y, player.x-e.x);
+      ctx.save();
+      ctx.translate(e.x, e.y);
+      ctx.rotate(wa);
+      ctx.fillStyle = '#c06060';
+      ctx.fillRect(12, -2, 24, 4);
+      ctx.restore();
+    }
+
+    // Icon
+    ctx.font = e.radius + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(et.icon, e.x, e.y + e.radius*0.35);
+
+    // HP bar
+    const bw = e.radius*2.5, bh = 4;
+    const bx = e.x-bw/2, by = e.y-e.radius-10;
+    const hpPct = e.hp/e.maxHp;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.fillStyle = e.isBoss ? '#c02020' : hpPct>0.5?'#40a040':hpPct>0.25?'#c0a020':'#d04040';
+    ctx.fillRect(bx, by, bw*hpPct, bh);
+    if (e.isBoss) {
+      ctx.fillStyle = '#c06060';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(et.name, e.x, by-5);
+    }
+  }
+
+  // Player
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(player.x, player.y+18, 12, 5, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // I-frame flash
+  let alpha = 1;
+  if (player.iframeTimer > 0 && Math.floor(Date.now()/80)%2) alpha = 0.4;
+  ctx.globalAlpha = alpha;
+
+  // Body
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, 15, 0, Math.PI*2);
+  ctx.fillStyle = player.hitFlash > 0 ? '#fff' : '#b08030';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Weapon swing
+  if (player.attacking) {
+    const prog = Math.min(1, player.attackTimer / player.attackDuration * 2);
+    const sa = player.swingAngle + (prog - 0.5) * Math.PI * (player.attackType === 'light' ? 0.8 : 1.0);
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    ctx.rotate(sa);
+    ctx.fillStyle = '#e0ddd5';
+    if (player.attackType === 'heavy') {
+      ctx.fillRect(12, -3, 35, 6);
+      ctx.fillStyle = '#c0a06080';
+      ctx.beginPath(); ctx.arc(47, 0, 5, 0, Math.PI*2); ctx.fill();
+    } else {
+      ctx.fillRect(12, -2, 26, 4);
+      ctx.fillStyle = '#c0a06060';
+      ctx.beginPath(); ctx.arc(38, 0, 4, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Special active glow
+  if (player.specialActive) {
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, CALLEN.special.range, 0, Math.PI*2);
+    ctx.strokeStyle = '#b0803040';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  // Icon
+  ctx.font = '15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🗡️', player.x, player.y + 5);
+
+  ctx.globalAlpha = 1;
+
+  // Particles
+  for (const p of particles) {
+    ctx.globalAlpha = p.life;
+    if (p.type === 'lightning') {
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x + (Math.random()-0.5)*10, p.y - 15);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+
+  // Damage numbers
+  for (const d of dmgNums) {
+    ctx.globalAlpha = d.life;
+    ctx.fillStyle = d.color;
+    ctx.font = `bold ${d.size}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(d.text, d.x, d.y);
+  }
+  ctx.globalAlpha = 1;
+
+  ctx.restore();
+}
+
+function spawnHitParticles(x, y, color) {
+  for (let i = 0; i < 5; i++) {
+    const a = Math.random()*Math.PI*2, s = 25+Math.random()*50;
+    particles.push({ x, y, vx:Math.cos(a)*s, vy:Math.sin(a)*s, life:0.4, size:2+Math.random()*3, color });
+  }
+}
+
+// ===== GAME LOOP =====
+function gameLoop(ts) {
+  if (!gameRunning) return;
+  if (gamePaused) { requestAnimationFrame(gameLoop); return; }
+  const dt = Math.min((ts-lastTime)/1000, 0.05);
+  lastTime = ts;
+
+  updatePlayer(dt);
+  updateEnemies(dt);
+  updateProjectiles(dt);
+  updateSessions(dt);
+
+  // Damage nums
+  for (const d of dmgNums) { d.y += d.vy*dt; d.life -= dt*0.8; }
+  dmgNums = dmgNums.filter(d => d.life > 0);
+
+  // Particles
+  for (const p of particles) { p.x+=p.vx*dt; p.y+=p.vy*dt; p.life-=dt*1.5; p.size*=0.97; }
+  particles = particles.filter(p => p.life > 0);
+
+  draw();
+  updateHUD();
+  requestAnimationFrame(gameLoop);
+}
+
+// ===== HUD =====
+function updateHUD() {
+  if (!player) return;
+  document.getElementById('hud-hp').style.width = (player.hp/player.maxHp*100)+'%';
+  document.getElementById('hud-xp').style.width = (player.xp/player.xpNext*100)+'%';
+  document.getElementById('hud-name').textContent = 'Callen';
+  document.getElementById('hud-level').textContent = 'Level ' + player.level;
+  document.getElementById('hud-wave').textContent = 'Session ' + (sessionIndex+1) + ' / ' + G.maxSession;
+  updateAbilityHUD();
+}
+
+function updateAbilityHUD() {
+  const bar = document.getElementById('hud-abilities');
+  bar.innerHTML = `
+    <div class="ab-slot" title="Throw Knife (${Math.floor(player.knives)} left)">🔪${knifeCooldown>0?`<div class="cd">${knifeCooldown.toFixed(1)}</div>`:''}</div>
+    <div class="ab-slot" title="${CALLEN.special.name}" onclick="useSpecial()">⚡${specialCooldown>0?`<div class="cd">${specialCooldown.toFixed(1)}</div>`:''}</div>
+    <div class="ab-slot" title="Dodge" style="opacity:${dodgeCooldown>0?'0.4':'1'}">💨${dodgeCooldown>0?`<div class="cd">${dodgeCooldown.toFixed(1)}</div>`:''}</div>
+  `;
+}
+
+function updateComboHUD() {
+  const el = document.getElementById('hud-combo');
+  if (player.comboCount > 2) { el.textContent = player.comboCount+'x'; el.classList.add('active'); }
+  else el.classList.remove('active');
+}
+
+// ===== INPUT =====
+document.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if ((e.key==='Escape'||e.key.toLowerCase()==='p') && gameRunning) { togglePause(); return; }
+  if (!gameRunning || gamePaused) return;
+  if (e.key.toLowerCase()==='j') startAttack('light');
+  if (e.key.toLowerCase()==='k') startAttack('heavy');
+  if (e.key.toLowerCase()==='l') throwKnife();
+  if (e.key===' '||e.key.toLowerCase()==='space') { e.preventDefault(); useSpecial(); }
+});
+document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+canvas.addEventListener('mousemove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouseX = (e.clientX-r.left)*(W/r.width);
+  mouseY = (e.clientY-r.top)*(H/r.height);
+});
+canvas.addEventListener('mousedown', e => {
+  e.preventDefault();
+  if (!gameRunning || gamePaused) return;
+  if (e.button===0) startAttack('light');
+  if (e.button===2) startAttack('heavy');
+});
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// ===== PAUSE =====
+function togglePause() {
+  gamePaused = !gamePaused;
+  document.getElementById('pause').classList.toggle('active', gamePaused);
+  if (!gamePaused) { lastTime = performance.now(); requestAnimationFrame(gameLoop); }
+}
+
+// ===== NOTIFICATIONS =====
+function notify(text) {
+  const el = document.getElementById('notif');
+  el.textContent = text; el.classList.add('show');
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ===== START / END =====
+function startGame(diff) {
+  initGame(diff);
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('hud').classList.add('active');
+  gameRunning = true;
+  lastTime = performance.now();
+  updateHUD();
+  // Skip opening story overlay — show it inline instead
+  notify('⚔️ Session 1 begins. Blue River Village is gone. Train under Zachariel.');
+  requestAnimationFrame(gameLoop);
+}
+
+function endGame(victory) {
+  gameRunning = false;
+  const el = document.getElementById('gameover');
+  const title = document.getElementById('go-title');
+  const text = document.getElementById('go-text');
+  if (victory) {
+    title.className = 'win'; title.textContent = '🗡️ Training Complete';
+    text.textContent = 'Callen has defeated Zachariel. He is the strongest the Black Leaf has ever produced. And he knows now — truly knows — what this organization does. The choice is his. It always was.';
+  } else {
+    title.className = 'lose'; title.textContent = '💀 Defeated';
+    text.textContent = `Callen fell at Session ${sessionIndex+1}. Zachariel looks down at his nephew. "Get up. We\'re not done yet." He\'s right. They never are. Callen will try again.`;
+  }
+  document.getElementById('go-wave').textContent = sessionIndex+1;
+  document.getElementById('go-kills').textContent = totalKills;
+  document.getElementById('go-level').textContent = player.level;
+  document.getElementById('go-combo').textContent = bestCombo;
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>

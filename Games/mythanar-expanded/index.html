@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mythanar's Cave &mdash; The Elven Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0e14;--bg2:#121a24;--bg3:#1a2535;
+  --blue:#6090c0;--blue-dim:#3a5a7a;--blue-glow:rgba(96,144,192,.25);
+  --gold:#C89B3C;--gold-dim:#8a6a28;--gold-glow:rgba(200,155,60,.3);
+  --text:#c8cdd4;--text-dim:#7a8494;--text-light:#e8ecf0;
+  --pass:#4a9a5a;--fail:#b84a4a;
+  --font-title:'Cinzel',serif;--font-body:'Crimson Text',serif;
+}
+html,body{height:100%;overflow-x:hidden}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--font-body);font-size:18px;line-height:1.6;
+  display:flex;flex-direction:column;
+}
+
+/* TOP BAR */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:52px;
+  background:linear-gradient(180deg,#0d1319 60%,transparent);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;font-family:var(--font-title);font-size:14px;
+  color:var(--gold);letter-spacing:1px;
+  border-bottom:1px solid rgba(200,155,60,.15);
+}
+#topbar .room-label{color:var(--blue)}
+
+/* MAIN */
+#game{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  padding:72px 16px 32px;min-height:100vh;
+}
+#room-view{
+  width:100%;max-width:780px;
+  background:var(--bg2);border:1px solid rgba(200,155,60,.12);
+  border-radius:8px;padding:40px 36px;
+  box-shadow:0 0 40px rgba(0,0,0,.5),inset 0 0 80px rgba(96,144,192,.04);
+  position:relative;overflow:hidden;
+}
+#room-view::before{
+  content:'';position:absolute;top:-1px;left:20%;right:20%;height:2px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+}
+
+/* FADE OVERLAY */
+#fade-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .6s ease;
+}
+#fade-overlay.active{opacity:1;pointer-events:all}
+#fade-overlay h2{
+  font-family:var(--font-title);font-size:clamp(24px,5vw,42px);
+  color:var(--gold);letter-spacing:3px;margin-bottom:12px;
+  text-shadow:0 0 30px var(--gold-glow);
+}
+#fade-overlay p{
+  font-family:var(--font-body);font-size:18px;color:var(--blue);
+  font-style:italic;max-width:500px;text-align:center;opacity:0;
+  animation:fadeUp .8s .4s forwards;
+}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}from{transform:translateY(12px)}}
+
+/* TYPOGRAPHY */
+h1,h2,h3{font-family:var(--font-title);color:var(--text-light)}
+h1{font-size:clamp(22px,4vw,34px);color:var(--gold);margin-bottom:16px;text-align:center;text-shadow:0 0 20px var(--gold-glow)}
+h2{font-size:clamp(18px,3vw,24px);margin-bottom:12px;color:var(--blue)}
+h3{font-size:18px;margin-bottom:8px;color:var(--text-light)}
+p{margin-bottom:12px}
+.note{
+  font-style:italic;color:var(--text-dim);border-left:3px solid var(--blue-dim);
+  padding:8px 16px;margin:16px 0;background:rgba(96,144,192,.04);border-radius:0 4px 4px 0;
+}
+.inscription{
+  font-family:var(--font-title);color:var(--gold);text-align:center;
+  font-size:16px;letter-spacing:1px;padding:16px;
+  border:1px solid var(--gold-dim);border-radius:6px;
+  background:rgba(200,155,60,.05);margin:16px 0;
+}
+
+/* BUTTONS */
+.btn{
+  display:inline-block;padding:12px 28px;margin:6px 4px;
+  font-family:var(--font-title);font-size:15px;letter-spacing:1px;
+  border:1px solid var(--gold-dim);border-radius:6px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(200,155,60,.12),rgba(200,155,60,.04));
+  color:var(--gold);transition:all .25s ease;
+}
+.btn:hover{
+  background:linear-gradient(180deg,rgba(200,155,60,.22),rgba(200,155,60,.1));
+  border-color:var(--gold);box-shadow:0 0 16px var(--gold-glow);
+  transform:translateY(-1px);
+}
+.btn:active{transform:translateY(0)}
+.btn-blue{border-color:var(--blue-dim);color:var(--blue);background:linear-gradient(180deg,rgba(96,144,192,.12),rgba(96,144,192,.04))}
+.btn-blue:hover{border-color:var(--blue);box-shadow:0 0 16px var(--blue-glow)}
+.btn-pass{border-color:var(--pass);color:var(--pass)}
+.btn-fail{border-color:var(--fail);color:var(--fail)}
+.btn:disabled{opacity:.4;cursor:default;transform:none;box-shadow:none}
+
+/* CHARACTER SELECT */
+.char-grid{display:flex;flex-direction:column;gap:10px;margin:20px 0}
+.char-card{
+  display:flex;align-items:center;gap:16px;padding:14px 20px;
+  border:1px solid rgba(200,155,60,.15);border-radius:8px;
+  background:rgba(200,155,60,.03);cursor:pointer;transition:all .25s ease;
+}
+.char-card:hover{border-color:var(--gold);background:rgba(200,155,60,.08);box-shadow:0 0 20px var(--gold-glow)}
+.char-card.selected{border-color:var(--gold);background:rgba(200,155,60,.12);box-shadow:0 0 24px var(--gold-glow)}
+.char-icon{font-size:32px;flex-shrink:0}
+.char-name{font-family:var(--font-title);color:var(--gold);font-size:17px}
+.char-ability{color:var(--text-dim);font-size:15px;font-style:italic}
+
+/* ROOM 1 */
+.basin{
+  width:200px;height:120px;margin:16px auto;
+  border:2px solid var(--blue-dim);border-radius:50%;
+  background:radial-gradient(ellipse,rgba(96,144,192,.15),transparent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;transition:all .3s;
+}
+.basin.has-stranger{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow)}
+.figurines{display:flex;gap:12px;justify-content:center;margin:12px 0}
+.figurine{
+  width:56px;height:56px;border:2px solid var(--blue-dim);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  cursor:pointer;transition:all .25s;background:rgba(96,144,192,.08);
+}
+.figurine:hover{border-color:var(--blue);box-shadow:0 0 12px var(--blue-glow)}
+.figurine.placed{opacity:.3;pointer-events:none;border-color:var(--text-dim)}
+.plates{display:flex;gap:8px;justify-content:center;margin:16px 0;flex-wrap:wrap}
+.plate{
+  padding:10px 18px;border:1px solid var(--gold-dim);border-radius:6px;
+  cursor:pointer;font-family:var(--font-title);font-size:13px;
+  background:rgba(200,155,60,.05);color:var(--gold-dim);transition:all .25s;
+}
+.plate:hover{border-color:var(--gold);background:rgba(200,155,60,.1)}
+.plate.pressed{background:rgba(200,155,60,.2);border-color:var(--gold);color:var(--gold)}
+.timer-bar{
+  height:4px;background:var(--bg3);border-radius:2px;margin:12px 0;overflow:hidden;
+}
+.timer-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .1s linear}
+.timer-fill.urgent{background:var(--fail)}
+
+/* ROOM 2 */
+.room2-scene{display:flex;gap:24px;align-items:center;justify-content:center;margin:24px 0;flex-wrap:wrap}
+.elven-figure{
+  width:80px;height:100px;border:2px solid var(--blue-dim);border-radius:8px 8px 0 0;
+  display:flex;align-items:center;justify-content:center;font-size:40px;
+  background:linear-gradient(180deg,rgba(96,144,192,.1),transparent);
+}
+.pool{
+  width:120px;height:60px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(96,144,192,.3),rgba(96,144,192,.05));
+  border:2px solid var(--blue-dim);display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:var(--blue);text-align:center;padding:4px;
+}
+.choice-row{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+
+/* ROOM 3 */
+.mirror{
+  width:200px;height:240px;margin:16px auto;
+  border:3px solid var(--blue-dim);border-radius:12px;
+  background:linear-gradient(180deg,rgba(96,144,192,.08),rgba(96,144,192,.02));
+  display:flex;align-items:center;justify-content:center;font-size:60px;
+  box-shadow:inset 0 0 30px rgba(96,144,192,.1);
+}
+.q-block{
+  padding:16px;border:1px solid rgba(200,155,60,.12);border-radius:8px;
+  margin:12px 0;background:rgba(200,155,60,.03);
+}
+.q-block p{font-weight:600;color:var(--text-light);margin-bottom:8px}
+.q-options{display:flex;gap:8px;flex-wrap:wrap}
+.q-opt{
+  padding:8px 16px;border:1px solid var(--blue-dim);border-radius:6px;
+  cursor:pointer;font-size:14px;transition:all .2s;color:var(--text);
+  background:rgba(96,144,192,.05);
+}
+.q-opt:hover{border-color:var(--blue);background:rgba(96,144,192,.1)}
+.q-opt.picked{border-color:var(--gold);background:rgba(200,155,60,.15);color:var(--gold)}
+
+/* ROOM 4 */
+.doors{display:flex;gap:24px;justify-content:center;margin:24px 0;flex-wrap:wrap}
+.door{
+  width:140px;height:200px;border:2px solid var(--gold-dim);border-radius:8px 8px 0 0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-family:var(--font-title);font-size:14px;color:var(--gold);text-align:center;
+  padding:12px;transition:all .3s;
+  background:linear-gradient(180deg,rgba(200,155,60,.06),rgba(200,155,60,.02));
+}
+.door:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow);transform:translateY(-4px)}
+.door.opened{opacity:.4;pointer-events:none;border-color:var(--pass)}
+.crack{
+  text-align:center;margin:16px 0;cursor:pointer;
+  padding:12px;border:1px dashed var(--blue-dim);border-radius:8px;
+  color:var(--blue-dim);font-style:italic;font-size:15px;transition:all .3s;
+  background:rgba(96,144,192,.03);
+}
+.crack:hover{border-color:var(--blue);color:var(--blue);box-shadow:0 0 16px var(--blue-glow)}
+.crack.found{border-color:var(--gold);color:var(--gold);background:rgba(200,155,60,.08)}
+
+/* ROOM 5 */
+.cage{
+  width:160px;height:140px;margin:16px auto;
+  border:3px solid var(--text-dim);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:50px;
+  background:repeating-linear-gradient(90deg,transparent,transparent 18px,rgba(122,132,148,.3) 18px,rgba(122,132,148,.3) 20px),
+             repeating-linear-gradient(0deg,transparent,transparent 18px,rgba(122,132,148,.3) 18px,rgba(122,132,148,.3) 20px),
+             rgba(0,0,0,.3);
+  cursor:pointer;transition:all .3s;
+}
+.cage:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow)}
+.cage.rescued{border-color:var(--pass);box-shadow:0 0 20px rgba(74,154,90,.3)}
+.cage.sacrificed{border-color:var(--fail);box-shadow:0 0 20px rgba(184,74,74,.3)}
+.lever{
+  padding:14px 32px;margin:12px auto;display:block;
+  border:2px solid var(--gold-dim);border-radius:8px;cursor:pointer;
+  font-family:var(--font-title);font-size:16px;color:var(--gold);
+  background:rgba(200,155,60,.08);transition:all .3s;
+}
+.lever:hover{border-color:var(--gold);box-shadow:0 0 20px var(--gold-glow)}
+.lever.pulled{border-color:var(--pass);color:var(--pass)}
+.stone-plates{display:flex;gap:10px;justify-content:center;margin:12px 0}
+.stone-plate{
+  width:48px;height:48px;border:2px solid var(--text-dim);border-radius:4px;
+  display:flex;align-items:center;justify-content:center;font-size:12px;
+  background:rgba(122,132,148,.08);color:var(--text-dim);
+}
+
+/* RESULT PANEL */
+.result-panel{
+  text-align:center;padding:24px;margin:16px 0;border-radius:8px;
+}
+.result-panel.pass{border:1px solid var(--pass);background:rgba(74,154,90,.08)}
+.result-panel.fail{border:1px solid var(--fail);background:rgba(184,74,74,.08)}
+.result-icon{font-size:48px;margin-bottom:8px}
+.result-panel.pass .result-icon{color:var(--pass)}
+.result-panel.fail .result-icon{color:var(--fail)}
+.result-title{font-family:var(--font-title);font-size:22px;margin-bottom:8px}
+.result-panel.pass .result-title{color:var(--pass)}
+.result-panel.fail .result-title{color:var(--fail)}
+
+/* CORRIDOR */
+.corridor-carvings{display:flex;gap:12px;justify-content:center;margin:20px 0;flex-wrap:wrap}
+.carving{
+  width:80px;height:80px;border:2px solid var(--gold-dim);border-radius:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:12px;font-family:var(--font-title);padding:8px;
+}
+.carving.pass{border-color:var(--pass);background:rgba(74,154,90,.08);color:var(--pass)}
+.carving.fail{border-color:var(--fail);background:rgba(184,74,74,.08);color:var(--fail)}
+.carving .c-icon{font-size:28px;margin-bottom:4px}
+.handprints{text-align:center;font-size:24px;letter-spacing:8px;margin:16px 0;opacity:.6}
+.faeron-mark{text-align:center;font-family:var(--font-title);color:var(--gold);font-size:20px;letter-spacing:4px;margin:12px 0}
+
+/* END SCREEN */
+.end-title{font-family:var(--font-title);font-size:clamp(24px,5vw,38px);color:var(--gold);text-align:center;margin-bottom:8px;text-shadow:0 0 30px var(--gold-glow)}
+.end-sub{font-style:italic;color:var(--blue);text-align:center;margin-bottom:24px;font-size:16px}
+
+/* HINT OVERLAY (character passive) */
+.hint-toast{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  padding:8px 20px;border-radius:6px;font-family:var(--font-body);font-size:14px;
+  font-style:italic;pointer-events:none;opacity:0;transition:opacity .4s;z-index:10;
+  white-space:nowrap;
+}
+.hint-toast.show{opacity:1}
+.hint-toast.kathrine{background:rgba(200,155,60,.15);color:var(--gold);border:1px solid var(--gold-dim)}
+.hint-toast.callen{background:rgba(96,144,192,.15);color:var(--blue);border:1px solid var(--blue-dim)}
+.hint-toast.silas{background:rgba(200,155,60,.12);color:var(--gold)}
+.hint-toast.bram{background:rgba(96,144,192,.12);color:var(--blue)}
+.hint-toast.avery{background:rgba(122,132,148,.15);color:var(--text-dim);border:1px solid rgba(122,132,148,.3)}
+
+/* MISC */
+.ornament{text-align:center;color:var(--gold-dim);margin:16px 0;font-size:20px;letter-spacing:8px}
+.center{text-align:center}
+.mt{margin-top:16px}
+.mb{margin-bottom:16px}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  #room-view{padding:24px 16px}
+  .door{width:120px;height:160px;font-size:13px}
+  .mirror{width:150px;height:180px;font-size:44px}
+  .char-card{padding:10px 14px}
+}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <span id="tb-room">Select a Character</span>
+  <span id="tb-char"></span>
+</div>
+
+<div id="fade-overlay">
+  <h2 id="fade-title"></h2>
+  <p id="fade-desc"></p>
+</div>
+
+<div id="game">
+  <div id="room-view"></div>
+</div>
+
+<script>
+/* ============================================================
+   MYTHANAR'S CAVE — THE ELVEN CHALLENGE
+   ============================================================ */
+
+const ICONS = {
+  kathrine:'👑', callen:'🗡️', silas:'⚡', brm:'🙏', avery:'💎'
+};
+
+const CHARACTERS = [
+  { id:'kathrine', name:'Kathrine', icon:'👑',
+    ability:'Warmth Pulse',
+    desc:'Feels a warmth pulse when about to make a "sacrifice" choice — hints the right answer.' },
+  { id:'callen', name:'Callen', icon:'🗡️',
+    ability:'Steadfast',
+    desc:'Gets extra time (20s vs 12s) before the timer runs out in Room 1.' },
+  { id:'silas', name:'Silas', icon:'⚡',
+    ability:'Golden Threads',
+    desc:'Sees golden threads pointing toward the right answers.' },
+  { id:'bram', name:'Bram', icon:'🙏',
+    ability:'Elven Whispers',
+    desc:'Hears elven whispers giving philosophical hints.' },
+  { id:'avery', name:'Avery', icon:'💎',
+    ability:'Ghost Visions',
+    desc:'Sees ghost-images of elves who failed before her.' }
+];
+
+/* ---- GAME STATE ---- */
+let state = {
+  screen: 'start',       // start | room1 | room2 | room3 | room4 | room5 | corridor | end
+  character: null,        // character id
+  results: [null,null,null,null,null], // true=pass, false=fail
+  r3Answers: {},          // room 3 answer tracker
+  r1FigurinesPlaced: 0,
+  r1PlatesPressed: [],
+  r5CageClicked: false,
+  r5MannequinRescued: false,
+  r5LeversPulled: false,
+  r4CrackFound: false,
+  r4DoorChosen: null,
+  r1Timer: null,
+  r1TimeLeft: 0
+};
+
+const ROOM_META = [
+  { id:'room1', name:'Room I', title:'The Weight of Strangers',
+    desc:'Three strangers. Five plates. A basin waiting.' },
+  { id:'room2', name:'Room II', title:'The Bargain',
+    desc:'A draught of borrowed sight. An offer you did not ask for.' },
+  { id:'room3', name:'Room III', title:'The Mirror',
+    desc:'Your reflection knows when you lie.' },
+  { id:'room4', name:'Room IV', title:'The Weight',
+    desc:'Two doors. A crack in the wall. Choose.' },
+  { id:'room5', name:'Room V', title:'The Guardian',
+    desc:'The inscription says sacrifice. The cage says otherwise.' }
+];
+
+/* ---- HELPERS ---- */
+const $ = s => document.querySelector(s);
+const view = () => $('#room-view');
+const topRoom = () => $('#tb-room');
+const topChar = () => $('#tb-char');
+
+function updateTopbar(roomIdx) {
+  const char = CHARACTERS.find(c => c.id === state.character);
+  if (roomIdx != null && roomIdx >= 0) {
+    const rm = ROOM_META[roomIdx];
+    topRoom().textContent = rm.name + ' — ' + rm.title;
+  } else {
+    topRoom().textContent = 'Mythanar\'s Cave';
+  }
+  topChar().textContent = char ? char.icon + ' ' + char.name : '';
+}
+
+function showTransition(roomIdx, cb) {
+  const rm = ROOM_META[roomIdx];
+  const ov = $('#fade-overlay');
+  $('#fade-title').textContent = rm.name + ': ' + rm.title;
+  $('#fade-desc').textContent = rm.desc;
+  ov.classList.add('active');
+  setTimeout(() => {
+    ov.classList.remove('active');
+    setTimeout(cb, 400);
+  }, 1600);
+}
+
+function showHint(cls, text) {
+  const v = view();
+  let t = v.querySelector('.hint-toast');
+  if (!t) { t = document.createElement('div'); t.className = 'hint-toast'; v.appendChild(t); }
+  t.className = 'hint-toast ' + cls + ' show';
+  t.textContent = text;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function hintForRoom(roomIdx) {
+  const ch = state.character;
+  const hints = {
+    kathrine: [
+      null,
+      'Something feels wrong about drinking… a warmth warns you.',
+      null,
+      null,
+      'A warmth pulses — the cage does not feel like a place of sacrifice.'
+    ],
+    callen: [
+      'You feel steady. More time than most.',
+      null, null, null, null
+    ],
+    silas: [
+      'A golden thread hums toward the basin, away from the plates.',
+      'A golden thread tugs you away from the pool.',
+      null,
+      'A golden thread traces a crack between the doors.',
+      'Golden threads pull toward the cage, not the lever.'
+    ],
+    bram: [
+      'A whisper: "What falls when you hold? What rises when you release?"',
+      'A whisper: "Sight borrowed is truth stolen."',
+      null,
+      'A whisper: "Between two certainties, doubt is the door."',
+      'A whisper: "The guardian guards nothing. The sacrifice saves everything."'
+    ],
+    avery: [
+      'A ghost shimmers — you see an elf pressing plates, then fading to dust.',
+      'A ghost shimmers — drinking, then crumbling to stone.',
+      null,
+      'A ghost shimmers — choosing a door, then half of them vanish.',
+      'A ghost shimmers — sacrificing, then the cage locks forever.'
+    ]
+  };
+  return (hints[ch] || [])[roomIdx];
+}
+
+/* ============================================================
+   START SCREEN
+   ============================================================ */
+function renderStart() {
+  state.screen = 'start';
+  updateTopbar(null);
+  const v = view();
+  let html = `
+    <h1>Mythanar's Cave</h1>
+    <p class="note center">The Elven Challenge</p>
+    <div class="ornament">✦ ✦ ✦</div>
+    <p class="center">Five chambers lie beneath the mountain. Five trials of conscience.
+    The elves built this place not to test strength — but to test <em>who you are</em>.</p>
+    <p class="center mb">Choose who walks into the cave:</p>
+    <div class="char-grid">`;
+  CHARACTERS.forEach(ch => {
+    const sel = state.character === ch.id ? ' selected' : '';
+    html += `
+      <div class="char-card${sel}" onclick="selectChar('${ch.id}')">
+        <div class="char-icon">${ch.icon}</div>
+        <div>
+          <div class="char-name">${ch.name}</div>
+          <div class="char-ability">${ch.ability}: ${ch.desc}</div>
+        </div>
+      </div>`;
+  });
+  html += `</div>
+    <div class="center mt">
+      <button class="btn" onclick="beginGame()" ${state.character ? '' : 'disabled'}>Enter the Cave</button>
+    </div>`;
+  v.innerHTML = html;
+}
+
+function selectChar(id) {
+  state.character = id;
+  renderStart();
+}
+
+function beginGame() {
+  if (!state.character) return;
+  state.results = [null,null,null,null,null];
+  state.r3Answers = {};
+  state.r1FigurinesPlaced = 0;
+  state.r1PlatesPressed = [];
+  state.r5CageClicked = false;
+  state.r5MannequinRescued = false;
+  state.r5LeversPulled = false;
+  state.r4CrackFound = false;
+  state.r4DoorChosen = null;
+  goToRoom(0);
+}
+
+/* ============================================================
+   ROOM NAVIGATION
+   ============================================================ */
+function goToRoom(idx) {
+  const renderers = [renderRoom1, renderRoom2, renderRoom3, renderRoom4, renderRoom5];
+  showTransition(idx, () => {
+    state.screen = 'room' + (idx + 1);
+    updateTopbar(idx);
+    renderers[idx]();
+  });
+}
+
+function goToCorridor() {
+  showTransition(-1, () => {
+    // fake meta for corridor
+    const ov = $('#fade-overlay');
+    $('#fade-title').textContent = 'The Corridor';
+    $('#fade-desc').textContent = 'Where the cave remembers what you did.';
+    ov.classList.add('active');
+    setTimeout(() => {
+      ov.classList.remove('active');
+      setTimeout(() => {
+        state.screen = 'corridor';
+        topRoom().textContent = 'The Corridor';
+        renderCorridor();
+      }, 400);
+    }, 1600);
+  });
+}
+
+/* ============================================================
+   ROOM RESULT — works for ALL rooms, no special casing
+   ============================================================ */
+function roomResult(roomIdx, passed) {
+  state.results[roomIdx] = passed;
+  const rm = ROOM_META[roomIdx];
+  const v = view();
+  const icon = passed ? '✦' : '✗';
+  const cls = passed ? 'pass' : 'fail';
+  const label = passed ? 'The cave accepts your choice.' : 'The cave remembers your failure.';
+
+  /* build result panel */
+  let panel = document.createElement('div');
+  panel.className = 'result-panel ' + cls;
+  panel.innerHTML = `
+    <div class="result-icon">${icon}</div>
+    <div class="result-title">${passed ? 'Passed' : 'Failed'} — ${rm.title}</div>
+    <p>${label}</p>`;
+  v.innerHTML = '';
+  v.appendChild(panel);
+
+  /* Continue button */
+  let btn = document.createElement('div');
+  btn.className = 'center mt';
+  let b = document.createElement('button');
+  b.className = 'btn ' + cls;
+  b.textContent = passed ? 'Continue Deeper' : 'Continue';
+  const nextIdx = roomIdx + 1;
+  b.onclick = function() {
+    if (nextIdx < 5) {
+      goToRoom(nextIdx);
+    } else {
+      goToCorridor();
+    }
+  };
+  btn.appendChild(b);
+
+  /* if failed, also show Try Again */
+  if (!passed) {
+    let b2 = document.createElement('button');
+    b2.className = 'btn btn-blue';
+    b2.textContent = 'Try Again';
+    b2.onclick = function() {
+      // reset room-specific state
+      if (roomIdx === 0) { state.r1FigurinesPlaced = 0; state.r1PlatesPressed = []; }
+      if (roomIdx === 2) { state.r3Answers = {}; }
+      if (roomIdx === 3) { state.r4CrackFound = false; state.r4DoorChosen = null; }
+      if (roomIdx === 4) { state.r5CageClicked = false; state.r5MannequinRescued = false; state.r5LeversPulled = false; }
+      goToRoom(roomIdx);
+    };
+    btn.appendChild(b2);
+  }
+
+  v.appendChild(btn);
+}
+
+/* ============================================================
+   ROOM 1: THE WEIGHT OF STRANGERS
+   ============================================================ */
+function renderRoom1() {
+  const ch = state.character;
+  const v = view();
+  state.r1FigurinesPlaced = 0;
+  state.r1PlatesPressed = [];
+  if (state.r1Timer) { clearInterval(state.r1Timer); state.r1Timer = null; }
+
+  const timeLimit = ch === 'callen' ? 20 : 12;
+  state.r1TimeLeft = timeLimit;
+
+  let hint = hintForRoom(0);
+  let hintHTML = hint ? `<button class="btn btn-blue" onclick="showHint('${ch}','${hint.replace(/'/g,"\\'")}')" style="font-size:13px;padding:6px 14px">✦ Sense the Path</button>` : '';
+
+  let html = `
+    <h1>The Weight of Strangers</h1>
+    <p class="note">Three figurines of strangers rest on a ledge. A stone basin sits in the center.
+    Five pressure plates line the floor — each marked with the symbol of "your people."
+    The walls groan as if the ceiling might fall.</p>
+
+    <div class="center">
+      <h3>The Basin</h3>
+      <div class="basin" id="basin">⬚</div>
+    </div>
+
+    <div class="center">
+      <h3>Figurines</h3>
+      <div class="figurines">
+        <div class="figurine" id="fig0" onclick="placeFigurine(0)">🧍</div>
+        <div class="figurine" id="fig1" onclick="placeFigurine(1)">🧍</div>
+        <div class="figurine" id="fig2" onclick="placeFigurine(2)">🧍</div>
+      </div>
+    </div>
+
+    <div class="center">
+      <h3>Pressure Plates — "Your People"</h3>
+      <div class="plates">
+        <div class="plate" id="pl0" onclick="pressPlate(0)">Plate I</div>
+        <div class="plate" id="pl1" onclick="pressPlate(1)">Plate II</div>
+        <div class="plate" id="pl2" onclick="pressPlate(2)">Plate III</div>
+        <div class="plate" id="pl3" onclick="pressPlate(3)">Plate IV</div>
+        <div class="plate" id="pl4" onclick="pressPlate(4)">Plate V</div>
+      </div>
+    </div>
+
+    <div class="center">
+      <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+    </div>
+
+    <div class="center mt">
+      ${hintHTML}
+      <button class="btn" onclick="submitRoom1()">Submit</button>
+    </div>`;
+  v.innerHTML = html;
+
+  /* start timer */
+  const startTime = Date.now();
+  state.r1Timer = setInterval(() => {
+    const elapsed = (Date.now() - startTime) / 1000;
+    const remaining = Math.max(0, timeLimit - elapsed);
+    const pct = (remaining / timeLimit) * 100;
+    const fill = document.getElementById('timer-fill');
+    if (fill) {
+      fill.style.width = pct + '%';
+      if (pct < 25) fill.classList.add('urgent');
+    }
+    if (remaining <= 0) {
+      clearInterval(state.r1Timer);
+      state.r1Timer = null;
+      /* time's up: if all figurines placed and no plates pressed, pass */
+      if (state.r1FigurinesPlaced === 3 && state.r1PlatesPressed.length === 0) {
+        roomResult(0, true);
+      } else {
+        roomResult(0, false);
+      }
+    }
+  }, 100);
+}
+
+function placeFigurine(i) {
+  const el = document.getElementById('fig' + i);
+  if (!el || el.classList.contains('placed')) return;
+  el.classList.add('placed');
+  state.r1FigurinesPlaced++;
+  const basin = document.getElementById('basin');
+  if (basin) {
+    basin.textContent = '🧍'.repeat(state.r1FigurinesPlaced);
+    basin.classList.add('has-stranger');
+  }
+}
+
+function pressPlate(i) {
+  const el = document.getElementById('pl' + i);
+  if (!el) return;
+  if (el.classList.contains('pressed')) {
+    el.classList.remove('pressed');
+    state.r1PlatesPressed = state.r1PlatesPressed.filter(x => x !== i);
+  } else {
+    el.classList.add('pressed');
+    state.r1PlatesPressed.push(i);
+  }
+}
+
+function submitRoom1() {
+  if (state.r1Timer) { clearInterval(state.r1Timer); state.r1Timer = null; }
+  const passed = (state.r1FigurinesPlaced === 3 && state.r1PlatesPressed.length === 0);
+  roomResult(0, passed);
+}
+
+/* ============================================================
+   ROOM 2: THE BARGAIN
+   ============================================================ */
+function renderRoom2() {
+  const ch = state.character;
+  const v = view();
+  let hint = hintForRoom(1);
+  let hintHTML = hint ? `<button class="btn btn-blue" onclick="showHint('${ch}','${hint.replace(/'/g,"\\'")}')" style="font-size:13px;padding:6px 14px">✦ Sense the Path</button>` : '';
+
+  let html = `
+    <h1>The Bargain</h1>
+    <p class="note">An elven figure stands beside a still pool. The water shimmers with a light
+    that is not its own. A plaque reads: <em>"The Draught of Borrowed Sight — one sip,
+    and you shall see the way."</em></p>
+
+    <div class="room2-scene">
+      <div class="elven-figure">🧝</div>
+      <div class="pool">Draught of<br>Borrowed Sight</div>
+    </div>
+
+    <p class="center">The figure gestures toward the pool. It offers you a choice.</p>
+
+    <div class="choice-row">
+      <button class="btn" onclick="room2Choice('drink')">Drink from the Pool</button>
+      <button class="btn btn-blue" onclick="room2Choice('walk')">Walk Past</button>
+    </div>
+
+    <div class="center mt">${hintHTML}</div>`;
+  v.innerHTML = html;
+}
+
+function room2Choice(choice) {
+  const v = view();
+  if (choice === 'drink') {
+    /* WRONG */
+    let html = `
+      <div class="result-panel fail">
+        <div class="result-icon">✗</div>
+        <div class="result-title">Failed — The Bargain</div>
+        <p>You drink. The vision floods your eyes — you see chambers, paths, solutions.
+        It feels like clarity. It feels like truth.</p>
+        <p>But the vision is a lie. The draught shows you what you want to see,
+        not what is. The elven figure shakes its head.</p>
+        <p><em>The cave remembers your failure.</em></p>
+      </div>
+      <div class="center mt">
+        <button class="btn btn-fail" onclick="roomResult(1,false)">Continue</button>
+        <button class="btn btn-blue" onclick="goToRoom(1)">Try Again</button>
+      </div>`;
+    v.innerHTML = html;
+  } else {
+    /* CORRECT */
+    let html = `
+      <div class="result-panel pass">
+        <div class="result-icon">✦</div>
+        <div class="result-title">Passed — The Bargain</div>
+        <p>You walk past the pool. The elven figure steps aside, and for the first time
+        you notice it: a handprint on the wall, pressed in ancient ash. Not a mark of warning —
+        a mark of gratitude. Someone who also walked past left it here.</p>
+        <p><em>The cave accepts your choice.</em></p>
+      </div>
+      <div class="center mt">
+        <button class="btn btn-pass" onclick="goToRoom(2)">Continue Deeper</button>
+      </div>`;
+    v.innerHTML = html;
+  }
+}
+
+/* ============================================================
+   ROOM 3: THE MIRROR
+   ============================================================ */
+function getMirrorQuestions() {
+  const ch = state.character;
+  const base = [
+    {
+      q: 'A child asks if you are afraid. What do you say?',
+      honest: '"Yes. But I will walk anyway."',
+      noble: '"I am not afraid."'
+    },
+    {
+      q: 'You find a resource that could save one group — your friends, or the strangers from Room 1. Who gets it?',
+      honest: '"I would save my friends. I am not selfless."',
+      noble: '"I would save the strangers — they need it more."'
+    },
+    {
+      q: 'At the end, the cave asks: did you do this for others, or for yourself?',
+      honest: '"For myself. I wanted to be the kind of person who could walk out of here."',
+      noble: '"For others. Only for others."'
+    }
+  ];
+  /* Bram gets philosophical variants */
+  if (ch === 'bram') {
+    base[0].q = 'A whisper asks: when the cave goes dark, whose hand do you reach for?';
+    base[1].q = 'The whisper asks: if sacrifice is real, whose name do you speak?';
+    base[2].q = 'The whisper asks: when the stone remembers, whose truth does it hold?';
+  }
+  return base;
+}
+
+function renderRoom3() {
+  const ch = state.character;
+  const v = view();
+  state.r3Answers = {};
+  let hint = hintForRoom(2);
+  let hintHTML = hint ? `<p class="center" style="color:var(--text-dim);font-style:italic;font-size:14px">${hint}</p>` : '';
+
+  const questions = getMirrorQuestions();
+  let html = `
+    <h1>The Mirror</h1>
+    <p class="note">A mirror rises from the stone. Your reflection stares back —
+    but it is not you. It is the you that you pretend to be.
+    Answer three questions. The mirror will know if you lie.</p>
+
+    <div class="center">
+      <div class="mirror">🪞</div>
+    </div>
+
+    <div id="q-container">${hintHTML}`;
+
+  questions.forEach((qq, i) => {
+    html += `
+      <div class="q-block">
+        <p>${i + 1}. ${qq.q}</p>
+        <div class="q-options">
+          <div class="q-opt" id="q${i}a" onclick="pickMirror(${i},'honest')">${qq.honest}</div>
+          <div class="q-opt" id="q${i}b" onclick="pickMirror(${i},'noble')">${qq.noble}</div>
+        </div>
+      </div>`;
+  });
+
+  html += `</div>
+    <div class="center mt">
+      <button class="btn" onclick="submitRoom3()" id="r3-submit">Submit</button>
+    </div>`;
+  v.innerHTML = html;
+}
+
+function pickMirror(qi, answer) {
+  state.r3Answers[qi] = answer;
+  /* visually mark */
+  const a = document.getElementById('q' + qi + 'a');
+  const b = document.getElementById('q' + qi + 'b');
+  if (a) a.classList.remove('picked');
+  if (b) b.classList.remove('picked');
+  document.getElementById('q' + qi + (answer === 'honest' ? 'a' : 'b')).classList.add('picked');
+}
+
+function submitRoom3() {
+  /* check all 3 answered */
+  if (Object.keys(state.r3Answers).length < 3) {
+    return; /* must answer all 3 */
+  }
+  /* pass only if ALL honest */
+  const passed = state.r3Answers[0] === 'honest'
+              && state.r3Answers[1] === 'honest'
+              && state.r3Answers[2] === 'honest';
+  roomResult(2, passed);
+}
+
+/* ============================================================
+   ROOM 4: THE WEIGHT
+   ============================================================ */
+function renderRoom4() {
+  const ch = state.character;
+  const v = view();
+  state.r4CrackFound = false;
+  state.r4DoorChosen = null;
+  let hint = hintForRoom(3);
+  let hintHTML = hint ? `<button class="btn btn-blue" onclick="showHint('${ch}','${hint.replace(/'/g,"\\'")}')" style="font-size:13px;padding:6px 14px">✦ Sense the Path</button>` : '';
+
+  let html = `
+    <h1>The Weight</h1>
+    <p class="note">Two doors stand before you. The left is carved with the faces of everyone
+    you love. The right is smooth — blank — holding nothing.
+    Between them, the wall is unremarkable. Or is it?</p>
+
+    <div class="doors">
+      <div class="door" id="door-left" onclick="chooseDoor('left')">Carry<br>Everything</div>
+      <div class="door" id="door-right" onclick="chooseDoor('right')">Carry<br>Nothing</div>
+    </div>
+
+    <div class="crack" id="crack" onclick="findCrack()">
+      ▸ The wall between the doors seems… unremarkable.
+    </div>
+
+    <div class="center mt">${hintHTML}</div>`;
+  v.innerHTML = html;
+
+  /* Silas passive: auto-highlight crack after a delay */
+  if (ch === 'silas') {
+    setTimeout(() => {
+      const c = document.getElementById('crack');
+      if (c && !state.r4CrackFound) {
+        c.style.borderColor = 'var(--gold)';
+        c.style.color = 'var(--gold)';
+      }
+    }, 3000);
+  }
+}
+
+function findCrack() {
+  state.r4CrackFound = true;
+  const crack = document.getElementById('crack');
+  if (crack) {
+    crack.classList.add('found');
+    crack.textContent = '✦ A crack — hidden in plain sight. You press it.';
+  }
+  /* Open both doors */
+  setTimeout(() => {
+    const dl = document.getElementById('door-left');
+    const dr = document.getElementById('door-right');
+    if (dl) dl.classList.add('opened');
+    if (dr) dr.classList.add('opened');
+    /* Show result */
+    setTimeout(() => roomResult(3, true), 600);
+  }, 800);
+}
+
+function chooseDoor(side) {
+  state.r4DoorChosen = side;
+  /* WRONG — choosing either door fails */
+  const v = view();
+  let html = `
+    <div class="result-panel fail">
+      <div class="result-icon">✗</div>
+      <div class="result-title">Failed — The Weight</div>
+      <p>You chose to carry ${side === 'left' ? 'everything' : 'nothing'}.
+      The door opens. ${side === 'left'
+        ? 'Your friends rush through — but the strangers from Room 1 are left behind, lost in the dark.'
+        : 'You walk through unburdened — but your friends are locked out, calling your name.'}
+      </p>
+      <p><em>Between two certainties, the cave wanted doubt.</em></p>
+    </div>
+    <div class="center mt">
+      <button class="btn btn-fail" onclick="roomResult(3,false)">Continue</button>
+      <button class="btn btn-blue" onclick="goToRoom(3)">Try Again</button>
+    </div>`;
+  v.innerHTML = html;
+}
+
+/* ============================================================
+   ROOM 5: THE GUARDIAN
+   ============================================================ */
+function renderRoom5() {
+  const ch = state.character;
+  const v = view();
+  state.r5CageClicked = false;
+  state.r5MannequinRescued = false;
+  state.r5LeversPulled = false;
+  let hint = hintForRoom(4);
+  let hintHTML = hint ? `<p class="center" style="color:var(--text-dim);font-style:italic;font-size:14px">${hint}</p>` : '';
+
+  let html = `
+    <h1>The Guardian</h1>
+    <p class="note">A cage stands in the center of the chamber. Inside it rests a mannequin —
+    a crude effigy of a person. Stone plates ring the floor. A lever waits on the wall.
+    An inscription is carved above the cage:</p>
+
+    <div class="inscription">
+      "Place the offering within the cage and sacrifice it,<br>
+      that the guardian may be appeased and the way opened."
+    </div>
+
+    <div class="center">
+      <div class="cage" id="cage" onclick="clickCage()">🧍</div>
+    </div>
+
+    <div class="stone-plates">
+      <div class="stone-plate">◈</div>
+      <div class="stone-plate">◈</div>
+      <div class="stone-plate">◈</div>
+    </div>
+
+    <div class="center mt" id="lever-area"></div>
+    <div class="center mt" id="cage-action"></div>
+    <div class="center mt">${hintHTML}</div>`;
+  v.innerHTML = html;
+}
+
+function clickCage() {
+  if (state.r5LeversPulled) return;
+  state.r5CageClicked = true;
+  const cage = document.getElementById('cage');
+  const action = document.getElementById('cage-action');
+
+  if (!state.r5MannequinRescued) {
+    /* First click: show option to rescue or to sacrifice */
+    if (cage) cage.innerHTML = '⬚';
+    if (action) {
+      action.innerHTML = `
+        <button class="btn btn-blue" onclick="rescueMannequin()">Rescue the Mannequin</button>`;
+    }
+    /* Show hint for Kathrine */
+    if (state.character === 'kathrine') {
+      showHint('kathrine', 'A warmth pulses — the inscription feels like a test.');
+    }
+  } else {
+    /* Already rescued, clicking does nothing */
+  }
+}
+
+function rescueMannequin() {
+  state.r5MannequinRescued = true;
+  const cage = document.getElementById('cage');
+  const action = document.getElementById('cage-action');
+  if (cage) {
+    cage.classList.add('rescued');
+    cage.innerHTML = '🧍';
+  }
+  if (action) {
+    action.innerHTML = `
+      <button class="lever" onclick="pullLevers()">Pull Levers</button>`;
+  }
+}
+
+function pullLevers() {
+  state.r5LeversPulled = true;
+  const lever = document.querySelector('.lever');
+  if (lever) lever.classList.add('pulled');
+
+  if (state.r5MannequinRescued) {
+    /* CORRECT */
+    setTimeout(() => roomResult(4, true), 600);
+  } else {
+    /* WRONG — sacrificed */
+    const cage = document.getElementById('cage');
+    if (cage) {
+      cage.classList.add('sacrificed');
+      cage.innerHTML = '✗';
+    }
+    setTimeout(() => roomResult(4, false), 800);
+  }
+}
+
+/* ============================================================
+   CORRIDOR
+   ============================================================ */
+function renderCorridor() {
+  const v = view();
+  topRoom().textContent = 'The Corridor';
+  const passCount = state.results.filter(r => r === true).length;
+  const roomNames = ['Strangers','Bargain','Mirror','Weight','Guardian'];
+  const icons = ['🧍','🧝','🪞','🚪','⚔️'];
+
+  let carvings = '<div class="corridor-carvings">';
+  for (let i = 0; i < 5; i++) {
+    const cls = state.results[i] === true ? 'pass' : (state.results[i] === false ? 'fail' : 'fail');
+    const ic = state.results[i] === true ? '✦' : '✗';
+    carvings += `
+      <div class="carving ${cls}">
+        <div class="c-icon">${icons[i]}</div>
+        <div>${roomNames[i]}</div>
+        <div>${ic}</div>
+      </div>`;
+  }
+  carvings += '</div>';
+
+  let summary = '';
+  if (passCount === 5) {
+    summary = 'All five chambers accept you. The cave opens its deepest path. '
+      + 'You are the kind of person the elves built this place to find.';
+  } else if (passCount >= 3) {
+    summary = passCount + ' of 5 chambers accept you. The cave sees more in you than most. '
+      + 'But some choices still echo with failure.';
+  } else if (passCount >= 1) {
+    summary = passCount + ' of 5 chambers accept you. The cave remembers your struggle. '
+      + 'You are not the person you pretended to be — and that is a start.';
+  } else {
+    summary = 'No chamber accepts you. The cave holds its breath. '
+      + 'Perhaps you are exactly who the elves feared you might be.';
+  }
+
+  let html = `
+    <h1>The Corridor</h1>
+    <p class="note">At the heart of the cave, five carvings wait in the stone.
+    Each shows the truth of what you did.</p>
+
+    ${carvings}
+
+    <div class="handprints">🤚 🤚 🤚 🤚 🤚</div>
+    <div class="faeron-mark">⬡ Faeron\'s Mark ⬡</div>
+
+    <p class="center">${summary}</p>
+
+    <div class="ornament">✦ ✦ ✦</div>
+
+    <div class="center mt">
+      <button class="btn" onclick="goToEnd()">Leave the Cave</button>
+    </div>`;
+  v.innerHTML = html;
+}
+
+/* ============================================================
+   END SCREEN
+   ============================================================ */
+function goToEnd() {
+  state.screen = 'end';
+  topRoom().textContent = 'The End';
+  topChar().textContent = '';
+  renderEnd();
+}
+
+function renderEnd() {
+  const v = view();
+  const passCount = state.results.filter(r => r === true).length;
+  const isPerfect = passCount === 5;
+
+  const roomNames = ['Strangers','Bargain','Mirror','Weight','Guardian'];
+  const icons = ['🧍','🧝','🪞','🚪','⚔️'];
+
+  let carvings = '<div class="corridor-carvings">';
+  for (let i = 0; i < 5; i++) {
+    const cls = state.results[i] === true ? 'pass' : 'fail';
+    const ic = state.results[i] === true ? '✦' : '✗';
+    carvings += `
+      <div class="carving ${cls}">
+        <div class="c-icon">${icons[i]}</div>
+        <div>${roomNames[i]}</div>
+        <div>${ic}</div>
+      </div>`;
+  }
+  carvings += '</div>';
+
+  let html = `
+    <div class="end-title">${isPerfect
+      ? 'The Guardian Was Never a Spirit'
+      : 'The Cave Remembers'}</div>
+    <p class="end-sub">${passCount} of 5 chambers accepted you</p>
+
+    <div class="ornament">✦ ✦ ✦</div>
+
+    <p class="center">${isPerfect
+      ? 'You walked through every trial and chose the harder right over the easier wrong. '
+        + 'The guardian was never a spirit to be appeased — it was a question to be answered. '
+        + 'And your answer was: <em>I will not sacrifice what I cannot save.</em>'
+      : 'Not every chamber accepted you. But the cave does not forget those who entered. '
+        + 'It holds your failures and your victories together, the way stone holds both fossils and fire.'}
+    </p>
+
+    <div class="center mt">${carvings}</div>
+
+    <div class="handprints mt">🤚 🤚 🤚 🤚 🤚</div>
+    <div class="faeron-mark">⬡ Faeron\'s Mark ⬡</div>
+
+    <div class="center mt">
+      <button class="btn" onclick="resetGame()">Play Again</button>
+      <button class="btn btn-blue" onclick="backToStart()">Choose Another Character</button>
+    </div>`;
+  v.innerHTML = html;
+}
+
+function resetGame() {
+  state.results = [null,null,null,null,null];
+  state.r3Answers = {};
+  state.r1FigurinesPlaced = 0;
+  state.r1PlatesPressed = [];
+  state.r5CageClicked = false;
+  state.r5MannequinRescued = false;
+  state.r5LeversPulled = false;
+  state.r4CrackFound = false;
+  state.r4DoorChosen = null;
+  if (state.r1Timer) { clearInterval(state.r1Timer); state.r1Timer = null; }
+  goToRoom(0);
+}
+
+function backToStart() {
+  state.results = [null,null,null,null,null];
+  state.r3Answers = {};
+  state.r1FigurinesPlaced = 0;
+  state.r1PlatesPressed = [];
+  state.r5CageClicked = false;
+  state.r5MannequinRescued = false;
+  state.r5LeversPulled = false;
+  state.r4CrackFound = false;
+  state.r4DoorChosen = null;
+  state.character = null;
+  if (state.r1Timer) { clearInterval(state.r1Timer); state.r1Timer = null; }
+  renderStart();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+renderStart();
+</script>
+</body>
+</html>

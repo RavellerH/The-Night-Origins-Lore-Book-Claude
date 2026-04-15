@@ -66,27 +66,50 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:24px;
-    padding: 8px 20px;
-    background: rgba(0,0,0,0.4);
+    gap:16px;
+    padding: 10px 20px;
+    background: rgba(0,0,0,0.5);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
   .time-period {
     font-family:'Cinzel',serif;
-    font-size:10px;
+    font-size:9px;
     letter-spacing:0.2em;
     color:var(--text-dim);
     text-transform:uppercase;
     transition: color 0.5s;
+    padding: 4px 8px;
+    border-radius: 2px;
   }
-  .time-period.active { color: var(--gold); }
+  .time-period:hover { color: var(--text); }
+  .time-period.active { 
+    color: var(--gold); 
+    background: rgba(200,155,60,0.15);
+    border: 1px solid var(--gold-dim);
+  }
   #time-clock {
     font-family:'Cinzel',serif;
-    font-size:13px;
-    color:var(--text);
-    min-width:60px;
+    font-size:14px;
+    color:var(--gold);
+    min-width:55px;
     text-align:center;
+  }
+  #quest-display {
+    font-family:'Cinzel',serif;
+    font-size:9px;
+    letter-spacing:0.1em;
+    color:var(--text);
+    padding: 4px 10px;
+    background: rgba(200,155,60,0.15);
+    border: 1px solid var(--gold-dim);
+    border-radius: 3px;
+    margin-left: 16px;
+    animation: questPulse 2s infinite;
+  }
+  @keyframes questPulse {
+    0%,100%{opacity:1}
+    50%{opacity:0.6}
   }
 
   /* SCENE */
@@ -461,6 +484,7 @@
   <span class="time-period" id="tp-afternoon">Afternoon</span>
   <span class="time-period" id="tp-dusk">Dusk</span>
   <span class="time-period" id="tp-night">Night</span>
+  <span id="quest-display"></span>
 </div>
 
 <div id="scene-wrap">
@@ -483,7 +507,7 @@
       <div id="pull-attempts"></div>
     </div>
 
-    <button class="btn-primary" id="main-btn" onclick="handleBtn()">Cast your line</button>
+    <button type="button" class="btn-primary" id="main-btn" onclick="handleBtn()">Cast your line</button>
   </div>
 </div>
 
@@ -507,7 +531,7 @@
     <div id="catch-name">River Carp</div>
     <div class="catch-divider"></div>
     <div id="catch-desc">Unremarkable. Edible. Forgets you immediately.</div>
-    <button id="catch-close" onclick="closeCatch()">Release it</button>
+    <button type="button" id="catch-close" onclick="closeCatch()">Release it</button>
   </div>
 </div>
 
@@ -519,11 +543,85 @@ function loadSave() {
 }
 function getSave() {
   const d = loadSave();
-  if (!d.fishing) d.fishing = { counts: {}, journal: [] };
+  if (!d.fishing) d.fishing = { counts: {}, journal: [], quest: null };
   return d;
 }
 function writeSave(d) {
   localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+}
+
+// ── QUEST SYSTEM ────────────────────────────────────────────────────────────
+var QUEST_TASKS = [
+  { id:'catch_3common', text:'Catch 3 common fish', check:function(d) { 
+    var c = 0; for (var k in d.fishing.counts) { 
+      var f = FISH.find(function(x){return x.id===k}); 
+      if (f && f.rarity === 'common') c += d.fishing.counts[k]; 
+    }
+    return c >= 3; 
+  }},
+  { id:'catch_uncommon', text:'Catch an uncommon fish', check:function(d) { 
+    for (var k in d.fishing.counts) { 
+      var f = FISH.find(function(x){return x.id===k}); 
+      if (f && f.rarity === 'uncommon') return true; 
+    }
+    return false; 
+  }},
+  { id:'catch_rare', text:'Catch a rare fish', check:function(d) { 
+    for (var k in d.fishing.counts) { 
+      var f = FISH.find(function(x){return x.id===k}); 
+      if (f && f.rarity === 'rare') return true; 
+    }
+    return false; 
+  }},
+  { id:'catch_10species', text:'Catch 10 different species', check:function(d) { 
+    return Object.keys(d.fishing.counts).length >= 10; 
+  }},
+  { id:'catch_all', text:'Catch every fish', check:function(d) { 
+    return Object.keys(d.fishing.counts).length >= FISH.length; 
+  }},
+  { id:'night_fish', text:'Catch a fish at night', check:function(d) { 
+    for (var k in d.fishing.counts) { 
+      var f = FISH.find(function(x){return x.id===k}); 
+      if (f && f.times.indexOf('night') >= 0) return true; 
+    }
+    return false; 
+  }},
+];
+
+function checkQuest() {
+  var d = getSave();
+  var currentQuest = d.fishing.quest;
+  
+  if (currentQuest && currentQuest.complete) return;
+  
+  for (var i = 0; i < QUEST_TASKS.length; i++) {
+    var q = QUEST_TASKS[i];
+    if (q.id === currentQuest) continue;
+    
+    if (q.check(d)) {
+      d.fishing.quest = q.id;
+      writeSave(d);
+      updateQuestDisplay();
+      return;
+    }
+  }
+}
+
+function updateQuestDisplay() {
+  var d = getSave();
+  var qEl = document.getElementById('quest-display');
+  if (!qEl) return;
+  
+  var currentQuest = d.fishing.quest;
+  if (!currentQuest) {
+    qEl.textContent = '🎣 New quest!';
+    return;
+  }
+  
+  var q = QUEST_TASKS.find(function(x){return x.id===currentQuest});
+  if (q) {
+    qEl.textContent = '🎯 ' + q.text;
+  }
 }
 
 // ── FISH DATABASE ───────────────────────────────────────────────────────────
@@ -598,17 +696,18 @@ function getPeriod(mins) {
 }
 
 function formatTime(mins) {
-  const m = mins % 1440;
-  const h = Math.floor(m / 60) % 24;
-  const min = m % 60;
-  const ampm = h >= 12 ? 'PM' : 'AM';
-  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${h12}:${String(min).padStart(2,'0')} ${ampm}`;
+  var h = Math.floor(mins / 60);
+  var m = mins % 60;
+  return h + ':' + (m < 10 ? '0' : '') + m;
 }
 
 function updateTimebar() {
-  document.getElementById('time-clock').textContent = formatTime(gameMinutes);
-  const p = getPeriod(gameMinutes);
+  var clockEl = document.getElementById('time-clock');
+  if (clockEl) {
+    var t = formatTime(gameMinutes);
+    clockEl.textContent = t;
+  }
+  var p = getPeriod(gameMinutes);
   ['dawn','morning','afternoon','dusk','night'].forEach(id => {
     document.getElementById('tp-'+id).classList.toggle('active', id===p);
   });
@@ -1015,6 +1114,7 @@ function showCatch(fish) {
 
   document.getElementById('catch-overlay').classList.add('show');
   renderJournal();
+  checkQuest();
 }
 
 function closeCatch() {
@@ -1060,11 +1160,11 @@ function toggleJournal() {
 // ── MAIN LOOP ─────────────────────────────────────────────────────────────────
 let lastTime = 0;
 function gameLoop(ts) {
-  const dt = Math.min(ts - lastTime, 100);
+  if (!lastTime) lastTime = ts;
+  var dt = ts - lastTime;
   lastTime = ts;
-
-  // Advance time
   gameMinutes += (dt / 1000) * TIME_SPEED;
+  gameMinutes = Math.floor(gameMinutes);
   if (gameMinutes >= 1440) gameMinutes -= 1440;
   updateTimebar();
 
@@ -1087,7 +1187,7 @@ function gameLoop(ts) {
     if (biteTimer <= 0) setPhase('escaped');
   }
 
-  drawScene(phase);
+drawScene(phase);
   requestAnimationFrame(gameLoop);
 }
 
@@ -1095,7 +1195,15 @@ function gameLoop(ts) {
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
 renderJournal();
+updateQuestDisplay();
 requestAnimationFrame(ts => { lastTime = ts; requestAnimationFrame(gameLoop); });
+
+// Clock timer - update every second
+setInterval(function() {
+  gameMinutes += 1;
+  if (gameMinutes >= 1440) gameMinutes = 0;
+  updateTimebar();
+}, 1000);
 </script>
 </body>
 </html>

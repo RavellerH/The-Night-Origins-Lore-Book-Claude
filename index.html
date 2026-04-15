@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Chronicles of Kalmirth — Lore Navigator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Open+Sans:ital,wght@0,400;0,600;1,400&display=swap">
 <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJ+Yd2V3a1pvK+K0QdRJv7/A+VVJbqDv311b8=" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/3d-force-graph"></script>
+<script src="https://unpkg.com/3d-force-graph@1.74.0"></script>
 <script src="page-flip.browser.js"></script>
 <style>
   :root {
@@ -29,6 +29,22 @@
     --divider:         rgba(200,155,60,0.25);
     --shadow:          rgba(0,0,0,0.7);
     --accent-blue:     #1a3050;
+
+    /* Z-INDEX TIERS */
+    --z-base:          1;
+    --z-layout:        100;
+    --z-overlay:       500;
+    --z-modal:         1000;
+    --z-toast:         2000;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   /* ─── LIGHT THEME ─── */
@@ -230,6 +246,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    z-index: var(--z-layout);
     transition: width 0.25s ease, min-width 0.25s ease;
   }
 
@@ -926,7 +943,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.92);
-    z-index: 1000;
+    z-index: var(--z-modal);
     align-items: center;
     justify-content: center;
     flex-direction: column;
@@ -1069,7 +1086,7 @@
     bottom: 0; left: 0; right: 0;
     height: 2px;
     background: transparent;
-    z-index: 1000;
+    z-index: var(--z-layout);
     transition: background 1s;
   }
   .grid-status.active {
@@ -1295,7 +1312,7 @@
   height: 2px;
   width: 0%;
   background: linear-gradient(90deg, var(--gold-dark), var(--gold-bright));
-  z-index: 999;
+  z-index: var(--z-layout);
   transition: width 0.1s linear;
   box-shadow: 0 0 8px rgba(200,155,60,0.6);
 }
@@ -1336,7 +1353,7 @@
 #toast-container {
   position: fixed; bottom: 28px; right: 28px;
   display: flex; flex-direction: column; gap: 10px;
-  z-index: 2000; pointer-events: none;
+  z-index: var(--z-toast); pointer-events: none;
 }
 .toast {
   background: var(--card);
@@ -1432,7 +1449,7 @@
 /* ─── STORY MODE ─── */
 #story-mode-overlay {
   display:none; position:fixed; inset:0;
-  background:#040810; z-index:900;
+  background:#040810; z-index:var(--z-overlay);
   flex-direction:column; align-items:center; justify-content:center;
 }
 #story-mode-overlay.open { display:flex; }
@@ -1663,7 +1680,7 @@ body.reader-mode .nav-item[data-writer="true"]:hover {
 body.writer-mode .nav-lock { display: none; }
 /* Password modal */
 #pw-modal {
-  position: fixed; inset: 0; z-index: 2000;
+  position: fixed; inset: 0; z-index: var(--z-modal);
   background: rgba(0,0,0,0.82); backdrop-filter: blur(4px);
   display: none; align-items: center; justify-content: center;
 }
@@ -1831,14 +1848,14 @@ body.writer-mode .nav-lock { display: none; }
     <h1>Chronicles of<br>Kalmirth</h1>
     <p>Night Etdler Lore Navigator</p>
     <div id="mode-toggle-row">
-      <button id="mode-badge" onclick="handleModeBadgeClick()" title="Switch mode">
+      <button id="mode-badge" onclick="handleModeBadgeClick()" title="Switch mode" aria-label="Switch between Reader and Writer mode">
         <span id="mode-icon">👁</span> <span id="mode-label">Reader</span>
       </button>
-      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Theme" aria-label="Toggle Light/Dark Theme">
         <span id="theme-icon">🌙</span>
       </button>
     </div>
-    <button id="sidebar-toggle" title="Toggle sidebar">‹</button>
+    <button id="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle navigation sidebar">‹</button>
   </div>
   <div id="search-wrap">
     <input id="search" type="text" placeholder="Search the chronicles…" autocomplete="off">
@@ -6661,8 +6678,8 @@ function renderLightbox() {
    ORACLE — LOCAL LORE Q&A (Ollama)
    ══════════════════════════════════════════════════════════ */
 
-// ⚠️ REMINDER: API key is hardcoded below — do not share this file publicly
-const GROQ_API_KEY = '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';
+// ⚠️ REMINDER: Enter your Groq API key below to enable the Oracle
+const GROQ_API_KEY = 'ENTER_YOUR_GROQ_KEY_HERE';
 const GROQ_MODEL   = 'llama-3.1-8b-instant';
 const GROQ_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 
@@ -7023,14 +7040,15 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <!-- PASSWORD MODAL -->
-<div id="pw-modal">
+<div id="pw-modal" role="dialog" aria-modal="true" aria-labelledby="pw-title">
   <div id="pw-box">
-    <span class="pw-icon">✍️</span>
-    <h2>Writer Mode</h2>
+    <span class="pw-icon" aria-hidden="true">✍️</span>
+    <h2 id="pw-title">Writer Mode</h2>
     <p>Enter the password to access drafts,<br>plot details, and private lore notes.</p>
     <input id="pw-input" type="password" placeholder="••••••••" autocomplete="off"
+           aria-label="Writer password"
            onkeydown="if(event.key==='Enter')submitWriterPassword()">
-    <div id="pw-error-msg"></div>
+    <div id="pw-error-msg" role="alert"></div>
     <hr id="pw-divider">
     <button id="pw-submit" onclick="submitWriterPassword()">Unlock</button>
     <br>

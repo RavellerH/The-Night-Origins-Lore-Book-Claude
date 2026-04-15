@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mythanar's Cave</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      background: #020406;
+      overflow: hidden;
+      font-family: 'Crimson Pro', Georgia, serif;
+      color: #b8d0e0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    
+    #back-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 8px 16px;
+      border: 1px solid #2a3a4a;
+      background: #0a1015;
+      color: #6a8a9a;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 200;
+    }
+    
+    #back-btn:hover {
+      border-color: #4a6a7a;
+      color: #8ab0c8;
+    }
+    
+    #game-container {
+      position: relative;
+    }
+    
+    #game-canvas {
+      display: block;
+      border: 2px solid #1a2a3a;
+      cursor: none;
+    }
+    
+    #vignette {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, transparent 30%, rgba(2, 4, 6, 0.9) 100%);
+      pointer-events: none;
+    }
+    
+    #ui-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px;
+    }
+    
+    #location {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      letter-spacing: 3px;
+      color: #6a8a9a;
+      text-shadow: 0 0 10px rgba(100, 150, 200, 0.3);
+    }
+    
+    #prompt {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #8ab0c8;
+      opacity: 0;
+      transition: opacity 0.3s;
+      text-align: center;
+      text-shadow: 0 0 8px rgba(100, 180, 220, 0.5);
+    }
+    
+    #prompt.visible { opacity: 1; }
+    
+    #bottom-ui {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    #status {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      font-size: 13px;
+      color: #5a7888;
+    }
+    
+    #plates {
+      display: flex;
+      gap: 8px;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: #4a6a7a;
+    }
+    
+    .pdot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      border: 1px solid #3a5060;
+      background: transparent;
+      transition: all 0.3s;
+    }
+    
+    .pdot.on {
+      background: #6ab0d0;
+      border-color: #8ad0f0;
+      box-shadow: 0 0 6px rgba(100, 180, 220, 0.6);
+    }
+    
+    #text-box {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 500px;
+      width: 90%;
+      background: rgba(8, 12, 20, 0.95);
+      border: 1px solid #2a3a4a;
+      border-left: 3px solid #4a8ab0;
+      padding: 18px 22px;
+      opacity: 0;
+      transition: all 0.4s ease;
+      pointer-events: auto;
+    }
+    
+    #text-box.visible {
+      opacity: 1;
+    }
+    
+    #text-box h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: #6ab0d0;
+      margin-bottom: 8px;
+    }
+    
+    #text-box p {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #b8c8d8;
+    }
+    
+    #text-box .dismiss {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: #3a5060;
+      margin-top: 10px;
+      text-align: right;
+    }
+    
+    #choice-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 4, 6, 0.9);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      pointer-events: auto;
+    }
+    
+    #choice-overlay.visible { display: flex; }
+    
+    #choice-overlay h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 16px;
+      letter-spacing: 4px;
+      color: #8ab0c8;
+    }
+    
+    #choice-overlay p {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: #5a7888;
+      text-align: center;
+      max-width: 350px;
+    }
+    
+    .cbtn {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      padding: 12px 24px;
+      border: 1px solid #4a6a7a;
+      background: rgba(10, 20, 30, 0.8);
+      color: #b8d0e0;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .cbtn:hover {
+      border-color: #6ab0d0;
+      background: rgba(20, 40, 60, 0.9);
+    }
+    
+    #start-screen, #end-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #020406;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 100;
+    }
+    
+    #start-screen.hidden, #end-screen.hidden { display: none; }
+    
+    #start-screen h1, #end-screen h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      letter-spacing: 6px;
+      color: #6ab0d0;
+      text-shadow: 0 0 30px rgba(100, 180, 220, 0.4);
+    }
+    
+    #start-screen p, #end-screen p {
+      font-family: 'Crimson Pro', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: #5a7888;
+    }
+    
+    .sbtn {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 3px;
+      padding: 12px 28px;
+      border: 1px solid #4a8ab0;
+      background: transparent;
+      color: #8ab0c8;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 16px;
+    }
+    
+    .sbtn:hover {
+      background: rgba(100, 180, 220, 0.1);
+      box-shadow: 0 0 20px rgba(100, 180, 220, 0.3);
+    }
+    
+    .controls {
+      font-family: 'Crimson Pro', serif;
+      font-size: 12px;
+      color: #3a5060;
+      text-align: center;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <a id="back-btn" href="../../index.html">← GAMES</a>
+  
+  <div id="game-container">
+    <canvas id="game-canvas" width="800" height="600"></canvas>
+    <div id="vignette"></div>
+    
+    <div id="ui-layer">
+      <div id="location">THE ENTRANCE</div>
+      <div id="prompt">[E] EXAMINE</div>
+      <div id="bottom-ui">
+        <div id="status">The cave breathes cold.</div>
+        <div id="plates">
+          <span>PLATES:</span>
+          <div class="pdot" id="pd0"></div>
+          <div class="pdot" id="pd1"></div>
+          <div class="pdot" id="pd2"></div>
+          <div class="pdot" id="pd3"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="text-box">
+      <h3 id="tb-title"></h3>
+      <p id="tb-text"></p>
+      <div class="dismiss">[E] to continue</div>
+    </div>
+    
+    <div id="choice-overlay">
+      <h2>THE CAGE OPENS</h2>
+      <p>The mannequin reaches toward you. It has no face, but it is asking something.</p>
+      <button class="cbtn" onclick="makeChoice('sacrifice')">SACRIFICE</button>
+      <button class="cbtn" onclick="makeChoice('refuse')">REFUSE</button>
+    </div>
+    
+    <div id="start-screen">
+      <h1>MYTHANAR'S CAVE</h1>
+      <p>A moment in the dark</p>
+      <button class="sbtn" onclick="startGame()">ENTER</button>
+      <div class="controls">WASD to move · E to interact</div>
+    </div>
+    
+    <div id="end-screen" class="hidden">
+      <h1 id="end-title"></h1>
+      <p id="end-text"></p>
+      <div class="controls">CALLEN · BLUE RIVER VILLAGE · AGE 16</div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // ═══════════════════════════════
+    // MAP (10x8 tile grid)
+    // ═══════════════════════════════
+    // 0 = floor, 1 = wall
+    const MAP = [
+      [1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,0,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1,1],
+    ];
+    
+    const TILE = 40;
+    const MW = MAP[0].length;
+    const MH = MAP.length;
+    
+    // ═══════════════════════════════
+    // SPRITES (world objects)
+    // ═══════════════════════════════
+    const SPRITES = [
+      { id: 'carving', x: 2, y: 2, type: 'examine', title: 'ELVEN CARVING', text: 'Faded grooves in the stone. The symbols look like they\'re trying to say something.' },
+      { id: 'plate0', x: 3, y: 3, type: 'plate', symbol: 'EARTH', index: 0 },
+      { id: 'plate1', x: 5, y: 3, type: 'plate', symbol: 'WATER', index: 1 },
+      { id: 'plate2', x: 7, y: 3, type: 'plate', symbol: 'FIRE', index: 2 },
+      { id: 'plate3', x: 5, y: 5, type: 'plate', symbol: 'AIR', index: 3 },
+      { id: 'mannequin', x: 5, y: 4, type: 'choice', visible: false },
+      { id: 'amulet', x: 8, y: 6, type: 'amulet', title: 'THE AMULET', text: 'Small. Unremarkable. The stone is empty.' },
+    ];
+    
+    // ═══════════════════════════════
+    // GAME STATE
+    // ═══════════════════════════════
+    const G = {
+      started: false,
+      player: { x: 2 * TILE, y: 4 * TILE, size: 12 },
+      plates: [false, false, false, false],
+      cageOpen: false,
+      choice: null,
+      hasAmulet: false,
+      near: null,
+      textOpen: false,
+      ended: false,
+      onCloseCb: null
+    };
+    
+    // ═══════════════════════════════
+    // INPUT
+    // ═══════════════════════════════
+    const keys = {};
+    document.addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.toLowerCase() === 'e' && G.near && !G.textOpen && !G.ended) {
+        e.preventDefault();
+        interact(G.near);
+      }
+      if (e.key.toLowerCase() === 'e' && G.textOpen) {
+        closeText();
+      }
+    });
+    document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+    
+    // ═══════════════════════════════
+    // COLLISION
+    // ═══════════════════════════════
+    function wallAt(px, py) {
+      const tx = Math.floor(px / TILE);
+      const ty = Math.floor(py / TILE);
+      if (tx < 0 || tx >= MW || ty < 0 || ty >= MH) return true;
+      return MAP[ty][tx] === 1;
+    }
+    
+    function canMove(px, py) {
+      const m = G.player.size * 0.7;
+      return !wallAt(px - m, py - m) && !wallAt(px + m, py - m) &&
+             !wallAt(px - m, py + m) && !wallAt(px + m, py + m);
+    }
+    
+    // ═══════════════════════════════
+    // UPDATE
+    // ═══════════════════════════════
+    function update() {
+      if (!G.started || G.textOpen || G.ended) return;
+      
+      const spd = 2.5;
+      let nx = G.player.x, ny = G.player.y;
+      
+      if (keys['w'] || keys['arrowup']) ny -= spd;
+      if (keys['s'] || keys['arrowdown']) ny += spd;
+      if (keys['a'] || keys['arrowleft']) nx -= spd;
+      if (keys['d'] || keys['arrowright']) nx += spd;
+      
+      if (canMove(nx, G.player.y)) G.player.x = nx;
+      if (canMove(G.player.x, ny)) G.player.y = ny;
+      
+      // Near detection
+      G.near = null;
+      for (const s of SPRITES) {
+        if (s.visible === false) continue;
+        if (s.type === 'amulet' && s.collected) continue;
+        const dx = s.x * TILE - G.player.x;
+        const dy = s.y * TILE - G.player.y;
+        if (Math.sqrt(dx*dx + dy*dy) < TILE * 1.2) {
+          G.near = s;
+          break;
+        }
+      }
+      
+      // UI
+      document.getElementById('prompt').classList.toggle('visible', !!G.near);
+      
+      // Location
+      const loc = document.getElementById('location');
+      const tx = G.player.x / TILE, ty = G.player.y / TILE;
+      if (ty < 4) loc.textContent = 'THE ENTRANCE';
+      else if (ty < 6) loc.textContent = 'THE CHAMBER';
+      else loc.textContent = 'THE DOME';
+      
+      if (G.cageOpen) loc.textContent = 'THE CHOICE';
+      
+      // Status
+      const st = document.getElementById('status');
+      if (!G.cageOpen && G.plates.every(p => p)) st.textContent = 'The mannequin is waiting.';
+      else if (G.cageOpen && !G.choice) st.textContent = 'Make your choice.';
+      else if (G.hasAmulet) st.textContent = 'The amulet is cold.';
+      else st.textContent = '';
+    }
+    
+    // ═══════════════════════════════
+    // INTERACT
+    // ═══════════════════════════════
+    function interact(s) {
+      if (G.textOpen) { closeText(); return; }
+      
+      switch (s.type) {
+        case 'examine':
+          openText(s.title, s.text);
+          if (s.id === 'faeron') s.seen = true;
+          break;
+          
+        case 'npc':
+          openText(s.title, s.text);
+          s.seen = true;
+          break;
+          
+        case 'plate':
+          if (!G.plates[s.index]) {
+            G.plates[s.index] = true;
+            document.getElementById('pd' + s.index).classList.add('on');
+            openText(s.symbol, `The plate glows beneath your feet.`);
+            if (G.plates.every(p => p)) {
+              setTimeout(() => {
+                openText('THE CAGE', 'The cage reaches the water\'s surface. The mannequin turns. Toward you.', () => {
+                  G.cageOpen = true;
+                  const m = SPRITES.find(x => x.id === 'mannequin');
+                  if (m) m.visible = true;
+                });
+              }, 1200);
+            }
+          }
+          break;
+          
+
+          
+        case 'choice':
+          if (G.cageOpen && !G.choice) {
+            document.getElementById('choice-overlay').classList.add('visible');
+          }
+          break;
+          
+        case 'amulet':
+          if (!s.collected) {
+            s.collected = true;
+            G.hasAmulet = true;
+            openText(s.title, s.text + '\n\nThe weight of it settles in your pocket.');
+          }
+          break;
+      }
+    }
+    
+    function makeChoice(ch) {
+      G.choice = ch;
+      G.hasAmulet = ch === 'refuse';
+      document.getElementById('choice-overlay').classList.remove('visible');
+      
+      if (ch === 'sacrifice') {
+        openText('SACRIFICE', 'The mannequin shatters. No ceremony. No light. The cage falls empty.');
+      } else {
+        openText('REFUSAL', 'The cage falls gently. The mannequin dissolves. Blue light, everywhere. And on the pedestal: an amulet.');
+        const a = SPRITES.find(s => s.id === 'amulet');
+        if (a) a.collected = false;
+      }
+    }
+    
+    function openText(title, text, onClose) {
+      G.textOpen = true;
+      document.getElementById('tb-title').textContent = title;
+      document.getElementById('tb-text').textContent = text;
+      document.getElementById('text-box').classList.add('visible');
+      G.onCloseCb = onClose;
+    }
+    
+    function closeText() {
+      G.textOpen = false;
+      document.getElementById('text-box').classList.remove('visible');
+      if (G.onCloseCb) { G.onCloseCb(); G.onCloseCb = null; }
+      checkEnd();
+    }
+    
+    function checkEnd() {
+      const ax = 8 * TILE, ay = 6 * TILE;
+      const dx = G.player.x - ax, dy = G.player.y - ay;
+      if ((G.hasAmulet || G.choice) && Math.sqrt(dx*dx + dy*dy) < TILE * 1.5) {
+        setTimeout(endGame, 800);
+      }
+    }
+    
+    function endGame() {
+      G.ended = true;
+      const endText = G.choice === 'refuse'
+        ? 'The amulet is warm in your pocket. Avery is waiting outside. The cave is behind you now, but it isn\'t finished with you.'
+        : 'You walk out empty-handed. The mannequin is splinters on the cave floor. You don\'t have an answer for her. Not yet.';
+      document.getElementById('end-text').textContent = endText;
+      document.getElementById('end-screen').classList.remove('hidden');
+    }
+    
+    // ═══════════════════════════════
+    // RENDER
+    // ═══════════════════════════════
+    function render() {
+      ctx.fillStyle = '#020406';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const ox = cx - G.player.x;
+      const oy = cy - G.player.y;
+      
+      // Draw floor tiles
+      for (let y = 0; y < MH; y++) {
+        for (let x = 0; x < MW; x++) {
+          const sx = x * TILE + ox;
+          const sy = y * TILE + oy;
+          
+          // Culling
+          if (sx + TILE < 0 || sx > canvas.width || sy + TILE < 0 || sy > canvas.height) continue;
+          
+          if (MAP[y][x] === 1) {
+            // Wall
+            const d = Math.sqrt((x * TILE - G.player.x) ** 2 + (y * TILE - G.player.y) ** 2);
+            const f = Math.max(0.3, 1 - d / 300);
+            ctx.fillStyle = `rgb(${20 * f}, ${28 * f}, ${40 * f})`;
+            ctx.fillRect(sx, sy, TILE, TILE);
+            ctx.strokeStyle = `rgba(40, 60, 80, ${f * 0.5})`;
+            ctx.strokeRect(sx, sy, TILE, TILE);
+          } else {
+            // Floor
+            ctx.fillStyle = '#050810';
+            ctx.fillRect(sx, sy, TILE, TILE);
+          }
+        }
+      }
+      
+      // Draw sprites
+      for (const s of SPRITES) {
+        if (s.visible === false) continue;
+        if (s.type === 'amulet' && s.collected) continue;
+        
+        const sx = s.x * TILE + ox + TILE / 2;
+        const sy = s.y * TILE + oy + TILE / 2;
+        const d = Math.sqrt((s.x * TILE - G.player.x) ** 2 + (s.y * TILE - G.player.y) ** 2);
+        const f = Math.max(0.2, 1 - d / 400);
+        
+        // Culling
+        if (sx < -50 || sx > canvas.width + 50 || sy < -50 || sy > canvas.height + 50) continue;
+        
+        ctx.save();
+        ctx.globalAlpha = f;
+        
+        switch (s.type) {
+          case 'examine':
+            // Carving glow
+            ctx.fillStyle = '#1a2530';
+            ctx.fillRect(sx - 15, sy - 20, 30, 40);
+            ctx.strokeStyle = '#2a4050';
+            ctx.strokeRect(sx - 15, sy - 20, 30, 40);
+            break;
+            
+          case 'npc':
+            // Faeron silhouette
+            ctx.fillStyle = '#05080c';
+            ctx.beginPath();
+            ctx.ellipse(sx, sy - 25, 8, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(sx - 6, sy - 15, 12, 35);
+            break;
+            
+          case 'plate':
+            const on = G.plates[s.index];
+            ctx.beginPath();
+            ctx.arc(sx, sy, 14, 0, Math.PI * 2);
+            ctx.fillStyle = on ? '#1a4050' : '#0a1520';
+            ctx.fill();
+            ctx.strokeStyle = on ? '#6ab0d0' : '#2a4050';
+            ctx.lineWidth = on ? 3 : 1;
+            ctx.stroke();
+            if (on) {
+              ctx.shadowColor = '#6ab0d0';
+              ctx.shadowBlur = 15;
+              ctx.stroke();
+              ctx.shadowBlur = 0;
+            }
+            ctx.fillStyle = on ? '#8ad0f0' : '#4a6070';
+            ctx.font = '8px Cinzel';
+            ctx.textAlign = 'center';
+            ctx.fillText(s.symbol[0], sx, sy + 3);
+            break;
+            
+
+            
+          case 'choice':
+            // Mannequin
+            ctx.fillStyle = '#2a3040';
+            ctx.beginPath();
+            ctx.ellipse(sx, sy - 25, 8, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillRect(sx - 8, sy - 15, 16, 30);
+            // Reach out
+            ctx.beginPath();
+            ctx.moveTo(sx + 8, sy - 10);
+            ctx.lineTo(sx + 25, sy - 15);
+            ctx.strokeStyle = '#2a3040';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            break;
+            
+          case 'amulet':
+            ctx.beginPath();
+            ctx.ellipse(sx, sy, 10, 6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a3050';
+            ctx.fill();
+            ctx.strokeStyle = '#6ab0d0';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowColor = '#6ab0d0';
+            ctx.shadowBlur = 12;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            break;
+        }
+        
+        ctx.restore();
+      }
+      
+      // Player
+      ctx.fillStyle = '#8ab0c8';
+      ctx.beginPath();
+      ctx.arc(cx, cy, G.player.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#6ab0d0';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      
+      // Glow under player
+      ctx.shadowColor = '#6ab0d0';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(cx, cy, G.player.size + 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+    
+    // ═══════════════════════════════
+    // GAME LOOP
+    // ═══════════════════════════════
+    function loop() {
+      update();
+      render();
+      requestAnimationFrame(loop);
+    }
+    
+    function startGame() {
+      document.getElementById('start-screen').classList.add('hidden');
+      G.started = true;
+    }
+    
+    // Start
+    loop();
+  </script>
+</body>
+</html>
